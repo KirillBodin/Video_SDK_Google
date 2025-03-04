@@ -1,5 +1,5 @@
 const API_BASE_URL = "https://api.videosdk.live";
-const VIDEOSDK_TOKEN = process.env.REACT_APP_VIDEOSDK_TOKEN;
+const VIDEOSDK_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcGlrZXkiOiIxZTUzNjVkYy0wZmNjLTQyOTktOTYwMi03ZTEwMjJmZmVhY2MiLCJwZXJtaXNzaW9ucyI6WyJhbGxvd19qb2luIl0sImlhdCI6MTc0MTAzNzc4MywiZXhwIjoxNzQxNjQyNTgzfQ.1-M8GFVxtjr-L2lTYNoEWyQUiFZmNTPss5XW7BNvSf4";
 const API_AUTH_URL = process.env.REACT_APP_AUTH_URL;
 
 export const getToken = async () => {
