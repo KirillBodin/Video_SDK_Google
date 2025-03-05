@@ -53,6 +53,8 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
   //const [lastUnmutedParticipantId, setLastUnmutedParticipantId] = useState(null);
   const [globalMuteState, setGlobalMuteState] = useState(false);
   const lastUnmutedParticipantIdRef = useRef(null); // Запоминаем последнего размьюченного ученика
+  const [highlightedParticipantId, setHighlightedParticipantId] = useState(null);
+  const { publish: highlightPublish, messages: highlightMessages } = usePubSub("HIGHLIGHT");
   const praiseMessages = [
     "Good job!",
     "Excellent!",
@@ -80,6 +82,18 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
     containerHeightRef.current = containerHeight;
     containerWidthRef.current = containerWidth;
   }, [containerHeight, containerWidth]);
+  useEffect(() => {
+    if (highlightMessages.length > 0) {
+      const lastMessage = highlightMessages[highlightMessages.length - 1];
+      if (lastMessage?.message?.participantId === "none") {
+        setHighlightedParticipantId(null); // Сбрасываем рамку
+        console.log("✅ Highlight reset (no participant highlighted)");
+      } else if (lastMessage?.message?.participantId) {
+        setHighlightedParticipantId(lastMessage.message.participantId);
+        console.log(`🔦 Highlighted participant: ${lastMessage.message.participantId}`);
+      }
+    }
+  }, [highlightMessages]);
 
   // Функции обратного вызова для meeting
   function onParticipantJoined(participant) {
@@ -188,6 +202,7 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
   const { publish: chatPublish } = usePubSub("CHAT");
 
 
+
   // Обработка клавиш для учителя с расширенными логами
   useEffect(() => {
     const localParticipant = mMeeting?.localParticipant;
@@ -261,7 +276,9 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
           const participant = participantArray[index];
 
           console.log(`✅ Highlighting ${participant.displayName} (ID: ${participant.id})`);
-          setSelectedParticipant(participant.id);
+          highlightPublish({ participantId: participant.id });
+
+
           lastUnmutedParticipantIdRef.current = participant.id; // Сохраняем ID
 
           controlPublish({
@@ -275,6 +292,7 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
       }
 
       // 🌟 Отправка похвалы последнему участнику, у которого отключали микрофон (по `+`)
+// 🌟 Отправка похвалы последнему участнику, у которого отключали микрофон (по `+`)
       if (key === "+") {
         if (lastUnmutedParticipantIdRef.current) {
           const targetParticipantId = lastUnmutedParticipantIdRef.current;
@@ -290,18 +308,23 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
               to: targetParticipantId,
             });
 
-            console.log(`📡 Sent praise message to participant (ID: ${targetParticipantId}): "${message}"`);
+            console.log(
+                `📡 Sent praise message to participant (ID: ${targetParticipantId}): "${message}"`
+            );
           } else {
             console.warn("❌ chatPublish is not available!");
           }
 
-          // ✅ Убираем выделение после отправки похвалы
-          setSelectedParticipant(null);
+          // ✅ Убираем выделение через PubSub
+          highlightPublish({ participantId: "none" });
 
-          // ✅ Сбрасываем ID последнего размьюченного участника
+          // ✅ Очищаем локальное состояние
+          setHighlightedParticipantId(null);
+
+          // ✅ Сбрасываем ID последнего размьюченного ученика
           lastUnmutedParticipantIdRef.current = null;
 
-          // ✅ Автоматически отключаем микрофон у этого участника
+          // ✅ Отключаем микрофон через 1 секунду
           setTimeout(() => {
             controlPublish({
               type: "control",
@@ -309,11 +332,13 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
               to: targetParticipantId,
             });
             console.log(`🔇 Sending mute command to participant (ID: ${targetParticipantId})`);
-          }, 2000);
+          }, 1000);
         } else {
           console.log("⚠️ No participant to praise yet.");
         }
       }
+
+
 
 
 
@@ -360,7 +385,18 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
       console.log(`🎤 Command for me: ${command}`);
 
       if (command === "requestUnmute") {
-        console.log("🎤 Received request to enable mic. Enabling automatically...");
+        console.log("🎤 Received request to enable mic");
+
+        // 🔔 Показываем сообщение ученику о включении микрофона
+        toast.info("Your microphone has been enabled by the teacher.", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeButton: false,
+          pauseOnHover: true,
+          draggable: true,
+          theme: "light",
+        });
 
         try {
           await mMeeting.unmuteMic();
@@ -369,7 +405,6 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
           console.error("❌ Failed to enable mic:", err);
         }
       }
-
 
       if (command === "mute") {
         console.log("🔇 Received mute command. Disabling mic...");
@@ -382,6 +417,7 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
       }
     },
   });
+
 
 
 
@@ -408,27 +444,6 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
       }
     },
   });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -553,7 +568,7 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
                         ) : (
                             <MemorizedParticipantView
                                 isPresenting={isPresenting}
-                                selectedParticipant={selectedParticipant} // Передаем выбранного участника для выделения
+                                highlightedParticipantId={highlightedParticipantId}
                             />
                         )}
                       </div>

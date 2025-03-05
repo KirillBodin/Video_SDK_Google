@@ -8,7 +8,7 @@ const MemoizedParticipant = React.memo(
     (prevProps, nextProps) => prevProps.participantId === nextProps.participantId
 );
 
-function ParticipantGrid({ participantIds, isPresenting, selectedParticipant }) {
+function ParticipantGrid({ participantIds, isPresenting, highlightedParticipantId }) {
     const { sideBarMode } = useMeetingAppContext();
     const { localParticipant } = useMeeting(); // Получаем локального участника (учителя)
     const isMobile = window.matchMedia("only screen and (max-width: 768px)").matches;
@@ -87,12 +87,17 @@ function ParticipantGrid({ participantIds, isPresenting, selectedParticipant }) 
                                                     sortedParticipantIds.length === 1
                                                         ? "md:max-w-7xl 2xl:max-w-[1480px] "
                                                         : "md:max-w-lg 2xl:max-w-2xl"
-                                                } overflow-clip overflow-hidden p-1
-                        ${participantId === selectedParticipant ? "border-4 border-green-500 rounded-lg" : ""}
-                        `}
+                                                } overflow-clip overflow-hidden p-1 ${
+                                                    highlightedParticipantId && highlightedParticipantId !== "none"
+                                                        ? participantId === highlightedParticipantId
+                                                        ? "border-4 border-green-500 rounded-lg"
+                                                        : ""
+                                                        : "" // ❗ Убираем рамку, если participantId = "none"
+                                                }`}
                                             >
                                                 <MemoizedParticipant participantId={participantId} />
                                             </div>
+
                                         );
                                     })}
                             </div>
@@ -108,6 +113,6 @@ export const MemoizedParticipantGrid = React.memo(ParticipantGrid, (prevProps, n
     return (
         JSON.stringify(prevProps.participantIds) === JSON.stringify(nextProps.participantIds) &&
         prevProps.isPresenting === nextProps.isPresenting &&
-        prevProps.selectedParticipant === nextProps.selectedParticipant
+        prevProps.highlightedParticipantId === nextProps.highlightedParticipantId
     );
 });
