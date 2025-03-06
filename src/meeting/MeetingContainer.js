@@ -205,19 +205,9 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
 
   // Обработка клавиш для учителя с расширенными логами
   useEffect(() => {
-    const localParticipant = mMeeting?.localParticipant;
-    if (!localParticipant) {
-      console.log("Local participant not available yet.");
-      return;
-    }
-
-    console.log("Local participant:", localParticipant.displayName, "with id:", localParticipant.id);
-
-    let lastUnmutedParticipantId = null; // Запоминаем последнего размьюченного ученика
-
-    const handleKeyDown = (event) => {
+    const handleGlobalKeyDown = (event) => {
       const key = event.key;
-      console.log(`Teacher pressed: ${key}`);
+      console.log(`🎹 [GLOBAL SHORTCUT] Pressed key: ${key}`);
 
       if (!mMeeting) {
         console.warn("❌ Meeting instance is not available!");
@@ -228,26 +218,27 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
           (p) => p.id !== mMeeting.localParticipant.id
       );
 
-      // Обновляем список участников
       setParticipantsArray(participantArray);
 
-      // 🔊 Включение микрофона у всех участников (по `5`)
       if (key === "5") {
-        console.log(`🎤 Toggling mic state for all participants. Current state: ${globalMuteState ? "Muted" : "Unmuted"}`);
-
+        console.log(`🎤 Toggling mic for all. Current state: ${globalMuteState ? "Muted" : "Unmuted"}`);
         participantArray.forEach((participant) => {
           controlPublish({
             type: "control",
             command: globalMuteState ? "mute" : "requestUnmute",
             to: participant.id,
           });
-          console.log(`📡 Sent ${globalMuteState ? "mute" : "unmute"} request to ${participant.displayName} (ID: ${participant.id})`);
         });
 
-        setGlobalMuteState(!globalMuteState); // Переключаем состояние
+        if (globalMuteState) {
+          mMeeting.muteMic();
+        } else {
+          mMeeting.unmuteMic();
+        }
+
+        setGlobalMuteState(!globalMuteState);
       }
 
-      // 🎲 Выбор случайного участника (по `0`, исключая `5`)
       if (key === "0") {
         const availableParticipants = participantArray.filter((p, index) => index !== 4);
         if (availableParticipants.length > 0) {
@@ -256,20 +247,16 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
 
           console.log(`🎲 Randomly selected: ${participant.displayName} (ID: ${participant.id})`);
           setSelectedParticipant(participant.id);
-          lastUnmutedParticipantIdRef.current = participant.id; // Сохраняем ID
+          lastUnmutedParticipantIdRef.current = participant.id;
 
           controlPublish({
             type: "control",
             command: "requestUnmute",
             to: participant.id,
           });
-          console.log(`📡 Sent unmute request to ${participant.displayName} (ID: ${participant.id})`);
-        } else {
-          console.log("⚠️ No participants available for random selection.");
         }
       }
 
-      // ✅ Включение участника по цифре (1-9)
       if (key >= "1" && key <= "9") {
         const index = parseInt(key, 10) - 1;
         if (index < participantArray.length) {
@@ -278,21 +265,15 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
           console.log(`✅ Highlighting ${participant.displayName} (ID: ${participant.id})`);
           highlightPublish({ participantId: participant.id });
 
-
-          lastUnmutedParticipantIdRef.current = participant.id; // Сохраняем ID
-
+          lastUnmutedParticipantIdRef.current = participant.id;
           controlPublish({
             type: "control",
             command: "requestUnmute",
             to: participant.id,
           });
-
-          console.log(`📡 Sent unmute request to ${participant.displayName} (ID: ${participant.id})`);
         }
       }
 
-      // 🌟 Отправка похвалы последнему участнику, у которого отключали микрофон (по `+`)
-// 🌟 Отправка похвалы последнему участнику, у которого отключали микрофон (по `+`)
       if (key === "+") {
         if (lastUnmutedParticipantIdRef.current) {
           const targetParticipantId = lastUnmutedParticipantIdRef.current;
@@ -300,31 +281,17 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
 
           console.log(`🌟 Sending praise to participant (ID: ${targetParticipantId}): ${message}`);
 
-          if (chatPublish) {
-            chatPublish({
-              senderId: mMeeting.localParticipant.id,
-              senderName: mMeeting.localParticipant.displayName,
-              message: message,
-              to: targetParticipantId,
-            });
+          chatPublish({
+            senderId: mMeeting.localParticipant.id,
+            senderName: mMeeting.localParticipant.displayName,
+            message: message,
+            to: targetParticipantId,
+          });
 
-            console.log(
-                `📡 Sent praise message to participant (ID: ${targetParticipantId}): "${message}"`
-            );
-          } else {
-            console.warn("❌ chatPublish is not available!");
-          }
-
-          // ✅ Убираем выделение через PubSub
           highlightPublish({ participantId: "none" });
-
-          // ✅ Очищаем локальное состояние
           setHighlightedParticipantId(null);
-
-          // ✅ Сбрасываем ID последнего размьюченного ученика
           lastUnmutedParticipantIdRef.current = null;
 
-          // ✅ Отключаем микрофон через 1 секунду
           setTimeout(() => {
             controlPublish({
               type: "control",
@@ -333,26 +300,17 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
             });
             console.log(`🔇 Sending mute command to participant (ID: ${targetParticipantId})`);
           }, 1000);
-        } else {
-          console.log("⚠️ No participant to praise yet.");
         }
       }
-
-
-
-
-
     };
 
+    window.addEventListener("keydown", handleGlobalKeyDown);
 
-    window.addEventListener("keydown", handleKeyDown);
     return () => {
-      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keydown", handleGlobalKeyDown);
     };
+  }, [mMeeting, controlPublish, chatPublish, praiseMessages]);
 
-
-
-  }, [mMeeting, controlPublish, praiseMessages]);
 
 
   // Подписка на канал CONTROL на стороне ученика

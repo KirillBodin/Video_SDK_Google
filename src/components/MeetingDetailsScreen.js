@@ -1,34 +1,45 @@
 import React, { useState } from "react";
-import { CheckIcon, ClipboardIcon } from "@heroicons/react/outline";
 import { toast } from "react-toastify";
-import { signInWithGoogle } from "../firebase"; // Импорт функции входа через Google
+import { signInWithGoogle } from "../firebase";
+import WaitingRoomScreen from "./screens/WaitingRoomScreen"; // Экран ожидания
+
+const ALLOWED_EMAILS = ["tamamatinfo@gmail.com", "meet.tamamat@gmail.com"];
 
 export function MeetingDetailsScreen({
-                                       onClickJoin,
-                                       _handleOnCreateMeeting,
-                                       participantName,
-                                       setParticipantName,
-                                       onClickStartMeeting,
+                                         onClickJoin,
+                                         _handleOnCreateMeeting,
+                                         participantName,
+                                         setParticipantName,
+                                         onClickStartMeeting,
                                      }) {
-  const [meetingId, setMeetingId] = useState("");
-  const [meetingIdError, setMeetingIdError] = useState(false);
-  const [isCopied, setIsCopied] = useState(false);
-  const [iscreateMeetingClicked, setIscreateMeetingClicked] = useState(false);
-  const [isJoinMeetingClicked, setIsJoinMeetingClicked] = useState(false);
+    const [meetingId, setMeetingId] = useState("");
+    const [isJoinMeetingClicked, setIsJoinMeetingClicked] = useState(false);
+    const [isWaitingRoom, setIsWaitingRoom] = useState(false);
+    const [userEmail, setUserEmail] = useState("");
 
-  return (
-      <div className="flex flex-1 flex-col justify-center w-full md:p-[6px] sm:p-1 p-1.5">
-        {/* Если имя не задано, показываем кнопку входа через Google */}
-        {!participantName && (
-            <div className="mb-4">
+    return isWaitingRoom ? (
+        <WaitingRoomScreen meetingId={meetingId} />
+    ) : (
+        <div className="flex flex-1 flex-col justify-center w-full md:p-[6px] sm:p-1 p-1.5">
+            {/* Поле ввода email (всегда отображается) */}
+            <input
+                value={userEmail}
+                onChange={(e) => setUserEmail(e.target.value.trim())}
+                placeholder="Enter your email"
+                className="px-4 py-3 bg-gray-650 rounded-xl text-white w-full text-center mb-4"
+            />
+
+            {/* Кнопка входа через Google, если email пустой */}
+            {!userEmail && (
                 <button
                     className="w-full bg-red-500 text-white px-2 py-3 rounded-xl"
                     onClick={async () => {
                         try {
-                            const user = await signInWithGoogle(); // Без передачи navigate
-                            if (user && user.displayName) {
-                                setParticipantName(user.displayName);
-                                toast("Вход выполнен. Ваше имя установлено", {
+                            const user = await signInWithGoogle();
+                            if (user && user.email) {
+                                setUserEmail(user.email.trim());
+                                setParticipantName(user.email);
+                                toast.success(`Signed in as ${user.email}`, {
                                     position: "bottom-left",
                                     autoClose: 3000,
                                     hideProgressBar: true,
@@ -36,7 +47,7 @@ export function MeetingDetailsScreen({
                             }
                         } catch (error) {
                             console.error("Ошибка входа через Google:", error);
-                            toast("Ошибка входа через Google", {
+                            toast.error("Google Sign-In Error", {
                                 position: "bottom-left",
                                 autoClose: 4000,
                                 hideProgressBar: true,
@@ -46,110 +57,117 @@ export function MeetingDetailsScreen({
                 >
                     Login with Google
                 </button>
-            </div>
-        )}
+            )}
 
-        {iscreateMeetingClicked ? (
-            <div className="border border-solid border-gray-400 rounded-xl px-4 py-3 flex items-center justify-center">
-              <p className="text-white text-base">{`Meeting code : ${meetingId}`}</p>
-              <button
-                  className="ml-2"
-                  onClick={() => {
-                    navigator.clipboard.writeText(meetingId);
-                    setIsCopied(true);
-                    setTimeout(() => {
-                      setIsCopied(false);
-                    }, 3000);
-                  }}
-              >
-                {isCopied ? (
-                    <CheckIcon className="h-5 w-5 text-green-400" />
-                ) : (
-                    <ClipboardIcon className="h-5 w-5 text-white" />
-                )}
-              </button>
-            </div>
-        ) : isJoinMeetingClicked ? (
-            <>
-              <input
-                  defaultValue={meetingId}
-                  onChange={(e) => {
-                    setMeetingId(e.target.value);
-                  }}
-                  placeholder={"Enter meeting Id"}
-                  className="px-4 py-3 bg-gray-650 rounded-xl text-white w-full text-center"
-              />
-              {meetingIdError && (
-                  <p className="text-xs text-red-600">{`Please enter valid meetingId`}</p>
-              )}
-            </>
-        ) : null}
+            {/* Ввод Meeting ID (отображается после нажатия "Join a meeting") */}
+            {isJoinMeetingClicked && (
+                <>
+                    <input
+                        value={meetingId}
+                        onChange={(e) => setMeetingId(e.target.value)}
+                        placeholder="Enter meeting ID"
+                        className="px-4 py-3 mt-3 bg-gray-650 rounded-xl text-white w-full text-center"
+                    />
+                </>
+            )}
 
-        {(iscreateMeetingClicked || isJoinMeetingClicked) && (
-            <>
-              <input
-                  value={participantName}
-                  onChange={(e) => setParticipantName(e.target.value)}
-                  placeholder="Enter your name"
-                  className="px-4 py-3 mt-5 bg-gray-650 rounded-xl text-white w-full text-center"
-              />
-              <button
-                  disabled={participantName.length < 3}
-                  className={`w-full ${
-                      participantName.length < 3 ? "bg-gray-650" : "bg-purple-350"
-                  } text-white px-2 py-3 rounded-xl mt-5`}
-                  onClick={(e) => {
-                    if (iscreateMeetingClicked) {
-                      onClickStartMeeting();
-                    } else {
-                      if (meetingId.match("\\w{4}\\-\\w{4}\\-\\w{4}")) {
-                        onClickJoin(meetingId);
-                      } else setMeetingIdError(true);
-                    }
-                  }}
-              >
-                {iscreateMeetingClicked ? "Start a meeting" : "Join a meeting"}
-              </button>
-            </>
-        )}
+            {/* Кнопки "Создать" и "Присоединиться" */}
+            <div className="w-full md:mt-4 mt-4 flex flex-col">
+                <div className="flex items-center justify-center flex-col w-full">
+                    {/* Кнопка "Create a meeting" исчезает, если нажата "Join a meeting" */}
+                    {!isJoinMeetingClicked && (
+                        <button
+                            className="w-full bg-purple-350 text-white px-2 py-3 rounded-xl"
+                            onClick={async () => {
+                                if (!ALLOWED_EMAILS.includes(userEmail)) {
+                                    toast.error(`Access denied: ${userEmail} is not authorized to create meetings.`, {
+                                        position: "bottom-left",
+                                        autoClose: 4000,
+                                        hideProgressBar: true,
+                                    });
+                                    return;
+                                }
 
-        {!iscreateMeetingClicked && !isJoinMeetingClicked && (
-            <div className="w-full md:mt-0 mt-4 flex flex-col">
-              <div className="flex items-center justify-center flex-col w-full">
-                <button
-                    className="w-full bg-purple-350 text-white px-2 py-3 rounded-xl"
-                    onClick={async (e) => {
-                      const { meetingId, err } = await _handleOnCreateMeeting();
-                      if (meetingId) {
-                        setMeetingId(meetingId);
-                        setIscreateMeetingClicked(true);
-                      } else {
-                        toast(`${err}`, {
-                          position: "bottom-left",
-                          autoClose: 4000,
-                          hideProgressBar: true,
-                          closeButton: false,
-                          pauseOnHover: true,
-                          draggable: true,
-                          progress: undefined,
-                          theme: "light",
-                        });
-                      }
-                    }}
-                >
-                  Create a meeting
-                </button>
-                <button
-                    className="w-full bg-gray-650 text-white px-2 py-3 rounded-xl mt-5"
-                    onClick={(e) => {
-                      setIsJoinMeetingClicked(true);
-                    }}
-                >
-                  Join a meeting
-                </button>
-              </div>
+                                toast.info("Creating meeting, please wait...", {
+                                    position: "bottom-left",
+                                    autoClose: 3000,
+                                    hideProgressBar: true,
+                                });
+
+                                try {
+                                    const { meetingId, err } = await _handleOnCreateMeeting();
+                                    if (meetingId) {
+                                        setMeetingId(meetingId);
+                                        toast.success(`Meeting created: ${meetingId}`, {
+                                            position: "bottom-left",
+                                            autoClose: 4000,
+                                            hideProgressBar: true,
+                                        });
+
+                                        // Автоматический переход в встречу
+                                        setTimeout(() => {
+                                            onClickStartMeeting();
+                                        }, 2000);
+                                    } else {
+                                        toast.error(`Failed to create meeting: ${err}`, {
+                                            position: "bottom-left",
+                                            autoClose: 4000,
+                                            hideProgressBar: true,
+                                        });
+                                    }
+                                } catch (error) {
+                                    toast.error("Unexpected error while creating meeting.", {
+                                        position: "bottom-left",
+                                        autoClose: 4000,
+                                        hideProgressBar: true,
+                                    });
+                                }
+                            }}
+                        >
+                            Create a meeting
+                        </button>
+                    )}
+
+                    {/* Кнопка "Join a meeting" теперь открывает поле для ввода ID */}
+                    {!isJoinMeetingClicked ? (
+                        <button
+                            className="w-full bg-gray-650 text-white px-2 py-3 rounded-xl mt-5"
+                            onClick={() => setIsJoinMeetingClicked(true)}
+                        >
+                            Join a meeting
+                        </button>
+                    ) : (
+                        <button
+                            className="w-full bg-green-500 text-white px-2 py-3 rounded-xl mt-3"
+                            onClick={() => {
+                                if (!meetingId.match("\\w{4}\\-\\w{4}\\-\\w{4}")) {
+                                    toast.info("No meeting found, redirecting to waiting room...", {
+                                        position: "bottom-left",
+                                        autoClose: 3000,
+                                        hideProgressBar: true,
+                                    });
+
+                                    setTimeout(() => {
+                                        setIsWaitingRoom(true);
+                                    }, 2000);
+                                } else {
+                                    toast.success("Joining meeting...", {
+                                        position: "bottom-left",
+                                        autoClose: 2000,
+                                        hideProgressBar: true,
+                                    });
+
+                                    setTimeout(() => {
+                                        onClickJoin(meetingId);
+                                    }, 2000);
+                                }
+                            }}
+                        >
+                            Confirm & Join
+                        </button>
+                    )}
+                </div>
             </div>
-        )}
-      </div>
-  );
+        </div>
+    );
 }
