@@ -1,0 +1,35 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = "postgresql://postgres:mynewpassword@localhost:5432/videosdk_db"
+}
+
+model SuperAdmin {
+  id       Int    @id @default(autoincrement())
+  email    String @unique
+  password String
+}
+
+model Admin {
+  id         Int    @id @default(autoincrement())
+  email      String @unique
+  password   String
+  schoolName String
+}
+
+model Teacher {
+  id       Int    @id @default(autoincrement())
+  email    String @unique
+  password String
+  adminId  Int    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+}
+
+model Meeting {
+  id         Int    @id @default(autoincrement())
+  teacherId  Int    @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  meetingId  String @unique
+  createdAt  DateTime @default(now())
+}

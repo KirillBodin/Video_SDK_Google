@@ -21,15 +21,15 @@ import { toast } from "react-toastify";
 export function JoiningScreen({
   participantName,
   setParticipantName,
-  setMeetingId,
-  setToken,
-  onClickStartMeeting,
+                                setToken,
+                                onClickStartMeeting,
   micOn,
   webcamOn,
   setWebcamOn,
   setMicOn,
   customAudioStream,
   setCustomAudioStream,
+  setIsAdminView, 
   setCustomVideoStream,
 }) {
   const {
@@ -62,6 +62,9 @@ export function JoiningScreen({
   const [dlgMuted, setDlgMuted] = useState(false);
   const [dlgDevices, setDlgDevices] = useState(false);
   const [didDeviceChange, setDidDeviceChange] = useState(false);
+  const [meetingId, setMeetingId] = useState(""); // Переконайся, що цей стан є!
+
+
 
   const videoPlayerRef = useRef();
   const videoTrackRef = useRef();
@@ -495,46 +498,52 @@ export function JoiningScreen({
               </div>
               <div className="md:col-span-5 2xl:col-span-5 col-span-12 md:relative">
                 <div className="flex flex-1 flex-col items-center justify-center xl:m-16 lg:m-6 md:mt-9 lg:mt-14 xl:mt-20 mt-3 md:absolute md:left-0 md:right-0 md:top-0 md:bottom-0">
-                  <MeetingDetailsScreen
-                    participantName={participantName}
-                    setParticipantName={setParticipantName}
-                    videoTrack={videoTrack}
-                    setVideoTrack={setVideoTrack}
-                    onClickStartMeeting={onClickStartMeeting}
-                    onClickJoin={async (id) => {
-                      const token = await getToken();
-                      const { meetingId, err } = await validateMeeting({
-                        roomId: id,
-                        token,
-                      });
-                      if (meetingId === id) {
-                        setToken(token);
-                        setMeetingId(id);
-                        onClickStartMeeting();
-                      } else {
-                        toast(`${err}`, {
-                          position: "bottom-left",
-                          autoClose: 4000,
-                          hideProgressBar: true,
-                          closeButton: false,
-                          pauseOnHover: true,
-                          draggable: true,
-                          progress: undefined,
-                          theme: "light",
-                        });
-                      }
-                    }}
-                    _handleOnCreateMeeting={async () => {
-                      const token = await getToken();
-                      const { meetingId, err } = await createMeeting({ token });
+                <MeetingDetailsScreen
+  participantName={participantName}
+  setParticipantName={setParticipantName}
+  videoTrack={videoTrack}
+  setMeetingId={setMeetingId}
+  setToken={setToken}
+  setVideoTrack={setVideoTrack}
+  setIsAdminView={setIsAdminView} // ✅ Передаем в MeetingDetailsScreen
+  onClickStartMeeting={onClickStartMeeting}
+  onClickJoin={async (token, id) => {
+    console.log("[JoiningScreen] 🔥 Вызывается onClickJoin с токеном и meetingId:", token, id);
+    // Обновляем состояния, если необходимо
+    setToken(token);
+    setMeetingId(id);
+    // Вызываем запуск митинга с переданными параметрами
+    onClickStartMeeting(token, id);
+                      }}
 
-                      if (meetingId) {
+
+                      _handleOnCreateMeeting={async () => {
+                        console.log("[JoiningScreen] 🔥 Вызывается _handleOnCreateMeeting!");
+
+                        const token = await getToken();
+                        console.log("[JoiningScreen] ✅ Получен токен:", token);
+
+                        if (!token) {
+                          console.error("[JoiningScreen] ❌ Ошибка: токен пуст!");
+                          return { meetingId: null, err: "Token is empty" };
+                        }
+
                         setToken(token);
-                        setMeetingId(meetingId);
-                      }
-                      return { meetingId: meetingId, err: err };
-                    }}
+                        console.log("[JoiningScreen] ✅ Токен установлен.");
+
+                        const { meetingId, err } = await createMeeting({ token });
+
+                        if (meetingId) {
+                          console.log("[JoiningScreen] ✅ Комната создана:", meetingId);
+                          setMeetingId(meetingId);
+                          return { meetingId, err: null };
+                        } else {
+                          console.error("[JoiningScreen] ❌ Ошибка при создании:", err);
+                          return { meetingId: null, err };
+                        }
+                      }}
                   />
+
                 </div>
               </div>
             </div>

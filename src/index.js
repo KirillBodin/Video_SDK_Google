@@ -1,5 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { BrowserRouter } from "react-router-dom"; // ✅ Импортируем BrowserRouter
 import "./index.css";
 import App from "./App";
 import { ToastContainer } from "react-toastify";
@@ -7,7 +8,7 @@ import "react-toastify/dist/ReactToastify.css";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
-  <>
+  <BrowserRouter> {/* ✅ Оборачиваем в BrowserRouter */}
     <ToastContainer
       toastClassName={() =>
         "relative flex py-4 px-3 rounded overflow-hidden cursor-pointer bg-white shadow-lg"
@@ -26,5 +27,5 @@ root.render(
       theme="light"
     />
     <App />
-  </>
+  </BrowserRouter>
 );
