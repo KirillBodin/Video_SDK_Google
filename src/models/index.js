@@ -1,12 +1,16 @@
 const sequelize = require("./db");
 const User = require("./User");
-const ClassMeeting = require("./ClassMeeting");
+const School = require("./School");
+
+// 🔹 Определяем связи
+User.belongsTo(School, { foreignKey: "schoolId", onDelete: "CASCADE" });
+School.hasMany(User, { foreignKey: "schoolId" });
 
 const initDB = async () => {
   try {
     await sequelize.authenticate();
     console.log("✅ Подключение к БД успешно!");
-    
+
     await sequelize.sync({ alter: true });
     console.log("✅ База данных синхронизирована!");
   } catch (error) {
@@ -14,4 +18,4 @@ const initDB = async () => {
   }
 };
 
-module.exports = { initDB, User, ClassMeeting };
+module.exports = { initDB, User, School };

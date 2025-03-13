@@ -2,11 +2,6 @@ const { DataTypes } = require("sequelize");
 const sequelize = require("./db");
 
 const User = sequelize.define("User", {
-  id: {
-    type: DataTypes.INTEGER,
-    autoIncrement: true,
-    primaryKey: true,
-  },
   email: {
     type: DataTypes.STRING,
     allowNull: false,
@@ -19,6 +14,10 @@ const User = sequelize.define("User", {
   role: {
     type: DataTypes.ENUM("superadmin", "admin", "teacher"),
     allowNull: false,
+  },
+  name: {
+    type: DataTypes.STRING,
+    allowNull: true, // Может быть как для админов, так и для учителей
   },
 });
 

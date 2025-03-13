@@ -3,10 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
 const adminRoles = {
-  SUPER_ADMIN: "super_admin",
-  SCHOOL_ADMIN: "school_admin",
-  TEACHER: "teacher",
-};
+    SUPER_ADMIN: "superadmin",
+    SCHOOL_ADMIN: "admin",
+    TEACHER: "teacher",
+  };
+  
 
 export default function AdminLoginScreen() {
   const [email, setEmail] = useState("");
@@ -14,47 +15,46 @@ export default function AdminLoginScreen() {
   const navigate = useNavigate();
 
   const handleLogin = async () => {
-    if (!email || !password) {
-      toast.error("Please enter both email and password!");
-      return;
-    }
-
     try {
-      // 📡 Отправляем запрос на сервер для проверки данных
-      const response = await fetch("http://localhost:5000/api/admin-login", {
+      const res = await fetch("http://localhost:5000/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
-
-      const data = await response.json();
-
-      if (response.ok && data.role) {
+  
+      const data = await res.json();
+  
+      if (res.ok) {
         toast.success("Login successful!");
-
-        // 🔀 Перенаправляем в зависимости от роли
-        switch (data.role) {
-          case adminRoles.SUPER_ADMIN:
-            navigate("/admin/super");
-            break;
-          case adminRoles.SCHOOL_ADMIN:
-            navigate(`/admin/school/${data.schoolId}`);
-            break;
-          case adminRoles.TEACHER:
-            navigate(`/admin/teacher/${data.teacherId}`);
-            break;
-          default:
-            toast.error("Unknown role. Contact support.");
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("role", data.role);
+  
+        if (data.schoolId) {
+          localStorage.setItem("schoolId", data.schoolId);
+        }
+  
+        if (data.teacherId) { // ✅ Сохраняем teacherId
+          localStorage.setItem("teacherId", data.teacherId);
+        }
+  
+        // 🔄 Перенаправление после входа
+        if (data.role === "superadmin") {
+          navigate("/admin/super");
+        } else if (data.role === "admin") {
+          navigate(`/admin/school/${data.schoolId}`);
+        } else if (data.role === "teacher") {
+          navigate(`/admin/teacher/${data.teacherId}`); // ✅ Теперь teacherId всегда будет корректным
         }
       } else {
-        toast.error("Invalid credentials!");
+        toast.error(data.error || "Login failed");
       }
     } catch (error) {
-      console.error("[AdminLoginScreen] ❌ Error:", error);
-      toast.error("Server error. Try again later.");
+      console.error("Login error:", error);
+      toast.error("Server error.");
     }
   };
-
+  
+  
   return (
     <div className="flex flex-col items-center justify-center h-screen bg-gray-900 text-white">
       <h1 className="text-3xl font-bold mb-6">Admin Login</h1>

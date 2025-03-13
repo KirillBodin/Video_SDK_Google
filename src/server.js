@@ -4,7 +4,9 @@ const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const { Pool } = require("pg"); // Подключаем PostgreSQL
 const { initDB } = require("./models");
-const authRoutes = require("./routes/auth");
+const authRoutes = require("./routes/authRoutes");
+const schoolAdminRoutes = require("./routes/schoolAdminRoutes");
+
 
 const app = express();
 app.use(express.json());
@@ -21,6 +23,13 @@ const pool = new Pool({
 
 // ✅ Подключаем роуты
 app.use("/api/auth", authRoutes);
+app.use("/api/school-admins", schoolAdminRoutes);
+
+
+
+
+
+
 
 // ✅ Эндпоинт для генерации токена VideoSDK
 app.get("/api/get-token", (req, res) => {
