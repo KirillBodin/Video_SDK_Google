@@ -12,6 +12,7 @@ const users = [
   { name: "Admin One", email: "admin1@example.com", password: "adminpassword1", role: "admin", schoolIndex: 0 },
   { name: "Admin Two", email: "admin2@example.com", password: "adminpassword2", role: "admin", schoolIndex: 1 },
   { name: "Teacher One", email: "teacher1@example.com", password: "teacherpassword1", role: "teacher", schoolIndex: 0 },
+  { name: "Andriy Dykyy", email: "meet.tamamat@gmail.com", password: "12345", role: "superadmin", schoolIndex: 0 },
   { name: "Teacher Two", email: "teacher2@example.com", password: "teacherpassword2", role: "teacher", schoolIndex: 1 }
 ];
 
