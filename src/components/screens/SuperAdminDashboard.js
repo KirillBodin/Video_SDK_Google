@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 // (Если нужно) import { useParams } from "react-router-dom";
-const SERVER_URL = process.env.REACT_APP_SERVER_URL || "http://localhost:5000";
+const SERVER_URL = "https://backend-videosdk.onrender.com" || "http://localhost:5000";
 
 export default function SuperAdminDashboard() {
   // Если нужно брать adminId из URL, можно использовать useParams:

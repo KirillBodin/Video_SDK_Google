@@ -6,7 +6,7 @@ import { signInWithGoogle } from "../firebase";
 
 // При необходимости можно подключить getToken, validateMeeting и т.д.
 // import { getToken, validateMeeting } from "../api";
-const SERVER_URL = process.env.REACT_APP_SERVER_URL || "http://localhost:5000";
+const SERVER_URL = "https://backend-videosdk.onrender.com" || "http://localhost:5000";
 export function MeetingDetailsScreen({
   setMeetingId,
   setToken,
@@ -31,7 +31,7 @@ export function MeetingDetailsScreen({
   const [isWaitingRoom, setIsWaitingRoom] = useState(false);
 
   const navigate = useNavigate();
-const SERVER_URL = process.env.REACT_APP_SERVER_URL || "http://localhost:5000";
+const SERVER_URL = "https://backend-videosdk.onrender.com" || "http://localhost:5000";
   // Если нужно загружать список учителей для чего-то ещё (но сейчас не используем)
   useEffect(() => {
     fetch(`${SERVER_URL}/api/school-admins/users`)

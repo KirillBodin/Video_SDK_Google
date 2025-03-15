@@ -4,7 +4,7 @@ import { toast } from "react-toastify";
 export default function AdminDashboardScreen() {
     const [meetings, setMeetings] = useState([]);
     const [loading, setLoading] = useState(false);
-    const SERVER_URL = process.env.REACT_APP_SERVER_URL || "http://localhost:5000";
+    const SERVER_URL = "https://backend-videosdk.onrender.com" || "http://localhost:5000";
 
     // ✅ Получение всех встреч из базы
     const fetchMeetings = async () => {
