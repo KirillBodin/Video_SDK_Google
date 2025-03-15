@@ -4,12 +4,13 @@ import { toast } from "react-toastify";
 export default function AdminDashboardScreen() {
     const [meetings, setMeetings] = useState([]);
     const [loading, setLoading] = useState(false);
+    const SERVER_URL = process.env.REACT_APP_SERVER_URL || "http://localhost:5000";
 
     // ✅ Получение всех встреч из базы
     const fetchMeetings = async () => {
         setLoading(true);
         try {
-            const response = await fetch("http://localhost:5000/api/meetings");
+            const response = await fetch(`${SERVER_URL}/api/meetings`);
             const data = await response.json();
             setMeetings(data);
         } catch (error) {
@@ -25,7 +26,7 @@ export default function AdminDashboardScreen() {
         if (!window.confirm("Are you sure you want to delete this meeting?")) return;
 
         try {
-            const response = await fetch(`http://localhost:5000/api/delete-meeting/${meetingId}`, {
+            const response = await fetch(`${SERVER_URL}/api/delete-meeting/${meetingId}`, {
                 method: "DELETE",
             });
             if (response.ok) {
