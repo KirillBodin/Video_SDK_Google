@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 // (Если нужно) import { useParams } from "react-router-dom";
+const SERVER_URL = process.env.REACT_APP_SERVER_URL || "http://localhost:5000";
 
 export default function SuperAdminDashboard() {
   // Если нужно брать adminId из URL, можно использовать useParams:
@@ -32,7 +33,7 @@ export default function SuperAdminDashboard() {
   const fetchAdmins = async () => {
     console.log("Fetching school admins...");
     try {
-      const res = await fetch("http://localhost:5000/api/school-admins");
+      const res = await fetch(`${SERVER_URL}/api/school-admins`);
       const data = await res.json();
       console.log("Received school admins:", data);
       if (!res.ok) {
@@ -57,7 +58,7 @@ export default function SuperAdminDashboard() {
     console.log(`Fetching teachers for schoolId ${schoolId}...`);
     try {
       const res = await fetch(
-        `http://localhost:5000/api/school-admins/${schoolId}/teachers`
+        `${SERVER_URL}/api/school-admins/${schoolId}/teachers`
       );
       const data = await res.json();
       console.log(`Received teachers for schoolId ${schoolId}:`, data);
@@ -80,7 +81,7 @@ export default function SuperAdminDashboard() {
     console.log(`Fetching lessons for teacherId ${teacherId}...`);
     try {
       const res = await fetch(
-        `http://localhost:5000/api/school-admins/${teacherId}/lessons`
+        `${SERVER_URL}/api/school-admins/${teacherId}/lessons`
       );
       const data = await res.json();
       console.log(`Received lessons for teacherId ${teacherId}:`, data);
@@ -98,7 +99,7 @@ export default function SuperAdminDashboard() {
     console.log(`Fetching lessons for adminId ${adminId}...`);
     try {
       const res = await fetch(
-        `http://localhost:5000/api/school-admins/${adminId}/lessons`
+        `${SERVER_URL}/api/school-admins/${adminId}/lessons`
       );
       const data = await res.json();
       console.log(`Received admin lessons for adminId ${adminId}:`, data);
@@ -126,7 +127,7 @@ export default function SuperAdminDashboard() {
       console.log("Super admin id:", superAdminId);
 
       const res = await fetch(
-        `http://localhost:5000/api/school-admins/${superAdminId}/lessons`
+        `${SERVER_URL}/api/school-admins/${superAdminId}/lessons`
       );
       const data = await res.json();
       console.log("Received super admin lessons:", data);
@@ -149,7 +150,7 @@ export default function SuperAdminDashboard() {
 
     try {
       // Предполагаем, что на бэкенде есть маршрут DELETE /api/lessons/:lessonId
-      const res = await fetch(`http://localhost:5000/api/lessons/${lessonId}`, {
+      const res = await fetch(`${SERVER_URL}/api/lessons/${lessonId}`, {
         method: "DELETE",
       });
       if (!res.ok) {
@@ -171,7 +172,7 @@ export default function SuperAdminDashboard() {
   const handleAddAdmin = async () => {
     console.log("Adding new school admin...", { name, email, schoolName });
     try {
-      const res = await fetch("http://localhost:5000/api/school-admins", {
+      const res = await fetch(`${SERVER_URL}/api/school-admins`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email, schoolName }),
@@ -213,7 +214,7 @@ const handleAddTeacher = async (schoolId) => {
 
   try {
     const res = await fetch(
-      `http://localhost:5000/api/school-admins/${schoolId}/teachers`,
+      `${SERVER_URL}/api/school-admins/${schoolId}/teachers`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -252,7 +253,7 @@ const handleDeleteTeacher = async (teacherId, schoolId) => {
 
   try {
     const res = await fetch(
-      `http://localhost:5000/api/school-admins/${schoolId}/teachers/${teacherId}`,
+      `${SERVER_URL}/api/school-admins/${schoolId}/teachers/${teacherId}`,
       { method: "DELETE" }
     );
 
@@ -282,7 +283,7 @@ const handleDeleteAdmin = async (adminId) => {
 
   try {
     const res = await fetch(
-      `http://localhost:5000/api/school-admins/${adminId}`,
+      `${SERVER_URL}/api/school-admins/${adminId}`,
       { method: "DELETE" }
     );
 

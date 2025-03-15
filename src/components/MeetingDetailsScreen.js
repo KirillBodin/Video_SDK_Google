@@ -6,7 +6,7 @@ import { signInWithGoogle } from "../firebase";
 
 // При необходимости можно подключить getToken, validateMeeting и т.д.
 // import { getToken, validateMeeting } from "../api";
-
+const SERVER_URL = process.env.REACT_APP_SERVER_URL || "http://localhost:5000";
 export function MeetingDetailsScreen({
   setMeetingId,
   setToken,
@@ -31,10 +31,10 @@ export function MeetingDetailsScreen({
   const [isWaitingRoom, setIsWaitingRoom] = useState(false);
 
   const navigate = useNavigate();
-
+const SERVER_URL = process.env.REACT_APP_SERVER_URL || "http://localhost:5000";
   // Если нужно загружать список учителей для чего-то ещё (но сейчас не используем)
   useEffect(() => {
-    fetch("http://localhost:5000/api/school-admins/users")
+    fetch(`${SERVER_URL}/api/school-admins/users`)
       .then((res) => res.json())
       .then((data) => {
         setTeachersList(data.map((teacher) => teacher.email));
@@ -162,7 +162,7 @@ export function MeetingDetailsScreen({
 
                 try {
                   // 1) Получаем VideoSDK токен
-                  const tokenResponse = await fetch("http://localhost:5000/api/get-token");
+                  const tokenResponse = await fetch(`${SERVER_URL}/api/get-token`);
                   const { token } = await tokenResponse.json();
 
                   if (!token) {
@@ -173,7 +173,7 @@ export function MeetingDetailsScreen({
                   setToken(token);
 
                   // 2) Создаём новую встречу
-                  const meetingResponse = await fetch("https://api.videosdk.live/v1/meetings", {
+                  const meetingResponse = await fetch(`https://api.videosdk.live/v1/meetings`, {
                     method: "POST",
                     headers: {
                       "Content-Type": "application/json",
@@ -192,7 +192,7 @@ export function MeetingDetailsScreen({
                   console.log("[MeetingDetailsScreen] ✅ Встреча создана:", newMeetingId);
 
                   // 3) Сохраняем на своём сервере
-                  await fetch("http://localhost:5000/api/save-meeting", {
+                  await fetch(`${SERVER_URL}/api/save-meeting`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
@@ -237,7 +237,7 @@ export function MeetingDetailsScreen({
 
                 try {
                   // 1) Получаем meetingId из базы по названию roomName
-                  const response = await fetch(`http://localhost:5000/api/get-meeting/${roomName}`);
+                  const response = await fetch(`http://${SERVER_URL}/api/get-meeting/${roomName}`);
                   const data = await response.json();
 
                   if (!data.meetingId) {
@@ -249,7 +249,7 @@ export function MeetingDetailsScreen({
                   console.log("[MeetingDetailsScreen] ✅ Найден meetingId:", meetingId);
 
                   // 2) Получаем токен
-                  const tokenResponse = await fetch("http://localhost:5000/api/get-token");
+                  const tokenResponse = await fetch(`${SERVER_URL}/api/get-token`);
                   const { token } = await tokenResponse.json();
 
                   if (!token) {

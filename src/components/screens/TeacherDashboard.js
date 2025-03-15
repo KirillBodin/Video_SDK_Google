@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { toast } from "react-toastify";
+const SERVER_URL = process.env.REACT_APP_SERVER_URL || "http://localhost:5000";
 
 export default function TeacherDashboard() {
   const { teacherId } = useParams();
@@ -12,7 +13,7 @@ export default function TeacherDashboard() {
 
   const fetchLessons = async () => {
     try {
-      const res = await fetch(`http://localhost:5000/api/${teacherId}/lessons`);
+      const res = await fetch(`${SERVER_URL}/api/${teacherId}/lessons`);
       const data = await res.json();
 
       if (res.ok) {
@@ -30,7 +31,7 @@ export default function TeacherDashboard() {
     if (!window.confirm("Are you sure you want to delete this lesson?")) return;
 
     try {
-      const res = await fetch(`http://localhost:5000/api/lessons/${lessonId}`, {
+      const res = await fetch(`${SERVER_URL}/api/lessons/${lessonId}`, {
         method: "DELETE",
       });
 

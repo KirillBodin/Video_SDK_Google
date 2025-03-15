@@ -7,6 +7,7 @@ const adminRoles = {
   SCHOOL_ADMIN: "admin",
   TEACHER: "teacher",
 };
+const SERVER_URL = process.env.REACT_APP_SERVER_URL || "http://localhost:5000";
 
 export default function AdminLoginScreen() {
   const [email, setEmail] = useState("");
@@ -15,7 +16,7 @@ export default function AdminLoginScreen() {
 
   const handleLogin = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/auth/login", {
+      const res = await fetch(`${SERVER_URL}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),

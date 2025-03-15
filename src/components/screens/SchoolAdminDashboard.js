@@ -10,11 +10,12 @@ export default function SchoolAdminDashboard() {
   const [teacherName, setTeacherName] = useState("");
   const [teacherEmail, setTeacherEmail] = useState("");
   const [teacherPassword, setTeacherPassword] = useState("");
+  const SERVER_URL = process.env.REACT_APP_SERVER_URL || "http://localhost:5000";
 
   // 📡 Загружаем список учителей
   const fetchTeachers = async () => {
     try {
-      const res = await fetch(`http://localhost:5000/api/${adminId}/teachers`);
+      const res = await fetch(`${SERVER_URL}/api/${adminId}/teachers`);
       const data = await res.json();
   
       if (res.ok) {
@@ -32,7 +33,7 @@ export default function SchoolAdminDashboard() {
 
   const fetchLessons = async () => {
     try {
-      const res = await fetch(`http://localhost:5000/api/${adminId}/lessons`);
+      const res = await fetch(`${SERVER_URL}/api/${adminId}/lessons`);
       const data = await res.json();
   
       if (res.ok) {
@@ -67,7 +68,7 @@ export default function SchoolAdminDashboard() {
     }
 
     try {
-      const res = await fetch(`http://localhost:5000/api/${adminId}/teachers`, {
+      const res = await fetch(`${SERVER_URL}/api/${adminId}/teachers`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -98,7 +99,7 @@ export default function SchoolAdminDashboard() {
     if (!window.confirm("Are you sure you want to delete this teacher?")) return;
 
     try {
-      const res = await fetch(`http://localhost:5000/api/${adminId}/teachers/${teacherId}`, {
+      const res = await fetch(`${SERVER_URL}/api/${adminId}/teachers/${teacherId}`, {
         method: "DELETE",
       });
 
