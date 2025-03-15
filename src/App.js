@@ -98,9 +98,13 @@ function App() {
             }
           />
           <Route path="/admin/login" element={<AdminLoginScreen />} />
-<Route path="/admin/super" element={<SuperAdminDashboard />} />
-<Route path="/admin/school/:schoolId" element={<SchoolAdminDashboard />} />
-<Route path="/admin/teacher/:teacherId" element={<TeacherDashboard />} />
+          <Route path="/superadmin/:superAdminId/:name" element={<SuperAdminDashboard />} />
+<Route path="/admin/:adminId/:name" element={<SchoolAdminDashboard />} />
+<Route path="/teacher/:teacherId/:name" element={<TeacherDashboard />} />
+
+
+
+
 
         </Routes>
       </MeetingAppProvider>

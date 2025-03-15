@@ -195,21 +195,35 @@ export function JoiningScreen({
     }
   };
   const changeMic = async (deviceId) => {
-
-
-    if (micOn) {
-      const currentAudioTrack = audioTrackRef.current;
-      currentAudioTrack && currentAudioTrack.stop();
-      const stream = await getAudioTrack({
-        micId: deviceId,
-      });
-      setCustomAudioStream(stream);
-      const audioTracks = stream?.getAudioTracks();
-      const audioTrack = audioTracks.length ? audioTracks[0] : null;
+    if (!micOn) return;
+    try {
+      // Останавливаем предыдущий аудио трек, если он есть
+      if (audioTrackRef.current) {
+        audioTrackRef.current.stop();
+      }
+      // Пытаемся получить новый поток с выбранным устройством
+      const stream = await getAudioTrack({ micId: deviceId });
+      if (stream) {
+        setCustomAudioStream(stream);
+        const audioTracks = stream.getAudioTracks();
+        if (audioTracks && audioTracks.length > 0) {
+          setAudioTrack(audioTracks[0]);
+        } else {
+          // Если поток не содержит аудио-треков, сбрасываем состояние
+          setAudioTrack(null);
+        }
+      } else {
+        // Если поток не получен, сбрасываем состояние
+        setAudioTrack(null);
+      }
       clearInterval(audioAnalyserIntervalRef.current);
-      setAudioTrack(audioTrack);
+    } catch (error) {
+      console.error("Ошибка при смене микрофона:", error);
+      // При возникновении ошибки сбрасываем аудио-трек, чтобы не получить undefined
+      setAudioTrack(null);
     }
   };
+  
 
   const getDefaultMediaTracks = async ({ mic, webcam }) => {
 
@@ -435,34 +449,79 @@ export function JoiningScreen({
                           </div>
                         </>
                       ) : null}
+<div className="absolute xl:bottom-6 bottom-4 left-0 right-0 flex flex-col items-center space-y-3">
+<div className="container flex space-x-24 items-center justify-center">
+  {/* Микрофон */}
+  {isMicrophonePermissionAllowed ? (
+    <div className="relative flex flex-col items-center">
+      <ButtonWithTooltip
+        onClick={_toggleMic}
+        onState={micOn}
+        mic={true}
+        OnIcon={MicOnIcon}
+        OffIcon={MicOffIcon}
+      />
+      {/* Выпадающий список микрофона */}
+      <div className="absolute top-full left-0 mt-1 w-32 z-50">
+        <select
+          className="px-2 py-1 bg-black text-white rounded-lg text-sm w-full shadow-md 
+                     outline-none focus:ring-2 focus:ring-gray-600 hover:bg-gray-800 
+                     cursor-pointer whitespace-nowrap overflow-hidden text-ellipsis"
+          value={selectedMic?.id || ""}
+          onChange={(e) => changeMic(e.target.value)}
+        >
+          {mics.map((device, index) => (
+            <option key={device.deviceId} value={device.deviceId}>
+              🎤 {device.label || `Mic ${index + 1}`}
+            </option>
+          ))}
+        </select>
+      </div>
+    </div>
+  ) : (
+    <MicPermissionDenied />
+  )}
 
-                      <div className="absolute xl:bottom-6 bottom-4 left-0 right-0">
-                        <div className="container grid grid-flow-col space-x-4 items-center justify-center md:-m-2">
-                          {isMicrophonePermissionAllowed ? (
-                            <ButtonWithTooltip
-                              onClick={_toggleMic}
-                              onState={micOn}
-                              mic={true}
-                              OnIcon={MicOnIcon}
-                              OffIcon={MicOffIcon}
-                            />
-                          ) : (
-                            <MicPermissionDenied />
-                          )}
+  {/* Камера */}
+  {isCameraPermissionAllowed ? (
+    <div className="relative flex flex-col items-center">
+      <ButtonWithTooltip
+        onClick={_toggleWebcam}
+        onState={webcamOn}
+        mic={false}
+        OnIcon={WebcamOnIcon}
+        OffIcon={WebcamOffIcon}
+      />
+      {/* Выпадающий список камеры */}
+      <div className="absolute top-full left-0 mt-1 w-32 z-50">
+        <select
+          className="px-2 py-1 bg-black text-white rounded-lg text-sm w-full shadow-md 
+                     outline-none focus:ring-2 focus:ring-gray-600 hover:bg-gray-800 
+                     cursor-pointer whitespace-nowrap overflow-hidden text-ellipsis"
+          value={selectedWebcam?.id || ""}
+          onChange={(e) => changeWebcam(e.target.value)}
+        >
+          {webcams.map((device, index) => (
+            <option key={device.deviceId} value={device.deviceId}>
+              📷 {device.label || `Cam ${index + 1}`}
+            </option>
+          ))}
+        </select>
+      </div>
+    </div>
+  ) : (
+    <CameraPermissionDenied />
+  )}
+</div>
 
-                          {isCameraPermissionAllowed ? (
-                            <ButtonWithTooltip
-                              onClick={_toggleWebcam}
-                              onState={webcamOn}
-                              mic={false}
-                              OnIcon={WebcamOnIcon}
-                              OffIcon={WebcamOffIcon}
-                            />
-                          ) : (
-                            <CameraPermissionDenied />
-                          )}
-                        </div>
-                      </div>
+</div>
+
+
+
+
+
+
+
                     </div>
 
                     {!isMobile && (

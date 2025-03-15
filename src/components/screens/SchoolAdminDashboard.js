@@ -3,53 +3,90 @@ import { useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 
 export default function SchoolAdminDashboard() {
-  const { schoolId } = useParams();
+  const { adminId } = useParams();
+
   const [teachers, setTeachers] = useState([]);
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [editingId, setEditingId] = useState(null);
-  const [editedTeacher, setEditedTeacher] = useState({});
+  const [lessons, setLessons] = useState({});
+  const [teacherName, setTeacherName] = useState("");
+  const [teacherEmail, setTeacherEmail] = useState("");
+  const [teacherPassword, setTeacherPassword] = useState("");
 
   // 📡 Загружаем список учителей
-  const fetchTeachers = () => {
-    fetch(`http://localhost:5000/api/school-admins/${schoolId}/teachers`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setTeachers(data);
-        } else {
-          toast.error("Invalid response from server: expected an array.");
-          setTeachers([]);
-        }
-      })
-      .catch(() => toast.error("Failed to load teachers"));
+  const fetchTeachers = async () => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/${adminId}/teachers`);
+      const data = await res.json();
+  
+      if (res.ok) {
+        setTeachers(data);
+        fetchLessons(); // Загружаем все уроки для этой школы
+      } else {
+        toast.error(data.error || "Failed to load teachers");
+        setTeachers([]);
+      }
+    } catch (error) {
+      toast.error("Server error.");
+    }
   };
+  
+
+  const fetchLessons = async () => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/${adminId}/lessons`);
+      const data = await res.json();
+  
+      if (res.ok) {
+        // Группируем уроки по учителям
+        const groupedLessons = {};
+        data.forEach((lesson) => {
+          if (!groupedLessons[lesson.teacherId]) {
+            groupedLessons[lesson.teacherId] = [];
+          }
+          groupedLessons[lesson.teacherId].push(lesson);
+        });
+  
+        setLessons(groupedLessons);
+      } else {
+        setLessons({});
+      }
+    } catch (error) {
+      setLessons({});
+    }
+  };
+  
 
   useEffect(() => {
     fetchTeachers();
-  }, [schoolId]);
+  }, [adminId]);
 
   // ✅ Добавить учителя
   const addTeacher = async () => {
-    if (!name || !email) {
-      toast.error("Please enter name and email");
+    if (!teacherName || !teacherEmail || !teacherPassword) {
+      toast.error("Please enter name, email, and password");
       return;
     }
 
     try {
-      const res = await fetch(`http://localhost:5000/api/school-admins/${schoolId}/add-teacher`, {
+      const res = await fetch(`http://localhost:5000/api/${adminId}/teachers`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email }),
+        body: JSON.stringify({
+          name: teacherName,
+          email: teacherEmail,
+          password: teacherPassword,
+        }),
       });
+
+      const data = await res.json();
 
       if (res.ok) {
         toast.success("Teacher added!");
-        setName("");
-        setEmail("");
+        setTeacherName("");
+        setTeacherEmail("");
+        setTeacherPassword("");
         fetchTeachers();
       } else {
-        toast.error("Failed to add teacher");
+        toast.error(data.error || "Failed to add teacher");
       }
     } catch (error) {
       toast.error("Server error.");
@@ -57,11 +94,11 @@ export default function SchoolAdminDashboard() {
   };
 
   // ✅ Удалить учителя
-  const deleteTeacher = async (id) => {
+  const deleteTeacher = async (teacherId) => {
     if (!window.confirm("Are you sure you want to delete this teacher?")) return;
 
     try {
-      const res = await fetch(`http://localhost:5000/api/school-admins/${schoolId}/delete-teacher/${id}`, {
+      const res = await fetch(`http://localhost:5000/api/${adminId}/teachers/${teacherId}`, {
         method: "DELETE",
       });
 
@@ -69,40 +106,8 @@ export default function SchoolAdminDashboard() {
         toast.success("Teacher deleted!");
         fetchTeachers();
       } else {
-        toast.error("Failed to delete teacher.");
-      }
-    } catch (error) {
-      toast.error("Server error.");
-    }
-  };
-
-  // ✅ Включение режима редактирования
-  const startEditing = (teacher) => {
-    setEditingId(teacher.id);
-    setEditedTeacher({ ...teacher });
-  };
-
-  // ✅ Обновить значение в инпуте при редактировании
-  const handleEditChange = (e, field) => {
-    setEditedTeacher((prev) => ({ ...prev, [field]: e.target.value }));
-  };
-
-  // ✅ Подтверждение редактирования
-  const saveTeacherChanges = async () => {
-    try {
-      const { id, name, email } = editedTeacher;
-      const res = await fetch(`http://localhost:5000/api/school-admins/${schoolId}/update-teacher/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email }),
-      });
-
-      if (res.ok) {
-        toast.success("Teacher updated!");
-        setEditingId(null);
-        fetchTeachers();
-      } else {
-        toast.error("Failed to update teacher.");
+        const data = await res.json();
+        toast.error(data.error || "Failed to delete teacher.");
       }
     } catch (error) {
       toast.error("Server error.");
@@ -110,92 +115,83 @@ export default function SchoolAdminDashboard() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white">
-      <div className="w-full max-w-lg p-6 bg-gray-800 rounded-xl shadow-md">
-        <h1 className="text-3xl font-bold mb-6 text-center">School Admin Panel - School {schoolId}</h1>
+    <div className="min-h-screen w-full bg-gradient-to-br from-[#111111] to-black text-white p-6">
+      <h1 className="text-5xl font-extrabold text-center mb-10 tracking-wide">
+        School Admin Panel - School {adminId}
+      </h1>
 
-        <div className="flex flex-col gap-4">
+      <div className="max-w-xl mx-auto bg-white bg-opacity-10 border border-white/20 rounded-xl p-6 shadow-md backdrop-blur-md">
+        <h2 className="text-2xl font-semibold mb-4">Add a New Teacher</h2>
+        <div className="flex flex-col gap-4 mb-8">
           <input
             type="text"
             placeholder="Teacher Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="px-4 py-3 bg-gray-700 rounded-xl text-white text-center w-full"
+            value={teacherName}
+            onChange={(e) => setTeacherName(e.target.value)}
+            className="px-4 py-2 bg-white bg-opacity-5 border border-white/20 rounded text-white placeholder-white/50 focus:outline-none focus:border-blue-500 transition-colors"
           />
-
           <input
             type="email"
             placeholder="Teacher Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="px-4 py-3 bg-gray-700 rounded-xl text-white text-center w-full"
+            value={teacherEmail}
+            onChange={(e) => setTeacherEmail(e.target.value)}
+            className="px-4 py-2 bg-white bg-opacity-5 border border-white/20 rounded text-white placeholder-white/50 focus:outline-none focus:border-blue-500 transition-colors"
           />
-
+          <input
+            type="password"
+            placeholder="Teacher Password"
+            value={teacherPassword}
+            onChange={(e) => setTeacherPassword(e.target.value)}
+            className="px-4 py-2 bg-white bg-opacity-5 border border-white/20 rounded text-white placeholder-white/50 focus:outline-none focus:border-blue-500 transition-colors"
+          />
           <button
             onClick={addTeacher}
-            className="w-full bg-blue-500 text-white px-4 py-3 rounded-xl font-semibold hover:bg-blue-600 transition"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-semibold transition-colors"
           >
             Add Teacher
           </button>
         </div>
 
-        <h2 className="text-xl font-bold mt-6">Teachers:</h2>
-        <ul className="mt-4">
-          {teachers.length > 0 ? (
-            teachers.map((teacher) => (
-              <li key={teacher.id} className="bg-gray-700 rounded-xl p-4 mb-2 flex justify-between items-center">
-                <div>
-                  {editingId === teacher.id ? (
-                    <>
-                      <input
-                        type="text"
-                        value={editedTeacher.name}
-                        onChange={(e) => handleEditChange(e, "name")}
-                        className="px-2 py-1 bg-gray-600 rounded text-white w-full mb-2"
-                      />
-                      <input
-                        type="email"
-                        value={editedTeacher.email}
-                        onChange={(e) => handleEditChange(e, "email")}
-                        className="px-2 py-1 bg-gray-600 rounded text-white w-full"
-                      />
-                    </>
-                  ) : (
-                    <>
-                      <span className="text-lg font-semibold">{teacher.name}</span>
-                      <span className="block text-gray-300 text-sm">{teacher.email}</span>
-                    </>
-                  )}
-                </div>
-                <div className="flex gap-3">
-                  {editingId === teacher.id ? (
-                    <button
-                      className="text-green-400 hover:text-green-300"
-                      onClick={saveTeacherChanges}
-                    >
-                      💾 Save
-                    </button>
-                  ) : (
-                    <button
-                      className="text-yellow-400 hover:text-yellow-300"
-                      onClick={() => startEditing(teacher)}
-                    >
-                      ✏ Edit
-                    </button>
-                  )}
-                  <button
-                    className="text-red-500 hover:text-red-400"
-                    onClick={() => deleteTeacher(teacher.id)}
-                  >
-                    ❌ Delete
-                  </button>
-                </div>
-              </li>
-            ))
-          ) : (
-            <p className="text-center text-gray-400">No teachers found</p>
-          )}
-        </ul>
+        <h2 className="text-2xl font-bold mb-4">Teachers and Lessons:</h2>
+<ul className="space-y-4">
+  {teachers.length > 0 ? (
+    teachers.map((teacher) => (
+      <li
+        key={teacher.id}
+        className="bg-white bg-opacity-5 border border-white/20 rounded p-4 shadow flex justify-between items-center"
+      >
+        <div>
+          <h3 className="text-lg font-semibold">{teacher.name}</h3>
+          <p className="text-sm text-white/80">{teacher.email}</p>
+
+          <div className="mt-3">
+            <h4 className="text-md font-semibold">Lessons:</h4>
+            {lessons[teacher.id]?.length > 0 ? (
+              <ul className="list-disc pl-5 text-sm">
+                {lessons[teacher.id].map((lesson) => (
+                  <li key={lesson.id}>
+                    {lesson.className} (ID: {lesson.id})
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-gray-400">No lessons available</p>
+            )}
+          </div>
+        </div>
+        <button
+          onClick={() => deleteTeacher(teacher.id)}
+          className="text-red-500 hover:text-red-400 text-lg"
+        >
+          ❌
+        </button>
+      </li>
+    ))
+  ) : (
+    <p>No teachers found</p>
+  )}
+</ul>
+
       </div>
     </div>
   );
