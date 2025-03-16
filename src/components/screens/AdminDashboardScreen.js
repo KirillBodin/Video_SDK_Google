@@ -14,7 +14,7 @@ export default function AdminDashboardScreen() {
             const data = await response.json();
             setMeetings(data);
         } catch (error) {
-            console.error("[Admin] ❌ Ошибка при загрузке встреч:", error);
+            console.error("[Admin] ❌ Error loading meetings:", error);
             toast.error("Failed to load meetings!");
         } finally {
             setLoading(false);
@@ -36,7 +36,7 @@ export default function AdminDashboardScreen() {
                 toast.error("Failed to delete meeting!");
             }
         } catch (error) {
-            console.error("[Admin] ❌ Ошибка при удалении:", error);
+            console.error("[Admin] ❌ Error while deleting:", error);
             toast.error("Server error!");
         }
     };
