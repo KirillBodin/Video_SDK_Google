@@ -9,14 +9,14 @@ export const getToken = async () => {
     const data = await response.json();
 
     if (data.token) {
-      console.log("[API] ✅ Получен токен:", data.token);
+      console.log("[API] ✅ Token received:", data.token);
       return data.token;
     } else {
-      console.error("[API] ❌ Ошибка при получении токена:", data.error);
+      console.error("[API] ❌ Error getting token:", data.error);
       return null;
     }
   } catch (error) {
-    console.error("[API] ❌ Ошибка запроса токена:", error);
+    console.error("[API] ❌ Token request error:", error);
     return null;
   }
 };
@@ -34,18 +34,18 @@ export const createMeeting = async ({ roomId }) => {
   };
 
   try {
-    console.log("[API] 🔍 Создаём комнату:", roomId);
+    console.log("[API] 🔍 Create a room:", roomId);
     const response = await fetch(url, options);
     const data = await response.json();
     if (data.roomId) {
-      console.log("[API] ✅ Комната создана:", data.roomId);
+      console.log("[API] ✅ Room created:", data.roomId);
       return { meetingId: data.roomId, err: null };
     } else {
-      console.error("[API] ❌ Ошибка создания:", data.error);
+      console.error("[API] ❌ Creation error:", data.error);
       return { meetingId: null, err: data.error };
     }
   } catch (error) {
-    console.error("[API] ❌ Ошибка создания встречи:", error);
+    console.error("[API] ❌ Error creating meeting:", error);
     return { meetingId: null, err: "Server error" };
   }
 };
@@ -62,24 +62,24 @@ export const validateMeeting = async ({ roomId }) => {
   };
 
   try {
-    console.log("[API] 🔍 Проверяем существование комнаты:", roomId);
+    console.log("[API] 🔍 Checking the existence of the room:", roomId);
     const response = await fetch(url, options);
     
     if (response.status === 400) {
-      console.log("[API] ❌ Комната не найдена, создаём новую...");
+      console.log("[API] ❌ Room not found, creating a new one...");
       return await createMeeting({ roomId });
     }
     
     const data = await response.json();
     if (data.roomId) {
-      console.log("[API] ✅ Комната найдена:", data.roomId);
+      console.log("[API] ✅ Room found:", data.roomId);
       return { meetingId: data.roomId, err: null };
     } else {
-      console.error("[API] ❌ Ошибка проверки комнаты:", data.error);
+      console.error("[API] ❌ Room verification error:", data.error);
       return { meetingId: null, err: data.error };
     }
   } catch (error) {
-    console.error("[API] ❌ Ошибка проверки встречи:", error);
+    console.error("[API] ❌ Meeting check error:", error);
     return { meetingId: null, err: "Server error" };
   }
 };
