@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { toast } from "react-toastify";
-const SERVER_URL = "https://backend-videosdk.onrender.com" || "http://localhost:5000";
+const SERVER_URL = process.env.REACT_APP_SERVER_URL || "https://backend-videosdk.onrender.com";
 
 export default function TeacherDashboard() {
   const { teacherId } = useParams();

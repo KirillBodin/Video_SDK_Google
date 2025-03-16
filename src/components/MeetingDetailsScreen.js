@@ -1,55 +1,88 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import WaitingRoomScreen from "./screens/WaitingRoomScreen";
-import { signInWithGoogle } from "../firebase";
 
-// При необходимости можно подключить getToken, validateMeeting и т.д.
-// import { getToken, validateMeeting } from "../api";
-const SERVER_URL = "https://backend-videosdk.onrender.com" || "http://localhost:5000";
+
+const SERVER_URL = process.env.REACT_APP_SERVER_URL || "https://backend-videosdk.onrender.com";
+
+
 export function MeetingDetailsScreen({
   setMeetingId,
   setToken,
   onClickJoin,
   onClickStartMeeting,
-  participantName,
-  setParticipantName,
-  videoTrack,
-  setVideoTrack,
-  setIsAdminView,
 }) {
   const [roomName, setRoomName] = useState("");
   const [userEmail, setUserEmail] = useState("");
-  // Список учителей, если нужен
-  const [teachersList, setTeachersList] = useState([]);
-
-  // Флаги, какой шаг в данный момент
-  const [isJoinMeetingClicked, setIsJoinMeetingClicked] = useState(false);
   const [isCreateMeetingClicked, setIsCreateMeetingClicked] = useState(false);
-
-  // Опционально: состояние, если нужно показать экран ожидания
-  const [isWaitingRoom, setIsWaitingRoom] = useState(false);
+  const [isJoinMeetingClicked, setIsJoinMeetingClicked] = useState(false);
 
   const navigate = useNavigate();
-const SERVER_URL = "https://backend-videosdk.onrender.com" || "http://localhost:5000";
-  // Если нужно загружать список учителей для чего-то ещё (но сейчас не используем)
-  useEffect(() => {
-    fetch(`${SERVER_URL}/api/school-admins/users`)
-      .then((res) => res.json())
-      .then((data) => {
-        setTeachersList(data.map((teacher) => teacher.email));
-      })
-      .catch(() => toast.error("Failed to load teachers list"));
-  }, []);
 
-  // Если нужно отображать “WaitingRoomScreen”, пока идёт ожидание
-  if (isWaitingRoom) {
-    return <WaitingRoomScreen meetingId={roomName} />;
-  }
+  // Проверка email перед созданием встречи
+  const checkEmail = async () => {
+    try {
+      const response = await fetch(`${SERVER_URL}/api/school-admins/check-email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: userEmail }),
+      });
+
+      const data = await response.json();
+      return data.exists; // true или false
+    } catch (error) {
+      console.error("❌ Email verification error:", error);
+      toast.error("Server error while checking email.");
+      return false;
+    }
+  };
+  const checkSession = async () => {
+    try {
+      const response = await fetch(`${SERVER_URL}/api/auth/verify-session`, {
+        method: "GET",
+        credentials: "include", // ✅ Передаём cookie сессии
+      });
+  
+      const data = await response.json();
+      if (data.success) {
+        setUserEmail(data.user.email); // ✅ Устанавливаем email пользователя
+        console.log("✅ User authenticated:", data.user.email);
+      } else {
+        console.warn("⚠ User is NOT authenticated");
+      }
+    } catch (error) {
+      console.error("❌ Session check error:", error);
+    }
+  };
+  useEffect(() => {
+    setUserEmail(""); // Очищаем email при каждом заходе
+    checkSession();   // Проверяем сессию и подставляем email, если авторизован
+  }, []);
+  
+  
+  
+  const loginWithGoogle = async () => {
+    try {
+      const response = await fetch("http://localhost:5000/api/auth/google/url");
+      const data = await response.json();
+  
+      if (data.authUrl) {
+        window.location.href = data.authUrl; // 🔹 Перенаправляем пользователя на Google
+      } else {
+        throw new Error("Failed to get authorization URL");
+      }
+    } catch (error) {
+      console.error("❌ Error getting Google URL:", error);
+      toast.error("Google authorization error.");
+    }
+  };
+  
+  
+  
 
   return (
     <div className="flex flex-col justify-center w-full md:p-[6px] sm:p-1 p-1.5 relative">
-      {/* Кнопка, ведущая на /admin/login */}
+      {/* Кнопка перехода в Admin Panel */}
       <button
         className="fixed top-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-md z-50"
         onClick={() => navigate("/admin/login")}
@@ -60,12 +93,11 @@ const SERVER_URL = "https://backend-videosdk.onrender.com" || "http://localhost:
       {/* Поле ввода E-mail */}
       <input
         value={userEmail}
-        onChange={(e) => setUserEmail(e.target.value.trim())}
+        onChange={(e) => setUserEmail(e.target.value)}
         placeholder="Enter your email"
         className="px-4 py-3 bg-gray-650 rounded-xl text-white w-full text-center mb-4"
       />
 
-      {/* Поле ввода className, только если ввели E-mail */}
       {userEmail && (
         <input
           value={roomName}
@@ -75,29 +107,11 @@ const SERVER_URL = "https://backend-videosdk.onrender.com" || "http://localhost:
         />
       )}
 
-      {/* Кнопка Login with Google, если E-mail не введён */}
+      {/* Кнопка Login with Google (без клиентского Firebase) */}
       {!userEmail && (
         <button
           className="w-full bg-red-500 text-white px-2 py-3 rounded-xl"
-          onClick={async () => {
-            try {
-              const user = await signInWithGoogle();
-              if (user && user.email) {
-                setUserEmail(user.email.trim());
-                toast.success(`Signed in as ${user.email}`, {
-                  position: "bottom-left",
-                  autoClose: 3000,
-                  hideProgressBar: true,
-                });
-              }
-            } catch (error) {
-              toast.error("Google Sign-In Error", {
-                position: "bottom-left",
-                autoClose: 4000,
-                hideProgressBar: true,
-              });
-            }
-          }}
+          onClick={loginWithGoogle}
         >
           Login with Google
         </button>
@@ -105,21 +119,26 @@ const SERVER_URL = "https://backend-videosdk.onrender.com" || "http://localhost:
 
       <div className="w-full md:mt-4 mt-4 flex flex-col">
         <div className="flex items-center justify-center flex-col w-full">
-
-          {/* ШАГ 1: Показываем две кнопки (Create / Join), если НИ одна не нажата */}
           {!isCreateMeetingClicked && !isJoinMeetingClicked && (
             <>
               {/* Кнопка "Create a class" */}
               <button
-                className={`w-full px-2 py-3 rounded-xl ${
-                  userEmail && roomName
-                    ? "bg-purple-350 text-white"
-                    : "bg-gray-600 text-gray-400 cursor-not-allowed"
-                }`}
+                className={`
+                  w-full px-2 py-3 rounded-xl ${
+                    userEmail && roomName ? "bg-purple-350 text-white" : "bg-gray-600 text-gray-400 cursor-not-allowed"
+                  }`}
                 disabled={!userEmail || !roomName}
-                onClick={() => {
-                  console.log("[MeetingDetailsScreen] 🔥 'Create a class' (Step1) clicked!");
+                onClick={async () => {
+                  console.log("[MeetingDetailsScreen] 🔥 Checking email...");
+                  const isValid = await checkEmail();
+
+                  if (!isValid) {
+                    toast.error("❌ Email not found. Access denied.");
+                    return;
+                  }
+
                   setIsCreateMeetingClicked(true);
+                  console.log("[MeetingDetailsScreen] ✅ Email подтверждён, создаём класс!");
                 }}
               >
                 Create a class
@@ -132,85 +151,61 @@ const SERVER_URL = "https://backend-videosdk.onrender.com" || "http://localhost:
                   ${userEmail && roomName ? "" : "cursor-not-allowed opacity-50"}
                 `}
                 disabled={!userEmail || !roomName}
-                onClick={() => {
-                  console.log("[MeetingDetailsScreen] 🔥 'Join a class' (Step1) clicked!");
-                  setIsJoinMeetingClicked(true);
-                }}
+                onClick={() => setIsJoinMeetingClicked(true)}
               >
                 Join a class
               </button>
             </>
           )}
 
-          {/* ШАГ 2А: Подтверждение создания (Confirm & Create), если нажали "Create a class" */}
+          {/* Подтверждение создания (Confirm & Create) */}
           {isCreateMeetingClicked && (
             <button
-              className={`
-                w-full bg-green-500 text-white px-2 py-3 rounded-xl mt-3
-                ${!userEmail || !roomName ? "cursor-not-allowed opacity-50" : ""}
-              `}
-              disabled={!userEmail || !roomName}
+              className="w-full bg-green-500 text-white px-2 py-3 rounded-xl mt-3"
               onClick={async () => {
                 console.log("[MeetingDetailsScreen] 🔥 'Confirm & Create' clicked!");
 
-                if (!roomName || !userEmail) {
-                  toast.error("Please enter your email and class name.");
-                  return;
-                }
-
-                toast.info("Creating class, please wait...");
-
                 try {
-                  // 1) Получаем VideoSDK токен
                   const tokenResponse = await fetch(`${SERVER_URL}/api/get-token`);
                   const { token } = await tokenResponse.json();
 
                   if (!token) {
-                    console.error("[MeetingDetailsScreen] ❌ Токен пуст!");
                     toast.error("Failed to get token!");
                     return;
                   }
+
                   setToken(token);
 
-                  // 2) Создаём новую встречу
-                  const meetingResponse = await fetch(`https://api.videosdk.live/v1/meetings`, {
+                  const meetingResponse = await fetch("https://api.videosdk.live/v1/meetings", {
                     method: "POST",
                     headers: {
                       "Content-Type": "application/json",
-                      Authorization: token,
+                      Authorization: `${token}`,
                     },
                     body: JSON.stringify({ userMeetingId: roomName }),
                   });
+
                   const meetingData = await meetingResponse.json();
 
                   if (!meetingData.meetingId) {
-                    console.error("[MeetingDetailsScreen] ❌ Ошибка при создании:", meetingData);
                     toast.error("Error creating meeting!");
                     return;
                   }
-                  const newMeetingId = meetingData.meetingId;
-                  console.log("[MeetingDetailsScreen] ✅ Встреча создана:", newMeetingId);
 
-                  // 3) Сохраняем на своём сервере
                   await fetch(`${SERVER_URL}/api/save-meeting`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                       className: roomName,
-                      meetingId: newMeetingId,
+                      meetingId: meetingData.meetingId,
                       teacherEmail: userEmail,
                     }),
-                  })
-                    .then((res) => res.json())
-                    .then((data) => console.log("[MeetingDetailsScreen] ✅ Встреча сохранена:", data))
-                    .catch((err) => console.error("[MeetingDetailsScreen] ❌ Ошибка сохранения:", err));
+                  });
 
-                  // 4) Переход в комнату (onClickStartMeeting)
                   setTimeout(() => {
-                    onClickStartMeeting(token, newMeetingId);
-                  }, 1000);
+                    onClickStartMeeting(token, meetingData.meetingId);
+                  }, 2000);
                 } catch (error) {
-                  console.error("[MeetingDetailsScreen] ❌ Ошибка:", error);
                   toast.error("Server error while creating meeting!");
                 }
               }}
@@ -219,70 +214,34 @@ const SERVER_URL = "https://backend-videosdk.onrender.com" || "http://localhost:
             </button>
           )}
 
-          {/* ШАГ 2Б: Подтверждение подключения (Confirm & Join), если нажали "Join a class" */}
+          {/* Подтверждение подключения (Confirm & Join) */}
           {isJoinMeetingClicked && (
             <button
-              className={`
-                w-full bg-green-500 text-white px-2 py-3 rounded-xl mt-3
-                ${!userEmail || !roomName ? "cursor-not-allowed opacity-50" : ""}
-              `}
-              disabled={!userEmail || !roomName}
+              className="w-full bg-green-500 text-white px-2 py-3 rounded-xl mt-3"
               onClick={async () => {
-                console.log("[MeetingDetailsScreen] 🔥 'Confirm & Join' clicked!");
-
-                if (!userEmail || !roomName) {
-                  toast.error("Please enter your email and class name.");
-                  return;
-                }
-
                 try {
-                  // 1) Получаем meetingId из базы по названию roomName
-                  const response = await fetch(`http://${SERVER_URL}/api/get-meeting/${roomName}`);
+                  const response = await fetch(`${SERVER_URL}/api/get-meeting/${roomName}`);
                   const data = await response.json();
 
                   if (!data.meetingId) {
-                    console.error("[MeetingDetailsScreen] ❌ Урок не найден!");
                     toast.error("Meeting not found!");
                     return;
                   }
                   const meetingId = data.meetingId;
-                  console.log("[MeetingDetailsScreen] ✅ Найден meetingId:", meetingId);
 
-                  // 2) Получаем токен
                   const tokenResponse = await fetch(`${SERVER_URL}/api/get-token`);
                   const { token } = await tokenResponse.json();
 
                   if (!token) {
-                    console.error("[MeetingDetailsScreen] ❌ Ошибка: токен пуст!");
                     toast.error("Failed to get token!");
                     return;
                   }
                   setToken(token);
-                  console.log("[MeetingDetailsScreen] ✅ Токен получен:", token);
 
-                  // 3) Валидируем встречу на VideoSDK
-                  const validateRes = await fetch(`https://api.videosdk.live/v1/meetings/${meetingId}`, {
-                    method: "GET",
-                    headers: {
-                      "Content-Type": "application/json",
-                      Authorization: token,
-                    },
-                  });
-
-                  if (!validateRes.ok) {
-                    toast.error("Meeting is invalid or does not exist in VideoSDK!");
-                    return;
-                  }
-
-                  // Подключаемся
                   setMeetingId(meetingId);
                   toast.success("Joining class...");
-
-                  console.log("[MeetingDetailsScreen] 🟢 Вызываем onClickJoin, meetingId:", meetingId, "token:", token);
                   onClickJoin(token, meetingId);
-
                 } catch (error) {
-                  console.error("[MeetingDetailsScreen] ❌ Ошибка при поиске встречи:", error);
                   toast.error("Server error while joining!");
                 }
               }}

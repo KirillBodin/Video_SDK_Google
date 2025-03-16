@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL") // ✅ Используем переменную окружения
+  url      = https://backend-videosdk.onrender.com // ✅ Используем переменную окружения
 }
 
 // ✅ Модель пользователей (SuperAdmin, Admin, Teacher)
