@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import jwtDecode from "jwt-decode"; // Добавь этот импорт
 
 
 const SERVER_URL = process.env.REACT_APP_SERVER_URL || "https://backend-videosdk.onrender.com";
@@ -36,48 +37,46 @@ export function MeetingDetailsScreen({
       return false;
     }
   };
-  const checkSession = async () => {
+// ✅ Проверяем, есть ли токен в localStorage или в URL после Google Login
+useEffect(() => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const tokenFromUrl = urlParams.get("token");
+
+  if (tokenFromUrl) {
+    localStorage.setItem("sessionToken", tokenFromUrl); // ✅ Сохраняем токен
+    console.log("✅ Token saved:", tokenFromUrl);
+    window.history.replaceState({}, document.title, "/"); // ✅ Чистим URL
+  }
+
+  const token = localStorage.getItem("sessionToken");
+  if (token) {
     try {
-      const response = await fetch(`${SERVER_URL}/api/auth/verify-session`, {
-        method: "GET",
-        credentials: "include", // ✅ Передаём cookie сессии
-      });
-  
-      const data = await response.json();
-      if (data.success) {
-        setUserEmail(data.user.email); // ✅ Устанавливаем email пользователя
-        console.log("✅ User authenticated:", data.user.email);
-      } else {
-        console.warn("⚠ User is NOT authenticated");
-      }
+      const decoded = jwtDecode(token);
+      setUserEmail(decoded.email);
+      console.log("✅ User authenticated:", decoded.email);
     } catch (error) {
-      console.error("❌ Session check error:", error);
+      console.error("❌ Invalid token:", error);
     }
-  };
-  useEffect(() => {
-    setUserEmail(""); // Очищаем email при каждом заходе
-    checkSession();   // Проверяем сессию и подставляем email, если авторизован
-  }, []);
-  
-  
-  
-  const loginWithGoogle = async () => {
-    try {
-      const response = await fetch(`${SERVER_URL}/api/auth/google/url`);
-      const data = await response.json();
-  
-      if (data.authUrl) {
-        window.location.href = data.authUrl; // 🔹 Перенаправляем пользователя на Google
-      } else {
-        throw new Error("Failed to get authorization URL");
-      }
-    } catch (error) {
-      console.error("❌ Error getting Google URL:", error);
-      toast.error("Google authorization error.");
+  }
+}, []);
+
+// 🔹 Запрашиваем ссылку для Google Login и отправляем запрос
+const loginWithGoogle = async () => {
+  try {
+    const response = await fetch(`${SERVER_URL}/api/auth/google/url`);
+    const data = await response.json();
+
+    if (data.authUrl) {
+      window.location.href = data.authUrl; // 🔹 Перенаправляем пользователя на Google
+    } else {
+      throw new Error("Failed to get authorization URL");
     }
-  };
-  
-  
+  } catch (error) {
+    console.error("❌ Error getting Google URL:", error);
+    toast.error("Google authorization error.");
+  }
+};
+ 
   
 
   return (
