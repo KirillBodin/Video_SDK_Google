@@ -63,7 +63,7 @@ export function MeetingDetailsScreen({
   
   const loginWithGoogle = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/auth/google/url");
+      const response = await fetch(`${SERVER_URL}/api/auth/google/url`);
       const data = await response.json();
   
       if (data.authUrl) {
