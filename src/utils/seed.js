@@ -1,6 +1,6 @@
 require("dotenv").config();
 const bcrypt = require("bcrypt");
-const { initDB, User, School, ClassMeeting } = require("../models");
+const { initDB, User, School, ClassMeeting, Student } = require("../backend/models");
 
 const schools = [
   { name: "Test School 1" },
@@ -21,6 +21,12 @@ const lessons = [
   { className: "Math Class", teacherEmail: "teacher2@example.com" } // Урок для Teacher Two
 ];
 
+const students = [
+  { name: "Peter Piper", email: "peter.piper@example.com", schoolIndex: 0, className: "Superadmin Meeting" },
+  { name: "Fled Flintstone", email: "fled.flintstone@example.com", schoolIndex: 0, className: "Superadmin Meeting" },
+  { name: "Berry Adams", email: "berry.adams@example.com", schoolIndex: 1, className: "Math Class" }
+];
+
 const seedDB = async () => {
   try {
     await initDB();
@@ -30,6 +36,7 @@ const seedDB = async () => {
     await ClassMeeting.destroy({ where: {} });
     await User.destroy({ where: {} });
     await School.destroy({ where: {} });
+    await Student.destroy({ where: {} });
 
     console.log("✅ Все данные удалены!");
 
@@ -60,6 +67,7 @@ const seedDB = async () => {
     console.log("✅ Все пользователи добавлены!");
 
     // 🔹 Добавляем уроки
+    const createdClasses = {};
     for (const lessonData of lessons) {
       const teacher = createdUsers[lessonData.teacherEmail];
 
@@ -68,13 +76,51 @@ const seedDB = async () => {
         continue;
       }
 
+      // Генерируем `meetingId`
+      const meetingId = `meet-${Math.random().toString(36).substring(2, 10)}`;
+
+      // Генерируем `classUrl`
+      const classUrl = `meet.tamamat.com/${meetingId}/${teacher.name.replace(/\s/g, "_")}/${lessonData.className.replace(/\s/g, "_")}`;
+
       const newLesson = await ClassMeeting.create({
         className: lessonData.className,
-        meetingId: `meet-${Math.random().toString(36).substring(2, 10)}`, // Генерация случайного ID
-        teacherId: teacher.id
+        meetingId,
+        teacherId: teacher.id,
+        classUrl
       });
 
-      console.log(`✅ Урок "${lessonData.className}" создан для ${lessonData.teacherEmail}!`);
+      createdClasses[lessonData.className] = newLesson; // Сохраняем урок для связи со студентами
+      console.log(`✅ Урок "${lessonData.className}" создан для ${lessonData.teacherEmail}! URL: ${classUrl}`);
+    }
+
+    console.log("✅ Все уроки добавлены!");
+
+    // 🔹 Добавляем студентов
+    for (const studentData of students) {
+      const school = createdSchools[studentData.schoolIndex];
+
+      if (!school) {
+        console.warn(`⚠️ Школа с индексом ${studentData.schoolIndex} не найдена, студент не будет добавлен.`);
+        continue;
+      }
+
+      const newStudent = await Student.create({
+        name: studentData.name,
+        email: studentData.email,
+        schoolId: school.id
+      });
+
+      console.log(`✅ Студент ${studentData.name} добавлен в школу "${school.name}"!`);
+
+      // Связываем студента с классом, если такой класс есть
+      const classMeeting = createdClasses[studentData.className];
+
+      if (classMeeting) {
+        await classMeeting.addStudent(newStudent);
+        console.log(`✅ Студент ${newStudent.name} добавлен в класс "${classMeeting.className}"!`);
+      } else {
+        console.warn(`⚠️ Класс "${studentData.className}" не найден, студент ${newStudent.name} не привязан.`);
+      }
     }
 
     console.log("🎉 Заполнение базы завершено!");

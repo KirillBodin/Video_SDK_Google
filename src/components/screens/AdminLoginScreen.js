@@ -7,7 +7,10 @@ const adminRoles = {
   SCHOOL_ADMIN: "admin",
   TEACHER: "teacher",
 };
-const SERVER_URL = process.env.REACT_APP_SERVER_URL || "https://backend-videosdk.onrender.com";
+const SERVER_URL = "http://localhost:5000";
+console.log(process.env.REACT_APP_SERVER_URL);
+console.log(window.process?.env?.REACT_APP_SERVER_URL);
+
 
 export default function AdminLoginScreen() {
   const [email, setEmail] = useState("");
@@ -31,7 +34,7 @@ export default function AdminLoginScreen() {
         localStorage.setItem("schoolId", data.schoolId || "");
         localStorage.setItem("adminId", data.adminId || "");
         localStorage.setItem("teacherId", data.teacherId || "");
-        localStorage.setItem("superAdminId", data.adminId || ""); // Суперадмин использует adminId
+        localStorage.setItem("superAdminId", data.adminId || ""); // Суперадмин использует adminIdаа
         localStorage.setItem("name", data.name || "");
   
         let rolePath = "";

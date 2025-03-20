@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import jwtDecode from "jwt-decode"; // Добавь этот импорт
+import { jwtDecode } from "jwt-decode"; 
+
 
 
 const SERVER_URL = process.env.REACT_APP_SERVER_URL || "https://backend-videosdk.onrender.com";
