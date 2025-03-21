@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
-// (Если нужно) import { useParams } from "react-router-dom";
+
 const SERVER_URL = process.env.REACT_APP_SERVER_URL || "https://backend-videosdk.onrender.com";
 
 export default function SuperAdminDashboard() {
-  // Если нужно брать adminId из URL, можно использовать useParams:
-  // const { adminId: routeAdminId } = useParams();
+  
 
   const [schoolAdmins, setSchoolAdmins] = useState([]);
   const [teachers, setTeachers] = useState({});
@@ -13,12 +12,12 @@ export default function SuperAdminDashboard() {
   const [adminLessons, setAdminLessons] = useState({});
   const [superAdminLessons, setSuperAdminLessons] = useState([]);
 
-  // Поля для добавления нового School Admin
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [schoolName, setSchoolName] = useState("");
 
-  // Для добавления учителя к каждому администратору
+  
   const [newTeacherData, setNewTeacherData] = useState({});
 
   useEffect(() => {
@@ -27,9 +26,7 @@ export default function SuperAdminDashboard() {
     fetchSuperAdminLessons();
   }, []);
 
-  // ======================
-  //  ЗАГРУЗКА ДАННЫХ
-  // ======================
+ 
   const fetchAdmins = async () => {
     console.log("Fetching school admins...");
     try {
@@ -41,7 +38,6 @@ export default function SuperAdminDashboard() {
       }
       setSchoolAdmins(data);
 
-      // Для каждого админа загружаем его учителей и уроки
       data.forEach((admin) => {
         console.log(`Fetching teachers for schoolId ${admin.schoolId}`);
         fetchTeachers(admin.schoolId);
@@ -66,7 +62,7 @@ export default function SuperAdminDashboard() {
         throw new Error(data.error || "Failed to fetch teachers");
       }
       setTeachers((prev) => ({ ...prev, [schoolId]: data }));
-      // Для каждого учителя — грузим уроки
+      
       data.forEach((teacher) => {
         console.log(`Fetching lessons for teacherId ${teacher.id}`);
         fetchLessons(teacher.id);
@@ -117,9 +113,7 @@ export default function SuperAdminDashboard() {
     }
   };
 
-  // ======================
-  //  УРОКИ СУПЕРАДМИНА
-  // ======================
+ 
   const fetchSuperAdminLessons = async () => {
     console.log("Fetching super admin lessons...");
     try {
@@ -141,15 +135,13 @@ export default function SuperAdminDashboard() {
     }
   };
 
-  // ======================
-  //  УДАЛЕНИЕ УРОКА СУПЕРАДМИНА
-  // ======================
+
   const handleDeleteSuperAdminLesson = async (lessonId) => {
     if (!window.confirm("Are you sure you want to delete this lesson?")) return;
     console.log("Deleting super admin lesson:", lessonId);
 
     try {
-      // Предполагаем, что на бэкенде есть маршрут DELETE /api/lessons/:lessonId
+  
       const res = await fetch(`${SERVER_URL}/api/lessons/${lessonId}`, {
         method: "DELETE",
       });
@@ -158,7 +150,7 @@ export default function SuperAdminDashboard() {
       }
       toast.success("Lesson deleted!");
 
-      // Убираем этот урок из состояния
+      
       setSuperAdminLessons((prev) => prev.filter((l) => l.id !== lessonId));
     } catch (error) {
       console.error("Error deleting lesson:", error);
@@ -166,9 +158,7 @@ export default function SuperAdminDashboard() {
     }
   };
 
-  // ======================
-  //  ДОБАВЛЕНИЕ ШКОЛЬНОГО АДМИНА
-  // ======================
+
   const handleAddAdmin = async () => {
     console.log("Adding new school admin...", { name, email, schoolName });
     try {
@@ -184,7 +174,6 @@ export default function SuperAdminDashboard() {
       }
       toast.success("School admin added successfully!");
       fetchAdmins();
-      // Сбрасываем поля
       setName("");
       setEmail("");
       setSchoolName("");
@@ -194,9 +183,7 @@ export default function SuperAdminDashboard() {
     }
   };
 
-  // ======================
-//  ДОБАВЛЕНИЕ УЧИТЕЛЯ К АДМИНУ
-// ======================
+
 const handleAddTeacher = async (schoolId) => {
   const { teacherName, teacherEmail, teacherPassword } =
     newTeacherData[schoolId] || {};
@@ -221,7 +208,7 @@ const handleAddTeacher = async (schoolId) => {
         body: JSON.stringify({
           name: teacherName,
           email: teacherEmail,
-          password: teacherPassword, // ✅ Добавляем пароль
+          password: teacherPassword, 
         }),
       }
     );
@@ -233,7 +220,7 @@ const handleAddTeacher = async (schoolId) => {
     toast.success(`Teacher added to school ${schoolId}!`);
     fetchTeachers(schoolId);
 
-    // Сбрасываем поля ввода
+   
     setNewTeacherData((prev) => ({
       ...prev,
       [schoolId]: { teacherName: "", teacherEmail: "", teacherPassword: "" },
@@ -244,9 +231,7 @@ const handleAddTeacher = async (schoolId) => {
   }
 };
 
-// ======================
-//  УДАЛЕНИЕ УЧИТЕЛЯ
-// ======================
+
 const handleDeleteTeacher = async (teacherId, schoolId) => {
   if (!window.confirm("Are you sure you want to delete this teacher?")) return;
   console.log(`Deleting teacher ${teacherId} from school ${schoolId}...`);
@@ -263,7 +248,7 @@ const handleDeleteTeacher = async (teacherId, schoolId) => {
 
     toast.success("Teacher deleted successfully!");
     
-    // Обновляем список учителей
+  
     setTeachers((prev) => ({
       ...prev,
       [schoolId]: prev[schoolId].filter((teacher) => teacher.id !== teacherId),
@@ -274,9 +259,7 @@ const handleDeleteTeacher = async (teacherId, schoolId) => {
   }
 };
 
-// ======================
-//  УДАЛЕНИЕ АДМИНИСТРАТОРА ШКОЛЫ
-// ======================
+
 const handleDeleteAdmin = async (adminId) => {
   if (!window.confirm("Are you sure you want to delete this admin?")) return;
   console.log(`Deleting admin ${adminId}...`);
@@ -293,7 +276,7 @@ const handleDeleteAdmin = async (adminId) => {
 
     toast.success("Admin deleted successfully!");
 
-    // Обновляем список администраторов
+  
     setSchoolAdmins((prev) => prev.filter((admin) => admin.id !== adminId));
   } catch (error) {
     console.error(`Error deleting admin ${adminId}:`, error);
@@ -301,9 +284,7 @@ const handleDeleteAdmin = async (adminId) => {
   }
 };
 
-  // ======================
-  //  ПОЛЯ ВВОДА ДЛЯ УЧИТЕЛЯ
-  // ======================
+ 
   const handleTeacherInputChange = (schoolId, field, value) => {
     console.log(
       `Updating new teacher data for school ${schoolId}:`,
@@ -325,10 +306,7 @@ const handleDeleteAdmin = async (adminId) => {
         Super Admin Dashboard
       </h1>
 
-      {/* 
-        СЕКЦИЯ: Уроки текущего суперадмина 
-        - Сделаем «карточки» вместо списка 
-      */}
+ 
       {superAdminLessons.length > 0 && (
         <div className="max-w-5xl mx-auto bg-gray-800 p-4 rounded-xl mb-6">
           <h2 className="text-2xl font-bold mb-4">Super Admin's Lessons:</h2>
@@ -356,7 +334,7 @@ const handleDeleteAdmin = async (adminId) => {
         </div>
       )}
 
-      {/* Форма для добавления нового School Admin */}
+     
       <div className="max-w-xl mx-auto bg-gray-800 rounded-xl p-6 mb-10">
         <h2 className="text-2xl font-semibold mb-4">Add New School Admin</h2>
         <div className="flex flex-col gap-4">
@@ -390,7 +368,7 @@ const handleDeleteAdmin = async (adminId) => {
         </div>
       </div>
 
-      {/* Список админов */}
+  
       <div className="max-w-5xl mx-auto">
         <h2 className="text-2xl font-bold mb-6">All School Admins:</h2>
         {schoolAdmins.map((admin) => (
@@ -416,7 +394,7 @@ const handleDeleteAdmin = async (adminId) => {
         </button>
             </div>
 
-            {/* Уроки админа, если есть */}
+           
             {adminLessons[admin.id]?.length > 0 && (
               <div className="mt-4 bg-gray-700 p-4 rounded">
                 <h4 className="font-semibold mb-2">Admin's Lessons:</h4>
@@ -429,7 +407,7 @@ const handleDeleteAdmin = async (adminId) => {
                 </ul>
               </div>
             )}
-{/* Добавление учителя к администратору */}
+
 <div className="mt-4 p-4 bg-gray-700 rounded">
               <h4 className="font-semibold mb-2">Add Teacher:</h4>
               <div className="flex flex-col md:flex-row gap-2">
@@ -486,7 +464,7 @@ const handleDeleteAdmin = async (adminId) => {
                 </button>
               </div>
             </div>
- {/* Список учителей у данного админа */}
+
  <div className="mt-6">
               <h4 className="text-lg font-semibold">Teachers:</h4>
               {teachers[admin.schoolId]?.length ? (
@@ -504,7 +482,7 @@ const handleDeleteAdmin = async (adminId) => {
           </button>
         </div>
 
-                    {/* Уроки конкретного учителя */}
+                    
                     <div className="mt-2 ml-4">
                       <h5 className="font-semibold text-gray-300">Lessons:</h5>
                       {lessons[teacher.id]?.length > 0 ? (

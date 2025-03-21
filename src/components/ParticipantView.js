@@ -478,18 +478,18 @@ export function ParticipantView({ participantId }) {
       <audio ref={micRef} autoPlay muted={isLocal} />
       {webcamOn ? (
         <ReactPlayer
-          //
+          
           playsinline // very very imp prop
           playIcon={<></>}
-          //
+          
           pip={false}
           light={false}
           controls={false}
           muted={true}
           playing={true}
-          //
+          
           url={webcamMediaStream}
-          //
+          
           height={"100%"}
           width={"100%"}
           onError={(err) => {

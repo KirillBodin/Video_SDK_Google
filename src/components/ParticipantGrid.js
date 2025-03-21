@@ -10,15 +10,15 @@ const MemoizedParticipant = React.memo(
 
 function ParticipantGrid({ participantIds, isPresenting, highlightedParticipantId }) {
     const { sideBarMode } = useMeetingAppContext();
-    const { localParticipant } = useMeeting(); // Получаем локального участника (учителя)
+    const { localParticipant } = useMeeting(); 
     const isMobile = window.matchMedia("only screen and (max-width: 768px)").matches;
 
-    // Распределение участников: учитель в центре
+
     let sortedParticipantIds = [...participantIds];
 
     if (sortedParticipantIds.includes(localParticipant.id)) {
-        sortedParticipantIds = sortedParticipantIds.filter(id => id !== localParticipant.id); // Убираем из списка
-        sortedParticipantIds.splice(Math.floor(sortedParticipantIds.length / 2), 0, localParticipant.id); // Вставляем в центр
+        sortedParticipantIds = sortedParticipantIds.filter(id => id !== localParticipant.id); 
+        sortedParticipantIds.splice(Math.floor(sortedParticipantIds.length / 2), 0, localParticipant.id); 
     }
 
     const perRow =

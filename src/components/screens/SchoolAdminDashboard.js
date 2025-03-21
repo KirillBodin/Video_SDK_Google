@@ -37,7 +37,7 @@ export default function SchoolAdminDashboard() {
       const data = await res.json();
   
       if (res.ok) {
-        // Группируем уроки по учителям
+       
         const groupedLessons = {};
         data.forEach((lesson) => {
           if (!groupedLessons[lesson.teacherId]) {
@@ -60,7 +60,7 @@ export default function SchoolAdminDashboard() {
     fetchTeachers();
   }, [adminId]);
 
-  // ✅ Добавить учителя
+  
   const addTeacher = async () => {
     if (!teacherName || !teacherEmail || !teacherPassword) {
       toast.error("Please enter name, email, and password");
@@ -94,7 +94,7 @@ export default function SchoolAdminDashboard() {
     }
   };
 
-  // ✅ Удалить учителя
+ 
   const deleteTeacher = async (teacherId) => {
     if (!window.confirm("Are you sure you want to delete this teacher?")) return;
 

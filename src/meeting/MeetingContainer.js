@@ -13,7 +13,7 @@ import { useMediaQuery } from "react-responsive";
 import { toast } from "react-toastify";
 import { useMeetingAppContext } from "../MeetingAppContextDef";
 
-// Компонент для воспроизведения аудио потока участника (микрофон)
+
 const ParticipantMicStream = memo(({ participantId }) => {
   const { micStream } = useParticipant(participantId);
   useEffect(() => {
@@ -95,7 +95,7 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
     }
   }, [highlightMessages]);
 
-  // Функции обратного вызова для meeting
+
   function onParticipantJoined(participant) {
     participant && participant.setQuality("high");
     console.log(`Participant joined: ${participant.displayName}`);
@@ -172,8 +172,7 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
     }
   };
 
-  // Инициализируем mMeeting сразу
-// Инициализируем mMeeting сразу
+
   const mMeeting = useMeeting({
     onParticipantJoined,
     onEntryResponded,
@@ -182,12 +181,12 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
 
       setTimeout(() => {
         if (mMeeting.muteMic) {
-          mMeeting.muteMic(); // Выключаем микрофон программно при входе
+          mMeeting.muteMic(); 
         }
         if (mMeeting.disableWebcam) {
-          mMeeting.disableWebcam(); // Выключаем веб-камеру программно при входе
+          mMeeting.disableWebcam(); 
         }
-      }, 1000); // Добавляем небольшую задержку, чтобы избежать конфликтов
+      }, 1000); 
     },
     onMeetingLeft,
     onError: _handleOnError,
@@ -197,13 +196,13 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
 
   const isPresenting = mMeeting.presenterId ? true : false;
 
-  // Используем хуки usePubSub для каналов "CONTROL" и "CHAT"
+ 
   const { publish: controlPublish } = usePubSub("CONTROL");
   const { publish: chatPublish } = usePubSub("CHAT");
 
 
 
-  // Обработка клавиш для учителя с расширенными логами
+  
   useEffect(() => {
     const handleGlobalKeyDown = (event) => {
       const key = event.key;
@@ -313,7 +312,6 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
 
 
 
-  // Подписка на канал CONTROL на стороне ученика
   useEffect(() => {
     if (mMeeting?.localParticipant) {
       console.log(
@@ -337,7 +335,7 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
         return;
       }
 
-      // Проверяем, адресовано ли сообщение этому участнику
+    
       if (to && localParticipantId !== to) return;
 
       console.log(`🎤 Command for me: ${command}`);
@@ -345,7 +343,7 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
       if (command === "requestUnmute") {
         console.log("🎤 Received request to enable mic");
 
-        // 🔔 Показываем сообщение ученику о включении микрофона
+      
         toast.info("Your microphone has been enabled by the teacher.", {
           position: "top-right",
           autoClose: 3000,
@@ -384,7 +382,7 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
       console.log("📡 CHAT message received:", data);
 
       try {
-        // ✅ Правильное извлечение данных из вложенного объекта
+      
         const { senderName, message } = data.message || {};
 
         if (!message) return;
@@ -407,10 +405,6 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
 
 
 
-
-
-
-// Отслеживаем ручное включение/выключение микрофона
   const originalEnableMic = mMeeting?.localParticipant?.enableMic;
   const originalDisableMic = mMeeting?.localParticipant?.disableMic;
   const originalToggleMic = mMeeting?.localParticipant?.toggleMic;
@@ -437,10 +431,6 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
   }
 
 
-
-
-
-  // Подписка на канал RAISE_HAND
   usePubSub("RAISE_HAND", {
     onMessageReceived: (data) => {
       const localParticipantId = mMeeting?.localParticipant?.id;

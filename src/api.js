@@ -1,7 +1,7 @@
 const API_BASE_URL = "https://api.videosdk.live";
-const SERVER_URL = "http://localhost:5000"; // Сервер теперь работает на 6000
+const SERVER_URL = "http://localhost:5000"; 
 
-// Функция для получения токена с сервера
+
 export const getToken = async () => {
   try {
     console.log("[API] 🔍 Запрашиваем токен...");
@@ -21,7 +21,7 @@ export const getToken = async () => {
   }
 };
 
-// Создание встречи
+
 export const createMeeting = async ({ roomId }) => {
   const token = await getToken();
   if (!token) return { meetingId: null, err: "Failed to get token" };
@@ -50,7 +50,7 @@ export const createMeeting = async ({ roomId }) => {
   }
 };
 
-// Проверка существования встречи и создание при необходимости
+
 export const validateMeeting = async ({ roomId }) => {
   const token = await getToken();
   if (!token) return { meetingId: null, err: "Failed to get token" };

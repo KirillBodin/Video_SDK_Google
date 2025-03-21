@@ -197,11 +197,11 @@ export function JoiningScreen({
   const changeMic = async (deviceId) => {
     if (!micOn) return;
     try {
-      // Останавливаем предыдущий аудио трек, если он есть
+      
       if (audioTrackRef.current) {
         audioTrackRef.current.stop();
       }
-      // Пытаемся получить новый поток с выбранным устройством
+    
       const stream = await getAudioTrack({ micId: deviceId });
       if (stream) {
         setCustomAudioStream(stream);
@@ -209,17 +209,17 @@ export function JoiningScreen({
         if (audioTracks && audioTracks.length > 0) {
           setAudioTrack(audioTracks[0]);
         } else {
-          // Если поток не содержит аудио-треков, сбрасываем состояние
+          
           setAudioTrack(null);
         }
       } else {
-        // Если поток не получен, сбрасываем состояние
+        
         setAudioTrack(null);
       }
       clearInterval(audioAnalyserIntervalRef.current);
     } catch (error) {
       console.error("Ошибка при смене микрофона:", error);
-      // При возникновении ошибки сбрасываем аудио-трек, чтобы не получить undefined
+     
       setAudioTrack(null);
     }
   };
@@ -568,10 +568,10 @@ export function JoiningScreen({
   onClickStartMeeting={onClickStartMeeting}
   onClickJoin={async (token, id) => {
     console.log("[JoiningScreen] 🔥 Вызывается onClickJoin с токеном и meetingId:", token, id);
-    // Обновляем состояния, если необходимо
+   
     setToken(token);
     setMeetingId(id);
-    // Вызываем запуск митинга с переданными параметрами
+
     onClickStartMeeting(token, id);
                       }}
 

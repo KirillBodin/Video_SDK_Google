@@ -6,7 +6,7 @@ import { LeaveScreen } from "./components/screens/LeaveScreen";
 import { JoiningScreen } from "./components/screens/JoiningScreen";
 import { MeetingAppProvider } from "./MeetingAppContextDef";
 import SuperAdminDashboard from "./components/screens/SuperAdminDashboard";
-import SchoolAdminDashboard from "./components/screens/SchoolAdminDashboard";
+import AdminDashboardScreen from "./components/screens/AdminDashboardScreen";
 import TeacherDashboard from "./components/screens/TeacherDashboard";
 import AdminLoginScreen from "./components/screens/AdminLoginScreen";
 
@@ -99,7 +99,7 @@ function App() {
           />
           <Route path="/admin/login" element={<AdminLoginScreen />} />
           <Route path="/superadmin/:superAdminId/:name" element={<SuperAdminDashboard />} />
-<Route path="/admin/:adminId/:name" element={<SchoolAdminDashboard />} />
+<Route path="/admin/:adminId/:name" element={<AdminDashboardScreen />} />
 <Route path="/teacher/:teacherId/:name" element={<TeacherDashboard />} />
 
 

@@ -25,7 +25,7 @@ export function PresenterView({ height }) {
     isActiveSpeaker,
   } = useParticipant(presenterId);
 
-  // Создаём MediaStream из экрана
+ 
   const mediaStream = useMemo(() => {
     if (screenShareOn) {
       const stream = new MediaStream();
@@ -34,7 +34,7 @@ export function PresenterView({ height }) {
     }
   }, [screenShareStream, screenShareOn]);
 
-  // Если расшаривается аудио, подключаем его
+  
   useEffect(() => {
     if (!isLocal && audioPlayer.current && screenShareOn && screenShareAudioStream) {
       const stream = new MediaStream();
@@ -73,13 +73,13 @@ export function PresenterView({ height }) {
               url={mediaStream}
               height="100%"
               width="100%"
-              // Убираем размытие, т.е. не используем style={{ filter: ... }}
+              
               onError={(err) => {
                 console.log("presenter video error => ", err);
               }}
           />
 
-          {/* Бейдж "микрофон выключен" или "говорит" */}
+          {}
           <div
               className="bottom-2 left-2 bg-gray-750 p-2 absolute rounded-md flex items-center justify-center"
               style={{
