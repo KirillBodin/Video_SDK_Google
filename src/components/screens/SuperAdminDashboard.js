@@ -1,515 +1,672 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
+import { FiMoreVertical, FiEdit, FiEye, FiTrash2 } from "react-icons/fi";
+import ReactDOM from "react-dom";
 
-const SERVER_URL = process.env.REACT_APP_SERVER_URL || "https://backend-videosdk.onrender.com";
+const SERVER_URL = "http://localhost:5000";
 
 export default function SuperAdminDashboard() {
-  
+  const [activeTab, setActiveTab] = useState("teachers");
 
-  const [schoolAdmins, setSchoolAdmins] = useState([]);
-  const [teachers, setTeachers] = useState({});
-  const [lessons, setLessons] = useState({});
-  const [adminLessons, setAdminLessons] = useState({});
-  const [superAdminLessons, setSuperAdminLessons] = useState([]);
+  // Data
+  const [teachers, setTeachers] = useState([]);
+  const [classes, setClasses] = useState([]);
+  const [students, setStudents] = useState([]);
+  const [admins, setAdmins] = useState([]); // <-- new state for admins
 
+  // Loading & context menu
+  const [loading, setLoading] = useState(false);
+  const [menuData, setMenuData] = useState(null);
 
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [schoolName, setSchoolName] = useState("");
+  // Modal states
+  const [showTeacherModal, setShowTeacherModal] = useState(false);
+  const [showClassModal, setShowClassModal] = useState(false); // we will not show the button, but keep the logic
+  const [showStudentModal, setShowStudentModal] = useState(false);
 
-  
-  const [newTeacherData, setNewTeacherData] = useState({});
+  // Form data
+  const [newTeacherData, setNewTeacherData] = useState({
+    teacherName: "",
+    teacherEmail: "",
+    teacherPassword: "",
+    adminId: "",
+  });
+  const [newClassData, setNewClassData] = useState({
+    className: "",
+    teacherId: "",
+  });
+  const [newStudentData, setNewStudentData] = useState({
+    studentName: "",
+    studentEmail: "",
+    classId: "",
+  });
 
   useEffect(() => {
-    console.log("Component mounted: fetching admins and super admin lessons");
-    fetchAdmins();
-    fetchSuperAdminLessons();
+    // Fetch all data (teachers, classes, students, admins)
+    fetchAllData();
+    fetchAdmins(); // get admins
   }, []);
 
- 
-  const fetchAdmins = async () => {
-    console.log("Fetching school admins...");
+  // Fetch all data in parallel
+  const fetchAllData = async () => {
+    setLoading(true);
     try {
-      const res = await fetch(`${SERVER_URL}/api/school-admins`);
+      await Promise.all([fetchTeachers(), fetchClasses(), fetchStudents()]);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch admins
+  const fetchAdmins = async () => {
+    try {
+      const res = await fetch(`${SERVER_URL}/api/super-admin/admins`);
       const data = await res.json();
-      console.log("Received school admins:", data);
       if (!res.ok) {
         throw new Error(data.error || "Failed to fetch admins");
       }
-      setSchoolAdmins(data);
-
-      data.forEach((admin) => {
-        console.log(`Fetching teachers for schoolId ${admin.schoolId}`);
-        fetchTeachers(admin.schoolId);
-        console.log(`Fetching lessons for adminId ${admin.id}`);
-        fetchAdminLessons(admin.id);
-      });
+      setAdmins(data);
     } catch (err) {
       console.error("Error fetching admins:", err);
-      toast.error("Failed to load school admins.");
+      toast.error("Failed to fetch admins.");
     }
   };
 
-  const fetchTeachers = async (schoolId) => {
-    console.log(`Fetching teachers for schoolId ${schoolId}...`);
+  // Fetch teachers
+  const fetchTeachers = async () => {
     try {
-      const res = await fetch(
-        `${SERVER_URL}/api/school-admins/${schoolId}/teachers`
-      );
+      const res = await fetch(`${SERVER_URL}/api/super-admin/teachers`);
       const data = await res.json();
-      console.log(`Received teachers for schoolId ${schoolId}:`, data);
       if (!res.ok) {
         throw new Error(data.error || "Failed to fetch teachers");
       }
-      setTeachers((prev) => ({ ...prev, [schoolId]: data }));
-      
-      data.forEach((teacher) => {
-        console.log(`Fetching lessons for teacherId ${teacher.id}`);
-        fetchLessons(teacher.id);
+      setTeachers(data);
+    } catch (err) {
+      console.error("Error fetching teachers:", err);
+      toast.error("Failed to fetch teachers.");
+    }
+  };
+
+  // Fetch classes
+  const fetchClasses = async () => {
+    try {
+      const res = await fetch(`${SERVER_URL}/api/super-admin/classes`);
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to fetch classes");
+      }
+      setClasses(data);
+    } catch (err) {
+      console.error("Error fetching classes:", err);
+      toast.error("Failed to fetch classes.");
+    }
+  };
+
+  // Fetch students
+  const fetchStudents = async () => {
+    try {
+      const res = await fetch(`${SERVER_URL}/api/super-admin/students`);
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to fetch students");
+      }
+      setStudents(data);
+    } catch (err) {
+      console.error("Error fetching students:", err);
+      toast.error("Failed to fetch students.");
+    }
+  };
+
+  // Add new teacher
+  const handleAddTeacher = async () => {
+    const { teacherName, teacherEmail, teacherPassword, adminId } = newTeacherData;
+    if (!teacherName || !teacherEmail || !teacherPassword || !adminId) {
+      toast.info("Please fill in all teacher fields (including Admin)!");
+      return;
+    }
+    try {
+      const res = await fetch(`${SERVER_URL}/api/super-admin/teachers`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newTeacherData),
       });
-    } catch (err) {
-      console.error(`Error fetching teachers for school ${schoolId}:`, err);
-      toast.error(`Failed to load teachers for school ${schoolId}`);
-    }
-  };
-
-  const fetchLessons = async (teacherId) => {
-    console.log(`Fetching lessons for teacherId ${teacherId}...`);
-    try {
-      const res = await fetch(
-        `${SERVER_URL}/api/school-admins/${teacherId}/lessons`
-      );
       const data = await res.json();
-      console.log(`Received lessons for teacherId ${teacherId}:`, data);
       if (!res.ok) {
-        throw new Error(data.error || "Failed to fetch lessons");
+        throw new Error(data.error || "Failed to create teacher");
       }
-      setLessons((prev) => ({ ...prev, [teacherId]: data }));
+      toast.success("Teacher added successfully!");
+      fetchTeachers();
+      setNewTeacherData({
+        teacherName: "",
+        teacherEmail: "",
+        teacherPassword: "",
+        adminId: "",
+      });
+      setShowTeacherModal(false);
     } catch (err) {
-      console.error(`Error fetching lessons for teacher ${teacherId}:`, err);
-      toast.error(`Failed to load lessons for teacher ${teacherId}`);
-    }
-  };
-
-  const fetchAdminLessons = async (adminId) => {
-    console.log(`Fetching lessons for adminId ${adminId}...`);
-    try {
-      const res = await fetch(
-        `${SERVER_URL}/api/school-admins/${adminId}/lessons`
-      );
-      const data = await res.json();
-      console.log(`Received admin lessons for adminId ${adminId}:`, data);
-
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to fetch admin lessons");
-      }
-
-      setAdminLessons((prev) => ({
-        ...prev,
-        [adminId]: data.lessons,
-      }));
-    } catch (err) {
-      console.warn(`No lessons found for adminId=${adminId}:`, err);
-    }
-  };
-
- 
-  const fetchSuperAdminLessons = async () => {
-    console.log("Fetching super admin lessons...");
-    try {
-      const superAdminId = localStorage.getItem("adminId") || "1"; 
-      console.log("Super admin id:", superAdminId);
-
-      const res = await fetch(
-        `${SERVER_URL}/api/school-admins/${superAdminId}/lessons`
-      );
-      const data = await res.json();
-      console.log("Received super admin lessons:", data);
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to fetch super admin lessons");
-      }
-      setSuperAdminLessons(data.lessons || data);
-    } catch (err) {
-      console.error("Error fetching super admin lessons:", err);
+      console.error("Error creating teacher:", err);
       toast.error(err.message);
     }
   };
 
-
-  const handleDeleteSuperAdminLesson = async (lessonId) => {
-    if (!window.confirm("Are you sure you want to delete this lesson?")) return;
-    console.log("Deleting super admin lesson:", lessonId);
-
-    try {
-  
-      const res = await fetch(`${SERVER_URL}/api/lessons/${lessonId}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) {
-        throw new Error("Failed to delete lesson");
-      }
-      toast.success("Lesson deleted!");
-
-      
-      setSuperAdminLessons((prev) => prev.filter((l) => l.id !== lessonId));
-    } catch (error) {
-      console.error("Error deleting lesson:", error);
-      toast.error(error.message);
+  // Add new class
+  const handleAddClass = async () => {
+    const { className, teacherId } = newClassData;
+    if (!className || !teacherId) {
+      toast.info("Please fill in the class name and select a teacher!");
+      return;
     }
-  };
-
-
-  const handleAddAdmin = async () => {
-    console.log("Adding new school admin...", { name, email, schoolName });
     try {
-      const res = await fetch(`${SERVER_URL}/api/school-admins`, {
+      const res = await fetch(`${SERVER_URL}/api/super-admin/classes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, schoolName }),
+        body: JSON.stringify(newClassData),
       });
       const data = await res.json();
-      console.log("Add admin response:", data);
       if (!res.ok) {
-        throw new Error(data.error || "Failed to create admin");
+        throw new Error(data.error || "Failed to create class");
       }
-      toast.success("School admin added successfully!");
-      fetchAdmins();
-      setName("");
-      setEmail("");
-      setSchoolName("");
-    } catch (error) {
-      console.error("Error adding school admin:", error);
-      toast.error(error.message);
+      toast.success("Class added successfully!");
+      fetchClasses();
+      setNewClassData({ className: "", teacherId: "" });
+      setShowClassModal(false);
+    } catch (err) {
+      console.error("Error creating class:", err);
+      toast.error(err.message);
     }
   };
 
-
-const handleAddTeacher = async (schoolId) => {
-  const { teacherName, teacherEmail, teacherPassword } =
-    newTeacherData[schoolId] || {};
-
-  console.log(`Adding teacher to school ${schoolId}...`, {
-    teacherName,
-    teacherEmail,
-    teacherPassword,
-  });
-
-  if (!teacherName || !teacherEmail || !teacherPassword) {
-    toast.info("Fill in teacher name, email, and password first!");
-    return;
-  }
-
-  try {
-    const res = await fetch(
-      `${SERVER_URL}/api/school-admins/${schoolId}/teachers`,
-      {
+  // Add new student
+  const handleAddStudent = async () => {
+    const { studentName, studentEmail, classId } = newStudentData;
+    if (!studentName || !studentEmail || !classId) {
+      toast.info("Please fill in student name, email, and select a class!");
+      return;
+    }
+    try {
+      const res = await fetch(`${SERVER_URL}/api/super-admin/students`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: teacherName,
-          email: teacherEmail,
-          password: teacherPassword, 
-        }),
+        body: JSON.stringify(newStudentData),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to create student");
       }
-    );
-    const data = await res.json();
-    console.log(`Add teacher response for school ${schoolId}:`, data);
-    if (!res.ok) {
-      throw new Error(data.error || "Failed to add teacher");
+      toast.success("Student added successfully!");
+      fetchStudents();
+      setNewStudentData({ studentName: "", studentEmail: "", classId: "" });
+      setShowStudentModal(false);
+    } catch (err) {
+      console.error("Error creating student:", err);
+      toast.error(err.message);
     }
-    toast.success(`Teacher added to school ${schoolId}!`);
-    fetchTeachers(schoolId);
+  };
 
-   
-    setNewTeacherData((prev) => ({
-      ...prev,
-      [schoolId]: { teacherName: "", teacherEmail: "", teacherPassword: "" },
-    }));
-  } catch (err) {
-    console.error(`Error adding teacher to school ${schoolId}:`, err);
-    toast.error(err.message);
-  }
-};
-
-
-const handleDeleteTeacher = async (teacherId, schoolId) => {
-  if (!window.confirm("Are you sure you want to delete this teacher?")) return;
-  console.log(`Deleting teacher ${teacherId} from school ${schoolId}...`);
-
-  try {
-    const res = await fetch(
-      `${SERVER_URL}/api/school-admins/${schoolId}/teachers/${teacherId}`,
-      { method: "DELETE" }
-    );
-
-    if (!res.ok) {
-      throw new Error("Failed to delete teacher");
+  // Delete item
+  const deleteItem = async (id, type) => {
+    if (!window.confirm(`Are you sure you want to delete this ${type}?`)) return;
+    try {
+      let url = "";
+      if (type === "teachers") {
+        url = `${SERVER_URL}/api/super-admin/teachers/${id}`;
+      } else if (type === "classes") {
+        url = `${SERVER_URL}/api/super-admin/classes/${id}`;
+      } else if (type === "students") {
+        url = `${SERVER_URL}/api/super-admin/students/${id}`;
+      }
+      const res = await fetch(url, { method: "DELETE" });
+      if (!res.ok) throw new Error(`Failed to delete ${type}`);
+      toast.success(`${type} deleted successfully!`);
+      if (type === "teachers") setTeachers((prev) => prev.filter((t) => t.id !== id));
+      if (type === "classes") setClasses((prev) => prev.filter((c) => c.id !== id));
+      if (type === "students") setStudents((prev) => prev.filter((s) => s.id !== id));
+    } catch (err) {
+      toast.error(err.message);
     }
+  };
 
-    toast.success("Teacher deleted successfully!");
-    
-  
-    setTeachers((prev) => ({
-      ...prev,
-      [schoolId]: prev[schoolId].filter((teacher) => teacher.id !== teacherId),
-    }));
-  } catch (error) {
-    console.error(`Error deleting teacher ${teacherId}:`, error);
-    toast.error("Failed to delete teacher.");
-  }
-};
-
-
-const handleDeleteAdmin = async (adminId) => {
-  if (!window.confirm("Are you sure you want to delete this admin?")) return;
-  console.log(`Deleting admin ${adminId}...`);
-
-  try {
-    const res = await fetch(
-      `${SERVER_URL}/api/school-admins/${adminId}`,
-      { method: "DELETE" }
-    );
-
-    if (!res.ok) {
-      throw new Error("Failed to delete admin");
+  // Toggle context menu
+  const toggleMenu = (id, type, event) => {
+    event.stopPropagation();
+    const rect = event.currentTarget.getBoundingClientRect();
+    if (menuData?.id === id) {
+      setMenuData(null);
+    } else {
+      setMenuData({
+        id,
+        type,
+        x: rect.x + rect.width,
+        y: rect.y + window.scrollY,
+      });
     }
-
-    toast.success("Admin deleted successfully!");
-
-  
-    setSchoolAdmins((prev) => prev.filter((admin) => admin.id !== adminId));
-  } catch (error) {
-    console.error(`Error deleting admin ${adminId}:`, error);
-    toast.error("Failed to delete admin.");
-  }
-};
-
- 
-  const handleTeacherInputChange = (schoolId, field, value) => {
-    console.log(
-      `Updating new teacher data for school ${schoolId}:`,
-      field,
-      value
-    );
-    setNewTeacherData((prev) => ({
-      ...prev,
-      [schoolId]: {
-        ...prev[schoolId],
-        [field]: value,
-      },
-    }));
   };
 
   return (
-    <div className="min-h-screen w-full bg-black text-white p-6">
-      <h1 className="text-4xl font-bold text-center mb-10">
-        Super Admin Dashboard
-      </h1>
+    <div className="min-h-screen w-full bg-gradient-to-br from-[#111111] to-black text-white p-6 flex flex-col items-center">
+      <h1 className="text-4xl font-bold text-center mb-10">Super Admin Dashboard</h1>
 
- 
-      {superAdminLessons.length > 0 && (
-        <div className="max-w-5xl mx-auto bg-gray-800 p-4 rounded-xl mb-6">
-          <h2 className="text-2xl font-bold mb-4">Super Admin's Lessons:</h2>
-          <div className="flex flex-col gap-4">
-            {superAdminLessons.map((lesson) => (
-              <div
-                key={lesson.id}
-                className="bg-gray-700 p-4 rounded flex justify-between items-center"
-              >
-                <div>
-                  <h4 className="text-lg font-bold">{lesson.className}</h4>
-                  <p className="text-sm text-gray-300">
-                    Meeting ID: {lesson.meetingId}
-                  </p>
-                </div>
-                <button
-                  onClick={() => handleDeleteSuperAdminLesson(lesson.id)}
-                  className="text-red-400 hover:text-red-300"
-                >
-                  ❌
-                </button>
-              </div>
-            ))}
+      {/* Tabs */}
+      <div className="flex mb-4 border-b border-gray-700">
+        {["teachers", "classes", "students"].map((tab) => (
+          <button
+            key={tab}
+            className={`px-4 py-2 ${activeTab === tab ? "border-b-2 border-blue-500" : ""}`}
+            onClick={() => setActiveTab(tab)}
+          >
+            {tab.charAt(0).toUpperCase() + tab.slice(1)}
+          </button>
+        ))}
+      </div>
+
+      {/* Teachers Tab */}
+      {activeTab === "teachers" && (
+        <div className="w-full max-w-5xl">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-semibold">Teachers</h3>
+            <button
+              className="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded"
+              onClick={() => setShowTeacherModal(true)}
+            >
+              Add Teacher
+            </button>
           </div>
+          <DataTable
+            title="Teachers"
+            data={teachers}
+            columns={[
+              { label: "Name", key: "name" },
+              { label: "Email", key: "email" },
+              { label: "# of Classes", key: "numberOfClasses" },
+              { label: "# of Students", key: "numberOfStudents" },
+            ]}
+            actions={{ view: true, edit: true, delete: true }}
+            onMenuToggle={toggleMenu}
+          />
         </div>
       )}
 
-     
-      <div className="max-w-xl mx-auto bg-gray-800 rounded-xl p-6 mb-10">
-        <h2 className="text-2xl font-semibold mb-4">Add New School Admin</h2>
-        <div className="flex flex-col gap-4">
+      {/* Classes Tab */}
+      {activeTab === "classes" && (
+        <div className="w-full max-w-5xl">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-semibold">Classes</h3>
+            {/* Button to add class is removed as per request */}
+          </div>
+          <DataTable
+            title="Classes"
+            data={classes}
+            columns={[
+              { label: "Class Name", key: "className" },
+              { label: "# of Students", key: "numberOfStudents" },
+              { label: "Class URL", key: "classUrl" },
+            ]}
+            actions={{ view: true, edit: true, delete: true }}
+            onMenuToggle={toggleMenu}
+          />
+        </div>
+      )}
+
+      {/* Students Tab */}
+      {activeTab === "students" && (
+        <div className="w-full max-w-5xl">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-semibold">Students</h3>
+            <button
+              className="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded"
+              onClick={() => setShowStudentModal(true)}
+            >
+              Add Student
+            </button>
+          </div>
+          <DataTable
+            title="Students"
+            data={students}
+            columns={[
+              { label: "Name", key: "name" },
+              { label: "Email", key: "email" },
+              { label: "Teacher", key: "teacherName" },
+              { label: "Class", key: "className" },
+            ]}
+            actions={{ view: true, edit: true, delete: true }}
+            onMenuToggle={toggleMenu}
+          />
+        </div>
+      )}
+
+      {/* Modals */}
+      <TeacherModal
+        visible={showTeacherModal}
+        onClose={() => setShowTeacherModal(false)}
+        onSave={handleAddTeacher}
+        formData={newTeacherData}
+        setFormData={setNewTeacherData}
+        admins={admins} // pass admins here
+      />
+      <ClassModal
+        visible={showClassModal}
+        onClose={() => setShowClassModal(false)}
+        onSave={handleAddClass}
+        formData={newClassData}
+        setFormData={setNewClassData}
+        teachers={teachers}
+      />
+      <StudentModal
+        visible={showStudentModal}
+        onClose={() => setShowStudentModal(false)}
+        onSave={handleAddStudent}
+        formData={newStudentData}
+        setFormData={setNewStudentData}
+        classes={classes}
+      />
+
+      {menuData && (
+        <ContextMenu
+          data={menuData}
+          onDelete={deleteItem}
+          onEdit={() => console.log("Edit", menuData)}
+          onView={() => console.log("View", menuData)}
+          setMenuData={setMenuData}
+        />
+      )}
+    </div>
+  );
+}
+
+/* -------------------------------------------
+   DataTable component
+   - Adds domain to Class URL
+------------------------------------------- */
+function DataTable({ title, data, columns, actions, onMenuToggle }) {
+  return (
+    <div className="w-full bg-white bg-opacity-10 rounded-xl p-6 shadow-lg border border-gray-700 backdrop-blur-md mb-6">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-2xl font-semibold text-white">{title}:</h2>
+      </div>
+      {data.length > 0 ? (
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse border border-gray-700 rounded-lg">
+            <thead>
+              <tr className="bg-gray-900 text-white">
+                {columns.map((col) => (
+                  <th key={col.key} className="px-4 py-3 text-left">
+                    {col.label}
+                  </th>
+                ))}
+                <th className="px-4 py-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.map((item) => {
+                return (
+                  <tr key={item.id} className="bg-gray-800 border-b border-gray-700">
+                    {columns.map((col) => {
+                      let value = item[col.key] ?? "-";
+
+                      // If column is "classUrl", prepend domain
+                      if (col.key === "classUrl" && value !== "-") {
+                        value = window.location.origin + "/" + value;
+                      }
+                      return (
+                        <td key={col.key} className="px-4 py-3">
+                          {value}
+                        </td>
+                      );
+                    })}
+                    <td className="px-4 py-3 text-right">
+                      <button
+                        onClick={(e) => onMenuToggle(item.id, title.toLowerCase(), e)}
+                        className="p-2 rounded-full bg-gray-700 hover:bg-gray-600 focus:outline-none"
+                      >
+                        <FiMoreVertical className="text-white text-lg" />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p className="text-white text-center">No {title.toLowerCase()} found</p>
+      )}
+    </div>
+  );
+}
+
+/* -------------------------------------------
+   ContextMenu component
+------------------------------------------- */
+function ContextMenu({ data, onDelete, onEdit, onView, setMenuData }) {
+  return ReactDOM.createPortal(
+    <div
+      className="portal-menu fixed bg-gray-900 text-white shadow-lg rounded-md z-50 w-44"
+      style={{ top: data.y + 10, left: data.x - 10 }}
+    >
+      <button className="flex items-center px-4 py-2 w-full hover:bg-gray-700 text-left" onClick={() => onView(data)}>
+        <FiEye className="mr-2" /> View
+      </button>
+      <button className="flex items-center px-4 py-2 w-full hover:bg-gray-700 text-left" onClick={() => onEdit(data)}>
+        <FiEdit className="mr-2" /> Edit
+      </button>
+      <button
+        className="flex items-center px-4 py-2 w-full text-red-400 hover:bg-gray-700 text-left"
+        onClick={() => onDelete(data.id, data.type)}
+      >
+        <FiTrash2 className="mr-2" /> Delete
+      </button>
+    </div>,
+    document.body
+  );
+}
+
+/* -------------------------------------------
+   Modals
+------------------------------------------- */
+
+/* TeacherModal 
+   - now includes a dropdown for Admin
+*/
+function TeacherModal({ visible, onClose, onSave, formData, setFormData, admins }) {
+  if (!visible) return null;
+
+  return ReactDOM.createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Overlay */}
+      <div
+        className="absolute inset-0 bg-black bg-opacity-50"
+        onClick={onClose}
+      />
+      {/* Modal content */}
+      <div className="relative bg-gray-800 text-white rounded-lg p-6 w-full max-w-sm">
+        <h2 className="text-xl font-semibold mb-4">Add Teacher</h2>
+        <div className="flex flex-col gap-3">
           <input
             type="text"
-            placeholder="Admin Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="px-4 py-3 bg-gray-700 rounded-xl text-white placeholder-gray-400"
+            placeholder="Name"
+            className="px-4 py-2 rounded bg-gray-700"
+            value={formData.teacherName}
+            onChange={(e) =>
+              setFormData({ ...formData, teacherName: e.target.value })
+            }
           />
           <input
             type="email"
-            placeholder="Admin Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="px-4 py-3 bg-gray-700 rounded-xl text-white placeholder-gray-400"
+            placeholder="Email"
+            className="px-4 py-2 rounded bg-gray-700"
+            value={formData.teacherEmail}
+            onChange={(e) =>
+              setFormData({ ...formData, teacherEmail: e.target.value })
+            }
           />
           <input
-            type="text"
-            placeholder="School Name"
-            value={schoolName}
-            onChange={(e) => setSchoolName(e.target.value)}
-            className="px-4 py-3 bg-gray-700 rounded-xl text-white placeholder-gray-400"
+            type="password"
+            placeholder="Password"
+            className="px-4 py-2 rounded bg-gray-700"
+            value={formData.teacherPassword}
+            onChange={(e) =>
+              setFormData({ ...formData, teacherPassword: e.target.value })
+            }
           />
+          {/* Select Admin */}
+          <select
+            className="px-4 py-2 rounded bg-gray-700"
+            value={formData.adminId}
+            onChange={(e) =>
+              setFormData({ ...formData, adminId: e.target.value })
+            }
+          >
+            <option value="">Select Admin</option>
+            {admins.map((admin) => (
+              <option key={admin.id} value={admin.id}>
+                {admin.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="flex justify-end mt-4 gap-2">
           <button
-            onClick={handleAddAdmin}
-            className="bg-blue-600 hover:bg-blue-700 rounded-xl py-3 font-semibold"
+            onClick={onClose}
+            className="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded"
           >
-            Add School Admin
+            Cancel
+          </button>
+          <button
+            onClick={onSave}
+            className="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded"
+          >
+            Save
           </button>
         </div>
       </div>
+    </div>,
+    document.body
+  );
+}
 
-  
-      <div className="max-w-5xl mx-auto">
-        <h2 className="text-2xl font-bold mb-6">All School Admins:</h2>
-        {schoolAdmins.map((admin) => (
-          <div
-            key={admin.id}
-            className="bg-gray-800 rounded-xl p-6 mb-6 shadow-md"
+/* ClassModal 
+   - The "Add Class" button is removed from the UI, 
+     but the modal is still here in case it's needed.
+*/
+function ClassModal({ visible, onClose, onSave, formData, setFormData, teachers }) {
+  if (!visible) return null;
+
+  return ReactDOM.createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div
+        className="absolute inset-0 bg-black bg-opacity-50"
+        onClick={onClose}
+      />
+      <div className="relative bg-gray-800 text-white rounded-lg p-6 w-full max-w-sm">
+        <h2 className="text-xl font-semibold mb-4">Add Class</h2>
+        <div className="flex flex-col gap-3">
+          <input
+            type="text"
+            placeholder="Class Name"
+            className="px-4 py-2 rounded bg-gray-700"
+            value={formData.className}
+            onChange={(e) =>
+              setFormData({ ...formData, className: e.target.value })
+            }
+          />
+          <select
+            className="px-4 py-2 rounded bg-gray-700"
+            value={formData.teacherId}
+            onChange={(e) =>
+              setFormData({ ...formData, teacherId: e.target.value })
+            }
           >
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-              <div>
-                <h3 className="text-xl font-bold">
-                  {admin.name}
-                  <span className="text-sm text-gray-400 ml-2">
-                    ({admin.schoolName || "No School"})
-                  </span>
-                </h3>
-                <p className="text-gray-400">Email: {admin.email}</p>
-              </div>
-              <button
-          className="text-red-400 mt-2 md:mt-0 hover:text-red-300"
-          onClick={() => handleDeleteAdmin(admin.id)}
-        >
-          ❌ Delete Admin
-        </button>
-            </div>
-
-           
-            {adminLessons[admin.id]?.length > 0 && (
-              <div className="mt-4 bg-gray-700 p-4 rounded">
-                <h4 className="font-semibold mb-2">Admin's Lessons:</h4>
-                <ul className="list-disc list-inside">
-                  {adminLessons[admin.id].map((lesson) => (
-                    <li key={lesson.id} className="text-gray-200">
-                      {lesson.className} (Meeting ID: {lesson.meetingId})
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-<div className="mt-4 p-4 bg-gray-700 rounded">
-              <h4 className="font-semibold mb-2">Add Teacher:</h4>
-              <div className="flex flex-col md:flex-row gap-2">
-                <input
-                  type="text"
-                  placeholder="Teacher Name"
-                  value={newTeacherData[admin.schoolId]?.teacherName || ""}
-                  onChange={(e) =>
-                    setNewTeacherData((prev) => ({
-                      ...prev,
-                      [admin.schoolId]: {
-                        ...prev[admin.schoolId],
-                        teacherName: e.target.value,
-                      },
-                    }))
-                  }
-                  className="flex-1 px-4 py-2 rounded bg-gray-600 placeholder-gray-400"
-                />
-                <input
-                  type="email"
-                  placeholder="Teacher Email"
-                  value={newTeacherData[admin.schoolId]?.teacherEmail || ""}
-                  onChange={(e) =>
-                    setNewTeacherData((prev) => ({
-                      ...prev,
-                      [admin.schoolId]: {
-                        ...prev[admin.schoolId],
-                        teacherEmail: e.target.value,
-                      },
-                    }))
-                  }
-                  className="flex-1 px-4 py-2 rounded bg-gray-600 placeholder-gray-400"
-                />
-                <input
-                  type="password"
-                  placeholder="Password"
-                  value={newTeacherData[admin.schoolId]?.teacherPassword || ""}
-                  onChange={(e) =>
-                    setNewTeacherData((prev) => ({
-                      ...prev,
-                      [admin.schoolId]: {
-                        ...prev[admin.schoolId],
-                        teacherPassword: e.target.value,
-                      },
-                    }))
-                  }
-                  className="flex-1 px-4 py-2 rounded bg-gray-600 placeholder-gray-400"
-                />
-                <button
-                  onClick={() => handleAddTeacher(admin.schoolId)}
-                  className="bg-blue-500 hover:bg-blue-600 rounded px-4 py-2 font-semibold"
-                >
-                  Add Teacher
-                </button>
-              </div>
-            </div>
-
- <div className="mt-6">
-              <h4 className="text-lg font-semibold">Teachers:</h4>
-              {teachers[admin.schoolId]?.length ? (
-                teachers[admin.schoolId].map((teacher) => (
-                  <div key={teacher.id} className="bg-gray-700 p-4 mt-2 rounded">
-                    <div className="flex justify-between items-center">
-                      <span>
-                        <strong>{teacher.name}</strong> — {teacher.email}
-                      </span>
-                      <button
-                        className="text-red-400"
-                        onClick={() => handleDeleteTeacher(teacher.id, admin.schoolId)}
+            <option value="">Select Teacher</option>
+            {teachers.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="flex justify-end mt-4 gap-2">
+          <button
+            onClick={onClose}
+            className="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded"
           >
-            ❌
+            Cancel
+          </button>
+          <button
+            onClick={onSave}
+            className="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded"
+          >
+            Save
           </button>
         </div>
-
-                    
-                    <div className="mt-2 ml-4">
-                      <h5 className="font-semibold text-gray-300">Lessons:</h5>
-                      {lessons[teacher.id]?.length > 0 ? (
-                        <ul className="list-disc list-inside">
-                          {lessons[teacher.id].map((lesson) => (
-                            <li key={lesson.id} className="text-sm text-gray-200">
-                              {lesson.className} (Meeting ID: {lesson.meetingId})
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p className="text-sm text-gray-400">
-                          No lessons assigned
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-gray-400 mt-2">
-                  No teachers found for this admin.
-                </p>
-              )}
-            </div>
-          </div>
-        ))}
       </div>
-    </div>
+    </div>,
+    document.body
+  );
+}
+
+/* StudentModal */
+function StudentModal({ visible, onClose, onSave, formData, setFormData, classes }) {
+  if (!visible) return null;
+
+  return ReactDOM.createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div
+        className="absolute inset-0 bg-black bg-opacity-50"
+        onClick={onClose}
+      />
+      <div className="relative bg-gray-800 text-white rounded-lg p-6 w-full max-w-sm">
+        <h2 className="text-xl font-semibold mb-4">Add Student</h2>
+        <div className="flex flex-col gap-3">
+          <input
+            type="text"
+            placeholder="Name"
+            className="px-4 py-2 rounded bg-gray-700"
+            value={formData.studentName}
+            onChange={(e) =>
+              setFormData({ ...formData, studentName: e.target.value })
+            }
+          />
+          <input
+            type="email"
+            placeholder="Email"
+            className="px-4 py-2 rounded bg-gray-700"
+            value={formData.studentEmail}
+            onChange={(e) =>
+              setFormData({ ...formData, studentEmail: e.target.value })
+            }
+          />
+          <select
+            className="px-4 py-2 rounded bg-gray-700"
+            value={formData.classId}
+            onChange={(e) =>
+              setFormData({ ...formData, classId: e.target.value })
+            }
+          >
+            <option value="">Select Class</option>
+            {classes.map((cls) => (
+              <option key={cls.id} value={cls.id}>
+                {cls.className}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="flex justify-end mt-4 gap-2">
+          <button
+            onClick={onClose}
+            className="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onSave}
+            className="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded"
+          >
+            Save
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
   );
 }

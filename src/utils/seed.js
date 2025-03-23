@@ -19,24 +19,23 @@ const students = [
   { name: "Fred Flintstone", email: "fred.flintstone@example.com", teacherEmail: "teacher2@example.com" }
 ];
 
-// 🔄 Функция заполнения базы
 const seedDB = async () => {
   const transaction = await sequelize.transaction();
   try {
-    await initDB();
-    console.log("🗑 Удаление всех данных...");
+    await sequelize.authenticate();
+    console.log("✅ Подключение к БД успешно!");
 
+    // 🔥 Полное удаление всех таблиц
+    await sequelize.drop({ transaction });
+    console.log("🗑 База данных очищена!");
 
-    await sequelize.query("TRUNCATE TABLE \"ClassStudents\" CASCADE", { transaction });
-    await sequelize.query("TRUNCATE TABLE \"ClassMeetings\" CASCADE", { transaction });
-    await sequelize.query("TRUNCATE TABLE \"Students\" CASCADE", { transaction });
-    await sequelize.query("TRUNCATE TABLE \"Users\" CASCADE", { transaction });
-
-    console.log("✅ Все данные удалены!");
+    // 🔄 Пересоздание таблиц
+    await sequelize.sync({ force: true, transaction });
+    console.log("📦 Структура БД пересоздана!");
 
     const createdUsers = {};
 
-  
+    // ✅ Создание пользователей
     for (const userData of users) {
       const hashedPassword = await bcrypt.hash(userData.password, 10);
 
@@ -62,62 +61,52 @@ const seedDB = async () => {
       console.log(`✅ Пользователь ${userData.email} добавлен!`);
     }
 
-    console.log("✅ Все пользователи добавлены!");
-
+    // ✅ Создание уроков
     const createdLessons = {};
     for (const lessonData of lessons) {
       const teacher = createdUsers[lessonData.teacherEmail];
-
-      if (!teacher) {
-        console.warn(`⚠️ Учитель ${lessonData.teacherEmail} не найден, урок не добавлен.`);
-        continue;
-      }
+      if (!teacher) continue;
 
       const meetingId = `meet-${Math.random().toString(36).substring(2, 10)}`;
-      const classUrl = `https://meet.tamamat.com/${meetingId}/${teacher.name.replace(/\s/g, "_")}/${lessonData.className.replace(/\s/g, "_")}`;
+      const classUrl = `${meetingId}/${teacher.name.replace(/\s/g, "_")}/${lessonData.className.replace(/\s/g, "_")}`;
+      const slug = `${teacher.name.replace(/\s/g, "-").toLowerCase()}-${lessonData.className.replace(/\s/g, "-").toLowerCase()}`;
 
-      const newLesson = await ClassMeeting.create({
+      const lesson = await ClassMeeting.create({
         className: lessonData.className,
         meetingId,
         teacherId: teacher.id,
-        classUrl
+        teacherName: teacher.name,
+        classUrl,
+        slug,
       }, { transaction });
 
-      createdLessons[lessonData.className] = newLesson;
-      console.log(`✅ Урок "${lessonData.className}" создан!`);
+      createdLessons[lessonData.className] = lesson;
+      console.log(`✅ Урок "${lesson.className}" создан!`);
     }
 
-    console.log("✅ Все уроки добавлены!");
-
-    
+    // ✅ Создание студентов и привязка к урокам
     for (const studentData of students) {
       const teacher = createdUsers[studentData.teacherEmail];
+      if (!teacher) continue;
 
-      if (!teacher) {
-        console.warn(`⚠️ Учитель ${studentData.teacherEmail} не найден, студент не добавлен.`);
-        continue;
-      }
-
-      const newStudent = await Student.create({
+      const student = await Student.create({
         name: studentData.name,
         email: studentData.email,
         teacherId: teacher.id
       }, { transaction });
 
-    
+      // Привязываем студента ко всем урокам его учителя
       for (const lesson of Object.values(createdLessons)) {
         if (lesson.teacherId === teacher.id) {
-          await newStudent.addClass(lesson, { transaction });
+          await student.addClass(lesson, { transaction });
         }
       }
 
-      console.log(`✅ Студент ${studentData.name} добавлен и привязан к урокам!`);
+      console.log(`✅ Студент ${student.name} добавлен и привязан к урокам!`);
     }
 
-    console.log("✅ Все студенты добавлены!");
-
     await transaction.commit();
-    console.log("🎉 Заполнение базы завершено!");
+    console.log("🎉 База данных успешно заполнена!");
     process.exit();
   } catch (error) {
     await transaction.rollback();

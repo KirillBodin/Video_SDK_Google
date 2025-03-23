@@ -5,7 +5,7 @@ import { jwtDecode } from "jwt-decode";
 
 
 
-const SERVER_URL = process.env.REACT_APP_SERVER_URL || "https://backend-videosdk.onrender.com";
+const SERVER_URL = "http://localhost:5000";
 
 
 export function MeetingDetailsScreen({
@@ -192,7 +192,7 @@ const loginWithGoogle = async () => {
                     return;
                   }
 
-                  await fetch(`${SERVER_URL}/api/save-meeting`, {
+                  await fetch(`${SERVER_URL}/api/savemeeting/new`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
@@ -201,6 +201,7 @@ const loginWithGoogle = async () => {
                       teacherEmail: userEmail,
                     }),
                   });
+                  
 
                   setTimeout(() => {
                     onClickStartMeeting(token, meetingData.meetingId);
@@ -220,13 +221,15 @@ const loginWithGoogle = async () => {
               className="w-full bg-green-500 text-white px-2 py-3 rounded-xl mt-3"
               onClick={async () => {
                 try {
-                  const response = await fetch(`${SERVER_URL}/api/get-meeting/${roomName}`);
-                  const data = await response.json();
+                  const response = await fetch(`${SERVER_URL}/api/savemeeting/byclassname/${roomName}`);
+const data = await response.json();
 
-                  if (!data.meetingId) {
-                    toast.error("Meeting not found!");
-                    return;
-                  }
+if (!data.meetingId) {
+  toast.error("Meeting not found!");
+  return;
+}
+
+
                   const meetingId = data.meetingId;
 
                   const tokenResponse = await fetch(`${SERVER_URL}/api/get-token`);
