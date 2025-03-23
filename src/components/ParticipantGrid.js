@@ -92,7 +92,7 @@ function ParticipantGrid({ participantIds, isPresenting, highlightedParticipantI
                                                         ? participantId === highlightedParticipantId
                                                         ? "border-4 border-green-500 rounded-lg"
                                                         : ""
-                                                        : "" // ❗ Убираем рамку, если participantId = "none"
+                                                        : "" 
                                                 }`}
                                             >
                                                 <MemoizedParticipant participantId={participantId} />

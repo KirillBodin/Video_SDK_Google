@@ -6,7 +6,6 @@ import { FiMoreVertical, FiCopy, FiEye, FiEdit, FiTrash2 } from "react-icons/fi"
 
 const SERVER_URL = "http://localhost:5000";
 
-/* =================== AddClassModal (добавление класса/студента) =================== */
 function AddClassModal({
   onClose,
   onSaveClass,
@@ -533,7 +532,7 @@ export default function TeacherDashboard() {
 
     setLessonToEdit(lesson);
     setShowEditClassModal(true);
-    setMenuData(null); // Закрыть меню
+    setMenuData(null); 
   };
 
 
