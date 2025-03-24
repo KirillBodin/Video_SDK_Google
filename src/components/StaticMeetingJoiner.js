@@ -16,7 +16,6 @@ export function StaticMeetingJoiner({ onClickStartMeeting }) {
   useEffect(() => {
     async function joinStaticMeeting() {
       try {
-        // Получаем данные встречи по статической ссылке
         const response = await fetch(
           `${SERVER_URL}/api/meet/${slug}/${teacherName}/${className}`
         );
@@ -31,7 +30,6 @@ export function StaticMeetingJoiner({ onClickStartMeeting }) {
         const fetchedMeetingId = data.meeting.meetingId;
         setMeetingId(fetchedMeetingId);
 
-        // Получаем токен напрямую по роуту
         const tokenRes = await fetch(`${SERVER_URL}/api/get-token`);
         const tokenData = await tokenRes.json();
         if (!tokenData.token) {

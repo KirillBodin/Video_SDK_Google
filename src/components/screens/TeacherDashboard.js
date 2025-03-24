@@ -16,6 +16,7 @@ function AddClassModal({
   const [showAddStudentForm, setShowAddStudentForm] = useState(false);
   const [className, setClassName] = useState("");
   const [selectedStudentId, setSelectedStudentId] = useState("");
+  const [selectedStudentIds, setSelectedStudentIds] = useState([]);
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -50,7 +51,7 @@ useEffect(() => {
   const handleSaveClass = () => {
     onSaveClass({
       className,
-      studentId: selectedStudentId || null,
+      studentIds: selectedStudentIds,
     });
     onClose();
   };
@@ -69,19 +70,29 @@ useEffect(() => {
             className="mb-4 px-3 py-2 border rounded"
           />
 
-          <label className="font-semibold mb-2">Select or Add Student</label>
-          <select
-            value={selectedStudentId}
-            onChange={(e) => setSelectedStudentId(e.target.value)}
-            className="mb-4 px-3 py-2 border rounded"
-          >
-            <option value="">-- Select Student --</option>
-            {students.map((stud) => (
-              <option key={stud.id} value={stud.id}>
-                {stud.name}
-              </option>
-            ))}
-          </select>
+<label className="font-semibold mb-2">Select or Add Student</label>
+<div className="overflow-y-auto border rounded px-3 py-2 mb-4 h-32 space-y-1">
+  {students.map((stud) => (
+    <label key={stud.id} className="flex items-center space-x-2">
+      <input
+        type="checkbox"
+        value={stud.id}
+        checked={selectedStudentIds.includes(String(stud.id))}
+        onChange={(e) => {
+          const value = e.target.value;
+          setSelectedStudentIds((prev) =>
+            e.target.checked
+              ? [...prev, value]
+              : prev.filter((id) => id !== value)
+          );
+        }}
+      />
+      <span>{stud.name}</span>
+    </label>
+  ))}
+</div>
+
+
 
           <button
             onClick={() => setShowAddStudentForm(true)}
@@ -325,14 +336,38 @@ export default function TeacherDashboard() {
 
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (e.target.closest(".portal-menu")) return;
-      setMenuData(null);
+      if (!e.target.closest(".portal-menu")) {
+        setMenuData(null);
+        setStudentMenuData(null); 
+      }
     };
+  
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+  
 
+  const handleDeleteStudent = async (studentId) => {
+    if (!window.confirm("Are you sure you want to delete this student?")) return;
+    try {
+      const res = await fetch(`${SERVER_URL}/api/teacher/${teacherId}/students/${studentId}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+  
+      if (res.ok) {
+        toast.success("Student deleted!");
+        fetchStudents();
+      } else {
+        toast.error(data.error || "Failed to delete student.");
+      }
+    } catch (error) {
+      toast.error("Server error.");
+    }
+    setStudentMenuData(null); // Закрыть меню после удаления
+  };
 
+  
   const handleEditStudentClick = (student) => {
     const [firstName = "", lastName = ""] = student.name.split(" ");
     setStudentToEdit({ id: student.id, firstName, lastName, email: student.email });
@@ -346,10 +381,9 @@ export default function TeacherDashboard() {
       return;
     }
     try {
-      const schoolRes = await fetch(`${SERVER_URL}/api/teachers/${teacherId}/school`);
+      const schoolRes = await fetch(`${SERVER_URL}/api/teacher/${teacherId}/students`);
       if (!schoolRes.ok) throw new Error("Failed to fetch school");
-      const { schoolId } = await schoolRes.json();
-      if (!schoolId) throw new Error("School ID is missing");
+      
   
       const name = `${firstName.trim()} ${lastName.trim()}`;
   
@@ -365,7 +399,7 @@ export default function TeacherDashboard() {
         const res = await fetch(`${SERVER_URL}/api/teacher/${teacherId}/students`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, email, schoolId }),
+          body: JSON.stringify({ name, email }),
         });
         if (!res.ok) throw new Error("Failed to add student");
         toast.success(`Student "${name}" added!`);
@@ -415,12 +449,13 @@ export default function TeacherDashboard() {
       const res = await fetch(`${SERVER_URL}/api/teacher/${teacherId}/students`);
       if (!res.ok) throw new Error("Failed to fetch students");
       const data = await res.json();
-      setStudents(data);
+      setStudents(data); 
     } catch (error) {
       console.error("❌ Error fetching students:", error);
       toast.error("Failed to load students");
     }
   };
+  
 
   
   const deleteLesson = async (lessonId) => {
@@ -468,33 +503,30 @@ export default function TeacherDashboard() {
   };
 
 
-  const handleSaveClass = async ({ className }) => {
+  const handleSaveClass = async ({ className, studentIds }) => {
     try {
       if (!teacherEmail) {
         toast.error("Teacher email is missing!");
         return;
       }
-
+  
       const meetingId = `meet-${Math.random().toString(36).substring(7)}`;
-      const body = { className, meetingId, teacherEmail };
-
+      const body = { className, meetingId, teacherEmail, studentIds };
+  
       const res = await fetch(`${SERVER_URL}/api/teachers/${teacherId}/lessons`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-
+  
       if (!res.ok) throw new Error("Failed to create class");
-      const data = await res.json();
-
-      toast.success(`Class "${data.lesson.className}" created!`);
+      toast.success("Class created!");
       fetchLessons();
     } catch (error) {
-      console.error("❌ Error saving class:", error);
       toast.error("Failed to save class");
     }
   };
-
+  
   
   const handleSaveStudent = async ({ firstName, lastName, email }) => {
     if (!firstName || !lastName || !email) {
@@ -502,16 +534,15 @@ export default function TeacherDashboard() {
       return;
     }
     try {
-      const schoolRes = await fetch(`${SERVER_URL}/api/teachers/${teacherId}/school`);
+      const schoolRes = await fetch(`${SERVER_URL}/api/teacher/${teacherId}/students`);
       if (!schoolRes.ok) throw new Error("Failed to fetch school");
-      const { schoolId } = await schoolRes.json();
-      if (!schoolId) throw new Error("School ID is missing");
+      
 
       const name = `${firstName.trim()} ${lastName.trim()}`;
       const res = await fetch(`${SERVER_URL}/api/teacher/${teacherId}/students`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, schoolId }),
+        body: JSON.stringify({ name, email }),
       });
 
       if (!res.ok) throw new Error("Failed to add student");
@@ -612,7 +643,7 @@ export default function TeacherDashboard() {
                 <tbody>
                   {lessons.map((lesson) => {
          
-                    const classURL = `https://meet.tamamat.com/${lesson.meetingId}/${name}/${lesson.className}`;
+                    const classURL = `${window.location.origin}/${lesson.classUrl}`;
                     return (
                       <tr key={lesson.id} className="bg-gray-800 border-b border-gray-700">
                         <td className="px-4 py-3 font-semibold">{lesson.className}</td>
@@ -666,18 +697,26 @@ export default function TeacherDashboard() {
     {students.length > 0 ? (
       <div className="overflow-x-auto">
         <table className="w-full border-collapse border border-gray-700 rounded-lg">
-          <thead>
-            <tr className="bg-gray-900 text-white">
-              <th className="px-4 py-3 text-left">Student Name</th>
-              <th className="px-4 py-3 text-left">Email</th>
-              <th className="px-4 py-3 text-right">Actions</th>
-            </tr>
-          </thead>
+        <thead>
+  <tr className="bg-gray-900 text-white">
+    <th className="px-4 py-3 text-left">Student Name</th>
+    <th className="px-4 py-3 text-left">Email</th>
+    <th className="px-4 py-3 text-left">Class</th>
+    <th className="px-4 py-3 text-right">Actions</th>
+  </tr>
+</thead>
+
           <tbody>
             {students.map((student) => (
               <tr key={student.id} className="bg-gray-800 border-b border-gray-700">
                 <td className="px-4 py-3 font-semibold">{student.name}</td>
                 <td className="px-4 py-3">{student.email}</td>
+                <td className="px-4 py-3">
+  {student.classes?.length > 0
+    ? student.classes.map((cls) => cls.className).join(", ")
+    : "—"}
+</td>
+
                 <td className="px-4 py-3 text-right">
                   <button
                     onClick={(e) => {
@@ -725,6 +764,13 @@ export default function TeacherDashboard() {
     >
       <FiEdit className="mr-2" /> Edit
     </button>
+    <button
+  onClick={() => handleDeleteStudent(studentMenuData.student.id)}
+  className="flex items-center px-4 py-2 w-full text-red-400 hover:bg-gray-700 text-left"
+>
+  <FiTrash2 className="mr-2" /> Delete
+</button>
+
   </div>
 )}
 

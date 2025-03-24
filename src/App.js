@@ -9,7 +9,8 @@ import SuperAdminDashboard from "./components/screens/SuperAdminDashboard";
 import AdminDashboardScreen from "./components/screens/AdminDashboardScreen";
 import TeacherDashboard from "./components/screens/TeacherDashboard";
 import AdminLoginScreen from "./components/screens/AdminLoginScreen";
-import { StaticMeetingJoiner } from "./components/StaticMeetingJoiner";
+import JoinMeetingWrapper from "./components/screens/JoinMeetingWrapper";
+
 
 function App() {
   const [token, setToken] = useState("");
@@ -102,7 +103,7 @@ function App() {
           <Route path="/superadmin/:superAdminId/:name" element={<SuperAdminDashboard />} />
 <Route path="/admin/:adminId/:name" element={<AdminDashboardScreen />} />
 <Route path="/teacher/:teacherId/:name" element={<TeacherDashboard />} />
-<Route path="/:slug/:teacherName/:className" element={<StaticMeetingJoiner onClickStartMeeting={handleStartMeeting} />} />
+<Route path="/:slug/:teacherName/:className" element={<JoinMeetingWrapper />} />
 
 
 
