@@ -65,7 +65,7 @@ export function StaticMeetingJoiner({ onClickStartMeeting }) {
           meetingId,
           micEnabled: true,
           webcamEnabled: true,
-          name: "User", // Можно заменить на актуальное имя участника
+          name: "User", 
           multiStream: true,
         }}
         token={token}

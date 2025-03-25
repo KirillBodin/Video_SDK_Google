@@ -10,7 +10,7 @@ import AdminDashboardScreen from "./components/screens/AdminDashboardScreen";
 import TeacherDashboard from "./components/screens/TeacherDashboard";
 import AdminLoginScreen from "./components/screens/AdminLoginScreen";
 import JoinMeetingWrapper from "./components/screens/JoinMeetingWrapper";
-
+import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
   const [token, setToken] = useState("");
@@ -100,9 +100,18 @@ function App() {
             }
           />
           <Route path="/admin/login" element={<AdminLoginScreen />} />
-          <Route path="/superadmin/:superAdminId/:name" element={<SuperAdminDashboard />} />
-<Route path="/admin/:adminId/:name" element={<AdminDashboardScreen />} />
-<Route path="/teacher/:teacherId/:name" element={<TeacherDashboard />} />
+          
+          <Route element={<ProtectedRoute allowedRoles={["superadmin"]} />}>
+  <Route path="/superadmin/:superAdminId/:name" element={<SuperAdminDashboard />} />
+</Route>
+
+<Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
+  <Route path="/admin/:adminId/:name" element={<AdminDashboardScreen />} />
+</Route>
+
+<Route element={<ProtectedRoute allowedRoles={["teacher"]} />}>
+  <Route path="/teacher/:teacherId/:name" element={<TeacherDashboard />} />
+</Route>
 <Route path="/:slug/:teacherName/:className" element={<JoinMeetingWrapper />} />
 
 

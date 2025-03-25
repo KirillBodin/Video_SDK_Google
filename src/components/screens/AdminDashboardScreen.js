@@ -3,6 +3,7 @@ import { toast } from "react-toastify";
 import { FiMoreVertical, FiTrash2 } from "react-icons/fi";
 import ReactDOM from "react-dom";
 import { useParams } from "react-router-dom";
+import { authorizedFetch } from "../../utils/api";
 
 const SERVER_URL = "http://localhost:5000";
 
@@ -16,6 +17,8 @@ export default function AdminDashboard() {
   const [showAddTeacherModal, setShowAddTeacherModal] = useState(false);
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
   const [showAddClassModal, setShowAddClassModal] = useState(false);
+  const [editData, setEditData] = useState(null); // объект с id и type
+
 
   useEffect(() => {
     fetchAll();
@@ -28,30 +31,74 @@ export default function AdminDashboard() {
   };
 
   const fetchTeachers = async () => {
-    const res = await fetch(`${SERVER_URL}/api/admin/${adminId}/teachers`);
+    const res = await authorizedFetch(`${SERVER_URL}/api/admin/${adminId}/teachers`);
     const data = await res.json();
     setTeachers(data || []);
   };
 
   const fetchClasses = async () => {
-    const res = await fetch(`${SERVER_URL}/api/admin/${adminId}/classes`);
+    const res = await authorizedFetch(`${SERVER_URL}/api/admin/${adminId}/classes`);
     const data = await res.json();
     setClasses(data || []);
   };
 
   const fetchStudents = async () => {
-    const res = await fetch(`${SERVER_URL}/api/admin/${adminId}/students`);
+    const res = await authorizedFetch(`${SERVER_URL}/api/admin/${adminId}/students`);
     const data = await res.json();
     setStudents(data || []);
   };
 
   const deleteItem = async (id, type) => {
+ 
+    
     if (!window.confirm("Are you sure you want to delete this?")) return;
-    let url = `${SERVER_URL}/api/${type}/${id}`;
-    await fetch(url, { method: "DELETE" });
-    toast.success(`${type} deleted!`);
-    fetchAll();
+  
+    let url = "";
+  
+    switch (type) {
+      case "teachers":
+        url = `${SERVER_URL}/api/teachers/${id}`;
+        break;
+  
+      case "students": {
+        const student = students.find((s) => s.id === id);
+        const teacherId = student?.teacherId;
+        if (!teacherId) {
+          toast.error("Teacher ID not found for this student");
+          return;
+        }
+        url = `${SERVER_URL}/api/teacher/${teacherId}/students/${id}`;
+        break;
+      }
+  
+      case "classes": {
+        url = `${SERVER_URL}/api/lessons/${id}`; // ✅ Используем только lessonId
+        break;
+      }
+  
+      default:
+        toast.error("Unknown type");
+        return;
+    }
+  
+    try {
+      const res = await authorizedFetch(url, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete");
+  
+      toast.success(`${type.slice(0, -1)} deleted!`);
+      fetchAll();
+    } catch (err) {
+      console.error("❌ Delete error:", err);
+      toast.error("Failed to delete");
+    }
   };
+  
+  const onEdit = (id, type) => {
+    setEditData({ id, type });
+    setMenuData(null); 
+  };
+  
+  
 
   const toggleMenu = (id, type, e) => {
     e.stopPropagation();
@@ -59,8 +106,39 @@ export default function AdminDashboard() {
     setMenuData({ id, type, x: rect.x + rect.width, y: rect.y + window.scrollY });
   };
 
+  const handleUpdateTeacher = async ({ id, name, email }) => {
+    await authorizedFetch(`${SERVER_URL}/api/teachers/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email }),
+    });
+    toast.success("Teacher updated!");
+    fetchTeachers();
+  };
+  
+  const handleUpdateStudent = async ({ id, teacherId, name, email }) => {
+    await authorizedFetch(`${SERVER_URL}/api/teacher/${teacherId}/students/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email }),
+    });
+    toast.success("Student updated!");
+    fetchStudents();
+  };
+  
+  const handleUpdateClass = async ({ id, className, studentIds }) => {
+    await authorizedFetch(`${SERVER_URL}/api/lessons/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ className, studentIds }),
+    });
+    toast.success("Class updated!");
+    fetchClasses();
+  };
+  
+
   const handleSaveTeacher = async ({ name, email, password }) => {
-    const res = await fetch(`${SERVER_URL}/api/admin/${adminId}/teachers`, {
+    const res = await authorizedFetch(`${SERVER_URL}/api/admin/${adminId}/teachers`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, email, password }),
@@ -72,7 +150,7 @@ export default function AdminDashboard() {
   };
 
   const handleSaveStudent = async ({ name, email, teacherId }) => {
-    const res = await fetch(`${SERVER_URL}/api/admin/${adminId}/students`, {
+    const res = await authorizedFetch(`${SERVER_URL}/api/admin/${adminId}/students`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, email, teacherId }),
@@ -84,7 +162,7 @@ export default function AdminDashboard() {
   };
 
   const handleSaveClass = async ({ className, meetingId, teacherId, studentIds }) => {
-    const res = await fetch(`${SERVER_URL}/api/admin/${adminId}/classes`, {
+    const res = await authorizedFetch(`${SERVER_URL}/api/admin/${adminId}/classes`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ className, meetingId, teacherId, studentIds }),
@@ -120,15 +198,16 @@ export default function AdminDashboard() {
           onMenuToggle={toggleMenu}
         />
       )}
-      {activeTab === "students" && (
-        <DataTable
-          title="students"
-          data={students}
-          columns={["name", "email"]}
-          onAdd={() => setShowAddStudentModal(true)}
-          onMenuToggle={toggleMenu}
-        />
-      )}
+{activeTab === "students" && (
+  <DataTable
+    title="students"
+    data={students}
+    columns={["name", "email", "classes"]}
+    onAdd={() => setShowAddStudentModal(true)}
+    onMenuToggle={toggleMenu}
+  />
+)}
+
       {activeTab === "classes" && (
         <DataTable
           title="classes"
@@ -138,9 +217,42 @@ export default function AdminDashboard() {
           onMenuToggle={toggleMenu}
         />
       )}
+{editData?.type === "teachers" && (
+  <AddTeacherModal
+    onClose={() => setEditData(null)}
+    onSave={(data) => handleUpdateTeacher({ ...data, id: editData.id })}
+    isEdit
+    initialData={teachers.find((t) => t.id === editData.id)}
+  />
+)}
+
+{editData?.type === "students" && (
+  <AddStudentModal
+    onClose={() => setEditData(null)}
+    onSave={(data) =>
+      handleUpdateStudent({ ...data, id: editData.id, teacherId: data.teacherId || students.find((s) => s.id === editData.id)?.teacherId })
+    }
+    isEdit
+    initialData={students.find((s) => s.id === editData.id)}
+    teachers={teachers}
+  />
+)}
+
+{editData?.type === "classes" && (
+  <AddClassModal
+    onClose={() => setEditData(null)}
+    onSave={(data) => handleUpdateClass({ ...data, id: editData.id })}
+    isEdit
+    initialData={classes.find((c) => c.id === editData.id)}
+    teachers={teachers}
+    students={students}
+  />
+)}
+
+
 
       {menuData && (
-        <ContextMenu data={menuData} onDelete={deleteItem} setMenuData={setMenuData} />
+        <ContextMenu data={menuData} onDelete={deleteItem} setMenuData={setMenuData} onEdit={onEdit}/>
       )}
 
       {showAddTeacherModal && (
@@ -180,15 +292,20 @@ function DataTable({ title, data, columns, onAdd, onMenuToggle }) {
             {columns.map((col) => (
               <th key={col} className="capitalize px-3 py-2">{col}</th>
             ))}
-            <th className="px-3 py-2 text-right"></th> {/* Без заголовка "Actions" */}
+            <th className="px-3 py-2 text-right"></th> 
           </tr>
         </thead>
         <tbody>
           {data.map((row) => (
             <tr key={row.id}>
-              {columns.map((col) => (
-                <td key={col} className="px-3 py-2">{row[col]}</td>
-              ))}
+    {columns.map((col) => (
+  <td key={col} className="px-3 py-2">
+    {col === "classes"
+      ? row.classes?.map((cls) => cls.className).join(", ")
+      : row[col]}
+  </td>
+))}
+
               <td className="text-right px-3 py-2">
                 <button
                   onClick={(e) => onMenuToggle(row.id, title, e)}
@@ -205,7 +322,7 @@ function DataTable({ title, data, columns, onAdd, onMenuToggle }) {
   );
 }
 
-function ContextMenu({ data, onDelete, setMenuData }) {
+function ContextMenu({ data, onDelete, setMenuData, onEdit }) {
   const menuRef = useRef();
   useEffect(() => {
     const click = (e) => {
@@ -231,6 +348,13 @@ function ContextMenu({ data, onDelete, setMenuData }) {
       >
         <FiTrash2 className="inline mr-2" /> Delete
       </button>
+      <button
+  className="px-4 py-2 w-full text-left hover:bg-gray-700"
+  onClick={() => onEdit(data.id, type)}
+>
+  ✏️ Edit
+</button>
+
     </div>,
     document.body
   );
@@ -280,19 +404,47 @@ function AddStudentModal({ onClose, onSave, teachers }) {
   });
 }
 
-function AddClassModal({ onClose, onSave, teachers, students }) {
+function AddClassModal({
+  onClose,
+  onSave,
+  teachers,
+  students,
+  isEdit = false,
+  initialData = {}
+}) {
   const [form, setForm] = useState({
-    className: "",
-    meetingId: "",
-    teacherId: "",
+    className: initialData.className || "",
+    meetingId: initialData.meetingId || `meet-${Math.random().toString(36).substring(7)}`,
+    teacherId: initialData.teacherId || "",
     studentIds: [],
   });
 
 
+useEffect(() => {
+  const fetchLinkedStudents = async () => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/lessons/${initialData.id}/students`);
+      const data = await res.json();
+      const ids = data.map((s) => s.id); 
+      setForm((prev) => ({ ...prev, studentIds: ids }));
+    } catch (err) {
+      console.error("❌ Failed to fetch lesson's students:", err);
+    }
+  };
+
+  if (isEdit && initialData.id) {
+    fetchLinkedStudents();
+  }
+}, [isEdit, initialData.id]);
+
+
+
   useEffect(() => {
-    const generatedId = `meet-${Math.random().toString(36).substring(7)}`;
-    setForm((prev) => ({ ...prev, meetingId: generatedId }));
-  }, []);
+    if (!isEdit) {
+      const generatedId = `meet-${Math.random().toString(36).substring(7)}`;
+      setForm((prev) => ({ ...prev, meetingId: generatedId }));
+    }
+  }, [isEdit]);
 
   const handleCheckbox = (id) => {
     setForm((prev) => ({
@@ -315,7 +467,7 @@ function AddClassModal({ onClose, onSave, teachers, students }) {
   return ReactDOM.createPortal(
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
       <div className="bg-white text-black p-6 rounded w-[450px] max-h-[90vh] overflow-y-auto">
-        <h2 className="text-xl font-bold mb-4">Add Class</h2>
+        <h2 className="text-xl font-bold mb-4">{isEdit ? "Edit Class" : "Add Class"}</h2>
         <input
           className="w-full mb-3 px-3 py-2 border rounded"
           placeholder="Class Name"
@@ -351,8 +503,6 @@ function AddClassModal({ onClose, onSave, teachers, students }) {
           </div>
         </div>
 
-  
-
         <div className="flex justify-end gap-2">
           <button onClick={onClose} className="border px-4 py-2 rounded text-gray-600">
             Cancel
@@ -366,6 +516,8 @@ function AddClassModal({ onClose, onSave, teachers, students }) {
     document.body
   );
 }
+
+
 
 
 function renderModal(title, form, setForm, onSubmit, onClose, customFields = {}) {

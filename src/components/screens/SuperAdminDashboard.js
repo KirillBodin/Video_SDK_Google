@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import { FiMoreVertical, FiEdit, FiEye, FiTrash2 } from "react-icons/fi";
 import ReactDOM from "react-dom";
+import { authorizedFetch } from "../../utils/api";
 
 const SERVER_URL = "http://localhost:5000";
 
@@ -12,7 +13,7 @@ export default function SuperAdminDashboard() {
   const [teachers, setTeachers] = useState([]);
   const [classes, setClasses] = useState([]);
   const [students, setStudents] = useState([]);
-  const [admins, setAdmins] = useState([]); // <-- new state for admins
+  const [admins, setAdmins] = useState([]); 
 
   // Loading & context menu
   const [loading, setLoading] = useState(false);
@@ -20,9 +21,9 @@ export default function SuperAdminDashboard() {
 
   // Modal states
   const [showTeacherModal, setShowTeacherModal] = useState(false);
-  const [showClassModal, setShowClassModal] = useState(false); // we will not show the button, but keep the logic
+  const [showClassModal, setShowClassModal] = useState(false); 
   const [showStudentModal, setShowStudentModal] = useState(false);
-
+  const [showDirectorModal, setShowDirectorModal] = useState(false);
   // Form data
   const [newTeacherData, setNewTeacherData] = useState({
     teacherName: "",
@@ -40,11 +41,32 @@ export default function SuperAdminDashboard() {
     classId: "",
   });
 
+
+   const [newDirectorData, setNewDirectorData] = useState({
+       name: "",
+      email: "",
+       password: ""
+     });
+
   useEffect(() => {
     // Fetch all data (teachers, classes, students, admins)
     fetchAllData();
     fetchAdmins(); // get admins
   }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (!e.target.closest(".portal-menu")) {
+        setMenuData(null);
+      }
+    };
+  
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+  
 
   // Fetch all data in parallel
   const fetchAllData = async () => {
@@ -61,7 +83,7 @@ export default function SuperAdminDashboard() {
   // Fetch admins
   const fetchAdmins = async () => {
     try {
-      const res = await fetch(`${SERVER_URL}/api/super-admin/admins`);
+      const res = await authorizedFetch(`${SERVER_URL}/api/super-admin/admins`);
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.error || "Failed to fetch admins");
@@ -76,7 +98,7 @@ export default function SuperAdminDashboard() {
   // Fetch teachers
   const fetchTeachers = async () => {
     try {
-      const res = await fetch(`${SERVER_URL}/api/super-admin/teachers`);
+      const res = await authorizedFetch(`${SERVER_URL}/api/super-admin/teachers`);
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.error || "Failed to fetch teachers");
@@ -91,7 +113,7 @@ export default function SuperAdminDashboard() {
   // Fetch classes
   const fetchClasses = async () => {
     try {
-      const res = await fetch(`${SERVER_URL}/api/super-admin/classes`);
+      const res = await authorizedFetch(`${SERVER_URL}/api/super-admin/classes`);
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.error || "Failed to fetch classes");
@@ -106,7 +128,7 @@ export default function SuperAdminDashboard() {
   // Fetch students
   const fetchStudents = async () => {
     try {
-      const res = await fetch(`${SERVER_URL}/api/super-admin/students`);
+      const res = await authorizedFetch(`${SERVER_URL}/api/super-admin/students`);
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.error || "Failed to fetch students");
@@ -126,7 +148,7 @@ export default function SuperAdminDashboard() {
       return;
     }
     try {
-      const res = await fetch(`${SERVER_URL}/api/super-admin/teachers`, {
+      const res = await authorizedFetch(`${SERVER_URL}/api/super-admin/teachers`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newTeacherData),
@@ -158,7 +180,7 @@ export default function SuperAdminDashboard() {
       return;
     }
     try {
-      const res = await fetch(`${SERVER_URL}/api/super-admin/classes`, {
+      const res = await authorizedFetch(`${SERVER_URL}/api/super-admin/classes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newClassData),
@@ -185,7 +207,7 @@ export default function SuperAdminDashboard() {
       return;
     }
     try {
-      const res = await fetch(`${SERVER_URL}/api/super-admin/students`, {
+      const res = await authorizedFetch(`${SERVER_URL}/api/super-admin/students`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newStudentData),
@@ -203,8 +225,68 @@ export default function SuperAdminDashboard() {
       toast.error(err.message);
     }
   };
+  const handleAddDirector = async () => {
+    const { name, email, password } = newDirectorData;
+    if (!name || !email || !password) {
+      toast.info("Please fill in all director fields!");
+      return;
+    }
+  
+    try {
+      const res = await authorizedFetch(`${SERVER_URL}/api/super-admin/admins`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
+      });
+  
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to create director");
+      }
+  
+      toast.success("Director added successfully!");
+      fetchAdmins(); 
+      setNewDirectorData({ name: "", email: "", password: "" });
+      setShowDirectorModal(false);
+    } catch (err) {
+      console.error("Error creating director:", err);
+      toast.error(err.message);
+    }
+  };
+  
 
-  // Delete item
+
+
+ const handleEditItem = (data) => {
+  setMenuData(null);
+
+  if (data.type === "teachers") {
+   
+  } else if (data.type === "classes") {
+   
+  } else if (data.type === "students") {
+    
+  } else if (data.type === "directors") {
+   
+    const director = admins.find((d) => d.id === data.id);
+    if (!director) return;
+
+    
+    setNewDirectorData({
+      name: director.name || "",
+      email: director.email || "",
+      password: ""
+    });
+
+   
+    setShowDirectorModal(true);
+
+  
+  }
+};
+
+
+
   const deleteItem = async (id, type) => {
     if (!window.confirm(`Are you sure you want to delete this ${type}?`)) return;
     try {
@@ -216,18 +298,22 @@ export default function SuperAdminDashboard() {
       } else if (type === "students") {
         url = `${SERVER_URL}/api/super-admin/students/${id}`;
       }
-      const res = await fetch(url, { method: "DELETE" });
+      else if (type === "directors") {
+            url = `${SERVER_URL}/api/super-admin/admins/${id}`;
+          }
+      const res = await authorizedFetch(url, { method: "DELETE" });
       if (!res.ok) throw new Error(`Failed to delete ${type}`);
       toast.success(`${type} deleted successfully!`);
       if (type === "teachers") setTeachers((prev) => prev.filter((t) => t.id !== id));
       if (type === "classes") setClasses((prev) => prev.filter((c) => c.id !== id));
       if (type === "students") setStudents((prev) => prev.filter((s) => s.id !== id));
+      if (type === "directors") setAdmins((prev) => prev.filter((d) => d.id !== id));
     } catch (err) {
       toast.error(err.message);
     }
   };
 
-  // Toggle context menu
+ 
   const toggleMenu = (id, type, event) => {
     event.stopPropagation();
     const rect = event.currentTarget.getBoundingClientRect();
@@ -249,7 +335,7 @@ export default function SuperAdminDashboard() {
 
       {/* Tabs */}
       <div className="flex mb-4 border-b border-gray-700">
-        {["teachers", "classes", "students"].map((tab) => (
+        {["teachers", "classes", "students", "directors"].map((tab) => (
           <button
             key={tab}
             className={`px-4 py-2 ${activeTab === tab ? "border-b-2 border-blue-500" : ""}`}
@@ -334,6 +420,29 @@ export default function SuperAdminDashboard() {
           />
         </div>
       )}
+{activeTab === "directors" && (
+  <div className="w-full max-w-5xl">
+    <div className="flex justify-between items-center mb-4">
+      <h3 className="text-xl font-semibold">Directors</h3>
+      <button
+        className="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded"
+        onClick={() => setShowDirectorModal(true)} 
+      >
+        Add Director
+      </button>
+    </div>
+    <DataTable
+      title="Directors"
+      data={admins} 
+      columns={[
+        { label: "Name", key: "name" },
+        { label: "Email", key: "email" },
+      ]}
+      actions={{ view: true, edit: true, delete: true }}
+      onMenuToggle={toggleMenu}
+    />
+  </div>
+)}
 
       {/* Modals */}
       <TeacherModal
@@ -361,11 +470,20 @@ export default function SuperAdminDashboard() {
         classes={classes}
       />
 
+<DirectorModal
+  visible={showDirectorModal}
+  onClose={() => setShowDirectorModal(false)}
+  onSave={handleAddDirector}
+  formData={newDirectorData}
+  setFormData={setNewDirectorData}
+/>
+
+
       {menuData && (
         <ContextMenu
           data={menuData}
           onDelete={deleteItem}
-          onEdit={() => console.log("Edit", menuData)}
+          onEdit={handleEditItem}
           onView={() => console.log("View", menuData)}
           setMenuData={setMenuData}
         />
@@ -650,6 +768,67 @@ function StudentModal({ visible, onClose, onSave, formData, setFormData, classes
               </option>
             ))}
           </select>
+        </div>
+        <div className="flex justify-end mt-4 gap-2">
+          <button
+            onClick={onClose}
+            className="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onSave}
+            className="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded"
+          >
+            Save
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+function DirectorModal({ visible, onClose, onSave, formData, setFormData }) {
+  if (!visible) return null;
+
+  return ReactDOM.createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Overlay */}
+      <div
+        className="absolute inset-0 bg-black bg-opacity-50"
+        onClick={onClose}
+      />
+      {/* Modal content */}
+      <div className="relative bg-gray-800 text-white rounded-lg p-6 w-full max-w-sm">
+        <h2 className="text-xl font-semibold mb-4">Add / Edit Director</h2>
+        <div className="flex flex-col gap-3">
+          <input
+            type="text"
+            placeholder="Director Name"
+            className="px-4 py-2 rounded bg-gray-700"
+            value={formData.name}
+            onChange={(e) =>
+              setFormData({ ...formData, name: e.target.value })
+            }
+          />
+          <input
+            type="email"
+            placeholder="Director Email"
+            className="px-4 py-2 rounded bg-gray-700"
+            value={formData.email}
+            onChange={(e) =>
+              setFormData({ ...formData, email: e.target.value })
+            }
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            className="px-4 py-2 rounded bg-gray-700"
+            value={formData.password}
+            onChange={(e) =>
+              setFormData({ ...formData, password: e.target.value })
+            }
+          />
         </div>
         <div className="flex justify-end mt-4 gap-2">
           <button

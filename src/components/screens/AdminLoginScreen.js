@@ -26,15 +26,16 @@ export default function AdminLoginScreen() {
       });
   
       const data = await res.json();
-  
+      
       if (res.ok) {
+        localStorage.setItem("token", data.token);
         toast.success("Login successful!");
         localStorage.setItem("token", data.token);
         localStorage.setItem("role", data.role);
         localStorage.setItem("schoolId", data.schoolId || "");
         localStorage.setItem("adminId", data.adminId || "");
         localStorage.setItem("teacherId", data.teacherId || "");
-        localStorage.setItem("superAdminId", data.adminId || ""); // Суперадмин использует adminIdаа
+        localStorage.setItem("superAdminId", data.adminId || ""); 
         localStorage.setItem("name", data.name || "");
   
         let rolePath = "";
@@ -42,13 +43,13 @@ export default function AdminLoginScreen() {
   
         if (data.role === "superadmin") {
           rolePath = "superadmin";
-          userId = data.adminId; // ✅ Передаём adminId как superAdminId
+          userId = data.adminId; 
         } else if (data.role === "admin") {
           rolePath = "admin";
-          userId = data.adminId; // ✅ Передаём adminId
+          userId = data.adminId; 
         } else if (data.role === "teacher") {
           rolePath = "teacher";
-          userId = data.teacherId; // ✅ Передаём teacherId
+          userId = data.teacherId; 
         }
   
         navigate(`/${rolePath}/${userId}/${data.name}`);

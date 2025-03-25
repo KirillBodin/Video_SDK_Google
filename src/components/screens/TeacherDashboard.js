@@ -3,6 +3,7 @@ import ReactDOM from "react-dom";
 import { useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import { FiMoreVertical, FiCopy, FiEye, FiEdit, FiTrash2 } from "react-icons/fi";
+import { authorizedFetch } from "../../utils/api";
 
 const SERVER_URL = "http://localhost:5000";
 
@@ -17,6 +18,7 @@ function AddClassModal({
   const [className, setClassName] = useState("");
   const [selectedStudentId, setSelectedStudentId] = useState("");
   const [selectedStudentIds, setSelectedStudentIds] = useState([]);
+
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -172,32 +174,46 @@ useEffect(() => {
 
 
 function EditClassModal({ onClose, lessonToEdit, onUpdateClass }) {
-
   const [className, setClassName] = useState(lessonToEdit.className);
   const [meetingId, setMeetingId] = useState(lessonToEdit.meetingId);
-  const [studentsCount, setStudentsCount] = useState(
-    lessonToEdit.studentsCount || 0
+  const [selectedStudentIds, setSelectedStudentIds] = useState(
+    lessonToEdit.selectedStudentIds || []
   );
+  const [allStudents, setAllStudents] = useState([]);
+
+  useEffect(() => {
+    fetch(`http://localhost:5000/api/teacher/${lessonToEdit.teacherId}/students`)
+      .then((res) => res.json())
+      .then((data) => setAllStudents(data))
+      .catch((err) => console.error("Error loading students:", err));
+  }, [lessonToEdit.teacherId]);
 
   const handleSubmit = () => {
-    
     const updatedLesson = {
-      ...lessonToEdit,
+      id: lessonToEdit.id,
       className,
       meetingId,
-      studentsCount: Number(studentsCount), 
+      studentsCount: selectedStudentIds.length,
+      studentIds: selectedStudentIds,
     };
 
     onUpdateClass(updatedLesson);
     onClose();
   };
 
+  const handleCheckboxChange = (id) => {
+    setSelectedStudentIds((prev) =>
+      prev.includes(id)
+        ? prev.filter((sid) => sid !== id)
+        : [...prev, id]
+    );
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="relative bg-white text-black w-[400px] min-h-[300px] rounded-md p-6 flex flex-col">
+      <div className="relative bg-white text-black w-[600px] min-h-[400px] rounded-md p-6 flex flex-col">
         <h2 className="text-xl font-bold mb-4">Edit Class</h2>
 
-        {/* Поля для редактирования */}
         <label className="mb-1 font-semibold">Class Name</label>
         <input
           type="text"
@@ -207,23 +223,20 @@ function EditClassModal({ onClose, lessonToEdit, onUpdateClass }) {
           placeholder="Class Name"
         />
 
-        <label className="mb-1 font-semibold">Meeting ID</label>
-        <input
-          type="text"
-          value={meetingId}
-          onChange={(e) => setMeetingId(e.target.value)}
-          className="mb-3 px-3 py-2 border rounded"
-          placeholder="Meeting ID"
-        />
-
-        <label className="mb-1 font-semibold">Students Count</label>
-        <input
-          type="number"
-          value={studentsCount}
-          onChange={(e) => setStudentsCount(e.target.value)}
-          className="mb-4 px-3 py-2 border rounded"
-          placeholder="Number of Students"
-        />
+        <label className="mb-1 font-semibold">Students</label>
+        <div className="overflow-y-auto border rounded px-3 py-2 mb-4 h-32 space-y-1">
+          {allStudents.map((stud) => (
+            <label key={stud.id} className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                value={stud.id}
+                checked={selectedStudentIds.includes(String(stud.id))}
+                onChange={() => handleCheckboxChange(String(stud.id))}
+              />
+              <span>{stud.name}</span>
+            </label>
+          ))}
+        </div>
 
         <div className="mt-auto flex gap-2 justify-end">
           <button
@@ -243,6 +256,9 @@ function EditClassModal({ onClose, lessonToEdit, onUpdateClass }) {
     </div>
   );
 }
+
+
+
 /* =================== StudentModal (добавление / редактирование ученика) =================== */
 function StudentModal({ onClose, onSave, initialData }) {
   const isEdit = !!initialData;
@@ -350,7 +366,7 @@ export default function TeacherDashboard() {
   const handleDeleteStudent = async (studentId) => {
     if (!window.confirm("Are you sure you want to delete this student?")) return;
     try {
-      const res = await fetch(`${SERVER_URL}/api/teacher/${teacherId}/students/${studentId}`, {
+      const res = await authorizedFetch(`${SERVER_URL}/api/teacher/${teacherId}/students/${studentId}`, {
         method: "DELETE",
       });
       const data = await res.json();
@@ -381,14 +397,14 @@ export default function TeacherDashboard() {
       return;
     }
     try {
-      const schoolRes = await fetch(`${SERVER_URL}/api/teacher/${teacherId}/students`);
+      const schoolRes = await authorizedFetch(`${SERVER_URL}/api/teacher/${teacherId}/students`);
       if (!schoolRes.ok) throw new Error("Failed to fetch school");
       
   
       const name = `${firstName.trim()} ${lastName.trim()}`;
   
       if (id) {
-        const res = await fetch(`${SERVER_URL}/api/teacher/${teacherId}/students/${id}`, {
+        const res = await authorizedFetch(`${SERVER_URL}/api/teacher/${teacherId}/students/${id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name, email }),
@@ -396,7 +412,7 @@ export default function TeacherDashboard() {
         if (!res.ok) throw new Error("Failed to update student");
         toast.success(`Student "${name}" updated!`);
       } else {
-        const res = await fetch(`${SERVER_URL}/api/teacher/${teacherId}/students`, {
+        const res = await authorizedFetch(`${SERVER_URL}/api/teacher/${teacherId}/students`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name, email }),
@@ -417,7 +433,7 @@ export default function TeacherDashboard() {
   /* ========== Получаем уроки / учителя / студентов ========== */
   const fetchLessons = async () => {
     try {
-      const res = await fetch(`${SERVER_URL}/api/teachers/${teacherId}/lessons`);
+      const res = await authorizedFetch(`${SERVER_URL}/api/teachers/${teacherId}/lessons`);
       const data = await res.json();
       if (res.ok) {
         setLessons(data);
@@ -432,7 +448,7 @@ export default function TeacherDashboard() {
 
   const fetchTeacherEmail = async () => {
     try {
-      const res = await fetch(`${SERVER_URL}/api/teachers/${teacherId}`);
+      const res = await authorizedFetch(`${SERVER_URL}/api/teachers/${teacherId}`);
       const data = await res.json();
       if (res.ok) {
         setTeacherEmail(data.email);
@@ -446,7 +462,7 @@ export default function TeacherDashboard() {
 
   const fetchStudents = async () => {
     try {
-      const res = await fetch(`${SERVER_URL}/api/teacher/${teacherId}/students`);
+      const res = await authorizedFetch(`${SERVER_URL}/api/teacher/${teacherId}/students`);
       if (!res.ok) throw new Error("Failed to fetch students");
       const data = await res.json();
       setStudents(data); 
@@ -462,7 +478,7 @@ export default function TeacherDashboard() {
     if (!window.confirm("Are you sure you want to delete this lesson?")) return;
 
     try {
-      const res = await fetch(`${SERVER_URL}/api/lessons/${lessonId}`, {
+      const res = await authorizedFetch(`${SERVER_URL}/api/lessons/${lessonId}`, {
         method: "DELETE",
       });
       const data = await res.json();
@@ -513,7 +529,7 @@ export default function TeacherDashboard() {
       const meetingId = `meet-${Math.random().toString(36).substring(7)}`;
       const body = { className, meetingId, teacherEmail, studentIds };
   
-      const res = await fetch(`${SERVER_URL}/api/teachers/${teacherId}/lessons`, {
+      const res = await authorizedFetch(`${SERVER_URL}/api/teachers/${teacherId}/lessons`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -534,12 +550,12 @@ export default function TeacherDashboard() {
       return;
     }
     try {
-      const schoolRes = await fetch(`${SERVER_URL}/api/teacher/${teacherId}/students`);
+      const schoolRes = await authorizedFetch(`${SERVER_URL}/api/teacher/${teacherId}/students`);
       if (!schoolRes.ok) throw new Error("Failed to fetch school");
       
 
       const name = `${firstName.trim()} ${lastName.trim()}`;
-      const res = await fetch(`${SERVER_URL}/api/teacher/${teacherId}/students`, {
+      const res = await authorizedFetch(`${SERVER_URL}/api/teacher/${teacherId}/students`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email }),
@@ -557,14 +573,29 @@ export default function TeacherDashboard() {
   };
 
 
-  const handleEditLessonClick = (lessonId) => {
+  const handleEditLessonClick = async (lessonId) => {
     const lesson = lessons.find((l) => l.id === lessonId);
     if (!lesson) return;
-
-    setLessonToEdit(lesson);
-    setShowEditClassModal(true);
-    setMenuData(null); 
+  
+    try {
+      const res = await authorizedFetch(`${SERVER_URL}/api/lessons/${lessonId}/students`);
+      const studentData = await res.json();
+  
+      if (!res.ok) {
+        toast.error("Failed to load class students");
+        return;
+      }
+  
+      const studentIds = studentData.map((s) => String(s.id));
+      setLessonToEdit({ ...lesson, selectedStudentIds: studentIds });
+      setShowEditClassModal(true);
+      setMenuData(null);
+    } catch (error) {
+      console.error("Error fetching students for class", error);
+      toast.error("Failed to fetch class students");
+    }
   };
+  
 
 
   const handleUpdateClass = async (updatedLesson) => {
@@ -574,9 +605,10 @@ export default function TeacherDashboard() {
         className: updatedLesson.className,
         meetingId: updatedLesson.meetingId,
         studentsCount: updatedLesson.studentsCount,
+        studentIds: updatedLesson.studentIds,
       };
 
-      const res = await fetch(`${SERVER_URL}/api/lessons/${updatedLesson.id}`, {
+      const res = await authorizedFetch(`${SERVER_URL}/api/lessons/${updatedLesson.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
