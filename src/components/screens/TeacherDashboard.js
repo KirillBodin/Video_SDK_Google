@@ -430,7 +430,7 @@ export default function TeacherDashboard() {
   };
   
 
-  /* ========== Получаем уроки / учителя / студентов ========== */
+
   const fetchLessons = async () => {
     try {
       const res = await authorizedFetch(`${SERVER_URL}/api/teachers/${teacherId}/lessons`);
@@ -675,7 +675,7 @@ export default function TeacherDashboard() {
                 <tbody>
                   {lessons.map((lesson) => {
          
-                    const classURL = `${window.location.origin}${lesson.classUrl}`;
+                    const classURL = `${window.location.origin}/${lesson.classUrl}`;
                     return (
                       <tr key={lesson.id} className="bg-gray-800 border-b border-gray-700">
                         <td className="px-4 py-3 font-semibold">{lesson.className}</td>

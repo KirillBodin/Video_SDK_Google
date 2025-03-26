@@ -4,17 +4,19 @@ import WaitingRoomScreen from "./WaitingRoomScreen";
 import StaticMeetingJoiner from "../StaticMeetingJoiner";
 
 export default function JoinMeetingWrapper() {
-  const { slug: meetingId, teacherName, className } = useParams();
+  const { slug, teacherName, className } = useParams();
   const [step, setStep] = useState("email");
   const [userEmail, setUserEmail] = useState("");
   const [token, setToken] = useState(null);
   const [error, setError] = useState("");
+  const [realMeetingId, setRealMeetingId] = useState(null);
+
   const SERVER_URL = process.env.REACT_APP_SERVER_URL;
+
   const handleMeetingAvailable = ({ token }) => {
     setToken(token);
     setStep("meeting");
   };
-  
 
   const handleEmailSubmit = async () => {
     if (!userEmail) return;
@@ -23,12 +25,13 @@ export default function JoinMeetingWrapper() {
       const res = await fetch(`${SERVER_URL}/api/student/check-access`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slug: meetingId, email: userEmail }),
+        body: JSON.stringify({ slug, email: userEmail }),
       });
 
       const data = await res.json();
 
       if (res.ok && data.access) {
+        setRealMeetingId(data.meetingId); 
         setStep("waiting");
       } else {
         setError("You do not have access to this class.");
@@ -64,7 +67,7 @@ export default function JoinMeetingWrapper() {
   if (step === "waiting") {
     return (
       <WaitingRoomScreen
-        meetingId={meetingId}
+        meetingId={realMeetingId} 
         onMeetingAvailable={({ token }) => handleMeetingAvailable({ token })}
       />
     );
@@ -73,7 +76,7 @@ export default function JoinMeetingWrapper() {
   if (step === "meeting") {
     return (
       <StaticMeetingJoiner
-        meetingId={meetingId}
+        meetingId={realMeetingId} 
         token={token}
         userName={userEmail.split("@")[0]}
       />
