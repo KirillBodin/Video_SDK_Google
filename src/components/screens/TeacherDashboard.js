@@ -526,8 +526,8 @@ export default function TeacherDashboard() {
         return;
       }
   
-      const meetingId = `meet-${Math.random().toString(36).substring(7)}`;
-      const body = { className, meetingId, teacherEmail, studentIds };
+      const slug = `meet-${Math.random().toString(36).substring(7)}`;
+      const body = { className, slug, teacherEmail, studentIds };
   
       const res = await authorizedFetch(`${SERVER_URL}/api/teachers/${teacherId}/lessons`, {
         method: "POST",
