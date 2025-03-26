@@ -8,7 +8,7 @@ import "react-toastify/dist/ReactToastify.css";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
-  <BrowserRouter> {/* ✅ Оборачиваем в BrowserRouter */}
+  <BrowserRouter> 
     <ToastContainer
       toastClassName={() =>
         "relative flex py-4 px-3 rounded overflow-hidden cursor-pointer bg-white shadow-lg"
