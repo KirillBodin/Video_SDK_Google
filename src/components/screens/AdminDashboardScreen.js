@@ -5,7 +5,7 @@ import ReactDOM from "react-dom";
 import { useParams } from "react-router-dom";
 import { authorizedFetch } from "../../utils/api";
 
-const SERVER_URL = "http://localhost:5000";
+const SERVER_URL = "https://backendvideosdk-production.up.railway.app";
 
 export default function AdminDashboard() {
   const { adminId } = useParams();
@@ -423,7 +423,7 @@ function AddClassModal({
 useEffect(() => {
   const fetchLinkedStudents = async () => {
     try {
-      const res = await fetch(`http://localhost:5000/api/lessons/${initialData.id}/students`);
+      const res = await fetch(`${SERVER_URL}/api/lessons/${initialData.id}/students`);
       const data = await res.json();
       const ids = data.map((s) => s.id); 
       setForm((prev) => ({ ...prev, studentIds: ids }));

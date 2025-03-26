@@ -5,7 +5,7 @@ import { toast } from "react-toastify";
 import { FiMoreVertical, FiCopy, FiEye, FiEdit, FiTrash2 } from "react-icons/fi";
 import { authorizedFetch } from "../../utils/api";
 
-const SERVER_URL = "http://localhost:5000";
+const SERVER_URL = "https://backendvideosdk-production.up.railway.app";
 
 function AddClassModal({
   onClose,
@@ -182,7 +182,7 @@ function EditClassModal({ onClose, lessonToEdit, onUpdateClass }) {
   const [allStudents, setAllStudents] = useState([]);
 
   useEffect(() => {
-    fetch(`http://localhost:5000/api/teacher/${lessonToEdit.teacherId}/students`)
+    fetch(`${SERVER_URL}/api/teacher/${lessonToEdit.teacherId}/students`)
       .then((res) => res.json())
       .then((data) => setAllStudents(data))
       .catch((err) => console.error("Error loading students:", err));

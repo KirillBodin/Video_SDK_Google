@@ -1,5 +1,5 @@
 const API_BASE_URL = "https://api.videosdk.live";
-const SERVER_URL = "http://localhost:5000"; 
+const SERVER_URL = "https://backendvideosdk-production.up.railway.app"; 
 
 
 export const getToken = async () => {

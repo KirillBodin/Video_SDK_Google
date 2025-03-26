@@ -9,7 +9,7 @@ export default function JoinMeetingWrapper() {
   const [userEmail, setUserEmail] = useState("");
   const [token, setToken] = useState(null);
   const [error, setError] = useState("");
-
+  const SERVER_URL = "https://backendvideosdk-production.up.railway.app";
   const handleMeetingAvailable = ({ token }) => {
     setToken(token);
     setStep("meeting");
@@ -20,7 +20,7 @@ export default function JoinMeetingWrapper() {
     if (!userEmail) return;
 
     try {
-      const res = await fetch("http://localhost:5000/api/student/check-access", {
+      const res = await fetch(`${SERVER_URL}/api/student/check-access`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ slug: meetingId, email: userEmail }),

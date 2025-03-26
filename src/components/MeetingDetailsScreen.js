@@ -5,7 +5,7 @@ import { jwtDecode } from "jwt-decode";
 
 
 
-const SERVER_URL = "http://localhost:5000";
+const SERVER_URL = "https://backendvideosdk-production.up.railway.app";
 
 
 export function MeetingDetailsScreen({

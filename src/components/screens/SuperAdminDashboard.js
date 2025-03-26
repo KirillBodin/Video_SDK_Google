@@ -4,7 +4,7 @@ import { FiMoreVertical, FiEdit, FiEye, FiTrash2 } from "react-icons/fi";
 import ReactDOM from "react-dom";
 import { authorizedFetch } from "../../utils/api";
 
-const SERVER_URL = "http://localhost:5000";
+const SERVER_URL = "https://backendvideosdk-production.up.railway.app";
 
 export default function SuperAdminDashboard() {
   const [activeTab, setActiveTab] = useState("teachers");
