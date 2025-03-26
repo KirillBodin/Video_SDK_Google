@@ -38,7 +38,7 @@ function App() {
   }, [token, meetingId, isMeetingStarted]);
 
   return (
-    
+    <Router>
       <MeetingAppProvider>
         <Routes>
           <Route
@@ -120,7 +120,7 @@ function App() {
 
         </Routes>
       </MeetingAppProvider>
-    
+      </Router>
   );
 }
 
