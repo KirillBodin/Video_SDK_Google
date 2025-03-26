@@ -10,7 +10,7 @@ export default function SchoolAdminDashboard() {
   const [teacherName, setTeacherName] = useState("");
   const [teacherEmail, setTeacherEmail] = useState("");
   const [teacherPassword, setTeacherPassword] = useState("");
-  const SERVER_URL = "https://backendvideosdk-production.up.railway.app";
+  const SERVER_URL = process.env.REACT_APP_SERVER_URL;
 
   // 📡 Загружаем список учителей
   const fetchTeachers = async () => {

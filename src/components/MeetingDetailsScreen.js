@@ -5,7 +5,7 @@ import { jwtDecode } from "jwt-decode";
 
 
 
-const SERVER_URL = "https://backendvideosdk-production.up.railway.app";
+const SERVER_URL = process.env.REACT_APP_SERVER_URL;
 
 
 export function MeetingDetailsScreen({

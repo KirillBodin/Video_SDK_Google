@@ -7,7 +7,7 @@ const adminRoles = {
   SCHOOL_ADMIN: "admin",
   TEACHER: "teacher",
 };
-const SERVER_URL = "https://backendvideosdk-production.up.railway.app";
+const SERVER_URL = process.env.REACT_APP_SERVER_URL;
 console.log(process.env.REACT_APP_SERVER_URL);
 console.log(window.process?.env?.REACT_APP_SERVER_URL);
 

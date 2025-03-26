@@ -4,7 +4,7 @@ import { toast } from "react-toastify";
 import { MeetingContainer } from "../meeting/MeetingContainer";
 import { MeetingProvider } from "@videosdk.live/react-sdk";
 
-const SERVER_URL = "https://backendvideosdk-production.up.railway.app";
+const SERVER_URL = process.env.REACT_APP_SERVER_URL;
 
 export function StaticMeetingJoiner({ onClickStartMeeting }) {
   const { slug, teacherName, className } = useParams();
