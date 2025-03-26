@@ -23,7 +23,7 @@ export default function JoinMeetingWrapper() {
       const res = await fetch(`${SERVER_URL}/api/student/check-access`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ meetingId: meetingId, email: userEmail }),
+        body: JSON.stringify({ slug: meetingId, email: userEmail }),
       });
 
       const data = await res.json();
