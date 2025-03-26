@@ -19,7 +19,7 @@ const ParticipantMicStream = memo(({ participantId }) => {
   useEffect(() => {
     navigator.mediaDevices.enumerateDevices().then((devices) => {
       const audioInputs = devices.filter((device) => device.kind === "audioinput");
-      console.log("Available audio input devices:", audioInputs);
+      
     });
 
     if (micStream) {
@@ -28,7 +28,7 @@ const ParticipantMicStream = memo(({ participantId }) => {
       const audioElement = new Audio();
       audioElement.srcObject = mediaStream;
       audioElement.play();
-      console.log(`Playing audio stream for participant ${participantId}`);
+      
     }
   }, [micStream, participantId]);
   return null;
@@ -86,11 +86,11 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
     if (highlightMessages.length > 0) {
       const lastMessage = highlightMessages[highlightMessages.length - 1];
       if (lastMessage?.message?.participantId === "none") {
-        setHighlightedParticipantId(null); // Сбрасываем рамку
-        console.log("✅ Highlight reset (no participant highlighted)");
+        setHighlightedParticipantId(null); 
+        
       } else if (lastMessage?.message?.participantId) {
         setHighlightedParticipantId(lastMessage.message.participantId);
-        console.log(`🔦 Highlighted participant: ${lastMessage.message.participantId}`);
+      
       }
     }
   }, [highlightMessages]);
@@ -98,11 +98,11 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
 
   function onParticipantJoined(participant) {
     participant && participant.setQuality("high");
-    console.log(`Participant joined: ${participant.displayName}`);
+    
   }
 
   function onEntryResponded(participantId, name) {
-    console.log(`onEntryResponded: ${participantId} - ${name}`);
+    
     if (mMeetingRef.current?.localParticipant?.id === participantId) {
       if (name === "allowed") {
         setLocalParticipantAllowedJoin(true);
@@ -115,12 +115,10 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
     }
   }
 
-  function onMeetingJoined() {
-    console.log("onMeetingJoined");
-  }
+ 
 
   function onMeetingLeft() {
-    console.log("onMeetingLeft");
+   
     setSelectedMic({ id: null, label: null });
     setSelectedWebcam({ id: null, label: null });
     setSelectedSpeaker({ id: null, label: null });
@@ -129,11 +127,11 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
 
   const _handleOnError = (data) => {
     const { code, message } = data;
-    console.log("meetingErr", code, message);
+    
     const joiningErrCodes = [4001, 4002, 4003, 4004, 4005, 4006, 4007, 4008, 4009, 4010];
     const isJoiningError = joiningErrCodes.findIndex((c) => c === code) !== -1;
     const isCriticalError = `${code}`.startsWith("500");
-    console.log(`Error received: code ${code}, isCriticalError: ${isCriticalError}`);
+   
     new Audio(
         isCriticalError
             ? `https://static.videosdk.live/prebuilt/notification_critical_err.mp3`
@@ -147,7 +145,7 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
   };
 
   const _handleOnRecordingStateChanged = ({ status }) => {
-    console.log("Recording state changed:", status);
+    
     if (
         status === Constants.recordingEvents.RECORDING_STARTED ||
         status === Constants.recordingEvents.RECORDING_STOPPED
@@ -177,7 +175,7 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
     onParticipantJoined,
     onEntryResponded,
     onMeetingJoined: () => {
-      console.log("🔇 Muting mic and disabling webcam by default...");
+     
 
       setTimeout(() => {
         if (mMeeting.muteMic) {
@@ -206,7 +204,7 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
   useEffect(() => {
     const handleGlobalKeyDown = (event) => {
       const key = event.key;
-      console.log(`🎹 [GLOBAL SHORTCUT] Pressed key: ${key}`);
+      
 
       if (!mMeeting) {
         console.warn("❌ Meeting instance is not available!");
@@ -220,7 +218,7 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
       setParticipantsArray(participantArray);
 
       if (key === "5") {
-        console.log(`🎤 Toggling mic for all. Current state: ${globalMuteState ? "Muted" : "Unmuted"}`);
+        
         participantArray.forEach((participant) => {
           controlPublish({
             type: "control",
@@ -244,7 +242,7 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
           const randomIndex = Math.floor(Math.random() * availableParticipants.length);
           const participant = availableParticipants[randomIndex];
 
-          console.log(`🎲 Randomly selected: ${participant.displayName} (ID: ${participant.id})`);
+          
           setSelectedParticipant(participant.id);
           lastUnmutedParticipantIdRef.current = participant.id;
 
@@ -261,7 +259,7 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
         if (index < participantArray.length) {
           const participant = participantArray[index];
 
-          console.log(`✅ Highlighting ${participant.displayName} (ID: ${participant.id})`);
+          
           highlightPublish({ participantId: participant.id });
 
           lastUnmutedParticipantIdRef.current = participant.id;
@@ -278,7 +276,7 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
           const targetParticipantId = lastUnmutedParticipantIdRef.current;
           const message = praiseMessages[Math.floor(Math.random() * praiseMessages.length)];
 
-          console.log(`🌟 Sending praise to participant (ID: ${targetParticipantId}): ${message}`);
+       
 
           chatPublish({
             senderId: mMeeting.localParticipant.id,
@@ -297,7 +295,7 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
               command: "mute",
               to: targetParticipantId,
             });
-            console.log(`🔇 Sending mute command to participant (ID: ${targetParticipantId})`);
+            
           }, 1000);
         }
       }
@@ -314,16 +312,14 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
 
   useEffect(() => {
     if (mMeeting?.localParticipant) {
-      console.log(
-          `🎤 Mic state changed manually: ${mMeeting.localParticipant.micOn ? "ON ✅" : "OFF ❌"}`
-      );
+     
     }
   }, [mMeeting?.localParticipant?.micOn]);
 
-  console.log("🔄 usePubSub CONTROL initialized!");
+ 
   usePubSub("CONTROL", {
     onMessageReceived: async (data) => {
-      console.log("📡 CONTROL message received:", data);
+     
 
       if (!data?.message) return;
 
@@ -338,10 +334,10 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
     
       if (to && localParticipantId !== to) return;
 
-      console.log(`🎤 Command for me: ${command}`);
+     
 
       if (command === "requestUnmute") {
-        console.log("🎤 Received request to enable mic");
+        
 
       
         toast.info("Your microphone has been enabled by the teacher.", {
@@ -356,17 +352,17 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
 
         try {
           await mMeeting.unmuteMic();
-          console.log("🎤 Mic enabled successfully.");
+          
         } catch (err) {
           console.error("❌ Failed to enable mic:", err);
         }
       }
 
       if (command === "mute") {
-        console.log("🔇 Received mute command. Disabling mic...");
+        
         try {
           await mMeeting.muteMic();
-          console.log("🔇 Mic disabled successfully.");
+          
         } catch (err) {
           console.error("❌ Failed to disable mic:", err);
         }
@@ -379,7 +375,7 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
 
   usePubSub("CHAT", {
     onMessageReceived: (data) => {
-      console.log("📡 CHAT message received:", data);
+      
 
       try {
       
@@ -393,8 +389,8 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
           return;
         }
 
-        console.log(`🎉 You received a praise message: "${message}" from ${senderName}`);
-        toast.success(`${senderName} says: "${message}"`); // ✅ Показываем только текст
+       
+        toast.success(`${senderName} says: "${message}"`); 
       } catch (error) {
         console.error("❌ Failed to parse incoming chat message:", error, data);
       }
@@ -411,21 +407,21 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
 
   if (originalEnableMic) {
     mMeeting.localParticipant.enableMic = (...args) => {
-      console.log("🔊 enableMic() manually triggered!");
+      
       return originalEnableMic(...args);
     };
   }
 
   if (originalDisableMic) {
     mMeeting.localParticipant.disableMic = (...args) => {
-      console.log("🔇 disableMic() manually triggered!");
+     
       return originalDisableMic(...args);
     };
   }
 
   if (originalToggleMic) {
     mMeeting.localParticipant.toggleMic = (...args) => {
-      console.log("🔄 toggleMic() manually triggered!");
+    
       return originalToggleMic(...args);
     };
   }
@@ -436,7 +432,7 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
       const localParticipantId = mMeeting?.localParticipant?.id;
       const { senderId, senderName } = data;
       const isLocal = senderId === localParticipantId;
-      console.log("RAISE_HAND message received:", data);
+      
       new Audio(`https://static.videosdk.live/prebuilt/notification.mp3`).play();
       toast(`${isLocal ? "You" : nameTructed(senderName, 15)} raised hand 🖐🏼`, {
         position: "bottom-left",
@@ -487,9 +483,9 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
   useEffect(() => {
     const debounceTimeout = setTimeout(() => {
       const participantIds = Array.from(mMeeting.participants.keys());
-      console.log("Debounced participantIds:", participantIds);
+  
       setParticipantsData(participantIds);
-      console.log("Setting participants");
+
     }, 500);
     return () => clearTimeout(debounceTimeout);
   }, [mMeeting.participants]);

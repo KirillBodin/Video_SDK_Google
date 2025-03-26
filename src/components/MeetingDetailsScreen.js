@@ -45,7 +45,6 @@ useEffect(() => {
 
   if (tokenFromUrl) {
     localStorage.setItem("sessionToken", tokenFromUrl); 
-    console.log("✅ Token saved:", tokenFromUrl);
     window.history.replaceState({}, document.title, "/"); 
   }
 
@@ -54,7 +53,7 @@ useEffect(() => {
     try {
       const decoded = jwtDecode(token);
       setUserEmail(decoded.email);
-      console.log("✅ User authenticated:", decoded.email);
+   
     } catch (error) {
       console.error("❌ Invalid token:", error);
     }
@@ -128,7 +127,7 @@ const loginWithGoogle = async () => {
                   }`}
                 disabled={!userEmail || !roomName}
                 onClick={async () => {
-                  console.log("[MeetingDetailsScreen] 🔥 Checking email...");
+       
                   const isValid = await checkEmail();
 
                   if (!isValid) {
@@ -137,7 +136,7 @@ const loginWithGoogle = async () => {
                   }
 
                   setIsCreateMeetingClicked(true);
-                  console.log("[MeetingDetailsScreen] ✅ Email confirmed, let's create a class!");
+
                 }}
               >
                 Create a class

@@ -4,12 +4,11 @@ const SERVER_URL = process.env.REACT_APP_SERVER_URL;
 
 export const getToken = async () => {
   try {
-    console.log("[API] 🔍 Запрашиваем токен...");
     const response = await fetch(`${SERVER_URL}/api/get-token`);
     const data = await response.json();
 
     if (data.token) {
-      console.log("[API] ✅ Token received:", data.token);
+  
       return data.token;
     } else {
       console.error("[API] ❌ Error getting token:", data.error);
@@ -34,11 +33,11 @@ export const createMeeting = async ({ roomId }) => {
   };
 
   try {
-    console.log("[API] 🔍 Create a room:", roomId);
+  
     const response = await fetch(url, options);
     const data = await response.json();
     if (data.roomId) {
-      console.log("[API] ✅ Room created:", data.roomId);
+      
       return { meetingId: data.roomId, err: null };
     } else {
       console.error("[API] ❌ Creation error:", data.error);
@@ -62,17 +61,17 @@ export const validateMeeting = async ({ roomId }) => {
   };
 
   try {
-    console.log("[API] 🔍 Checking the existence of the room:", roomId);
+  
     const response = await fetch(url, options);
     
     if (response.status === 400) {
-      console.log("[API] ❌ Room not found, creating a new one...");
+      
       return await createMeeting({ roomId });
     }
     
     const data = await response.json();
     if (data.roomId) {
-      console.log("[API] ✅ Room found:", data.roomId);
+      
       return { meetingId: data.roomId, err: null };
     } else {
       console.error("[API] ❌ Room verification error:", data.error);

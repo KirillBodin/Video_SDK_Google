@@ -303,7 +303,7 @@ export function JoiningScreen({
         }
       }
     } catch (ex) {
-      console.log("Error in requestPermission", ex);
+      
     }
   }
   function onDeviceChanged() {
@@ -368,7 +368,6 @@ export function JoiningScreen({
     try {
       if (permissonAvaialble.current?.isMicrophonePermissionAllowed) {
         let mics = await getMicrophones();
-        console.log(mics)
         let speakers = await getPlaybackDevices();
         const hasMic = mics.length > 0;
         if (hasMic) {
@@ -567,7 +566,7 @@ export function JoiningScreen({
   setIsAdminView={setIsAdminView} // ✅ Передаем в MeetingDetailsScreen
   onClickStartMeeting={onClickStartMeeting}
   onClickJoin={async (token, id) => {
-    console.log("[JoiningScreen] 🔥 Вызывается onClickJoin с токеном и meetingId:", token, id);
+    
    
     setToken(token);
     setMeetingId(id);
@@ -577,27 +576,27 @@ export function JoiningScreen({
 
 
                       _handleOnCreateMeeting={async () => {
-                        console.log("[JoiningScreen] 🔥 Вызывается _handleOnCreateMeeting!");
+                        
 
                         const token = await getToken();
-                        console.log("[JoiningScreen] ✅ Получен токен:", token);
+                        
 
                         if (!token) {
-                          console.error("[JoiningScreen] ❌ Ошибка: токен пуст!");
+                          
                           return { meetingId: null, err: "Token is empty" };
                         }
 
                         setToken(token);
-                        console.log("[JoiningScreen] ✅ Токен установлен.");
+                        
 
                         const { meetingId, err } = await createMeeting({ token });
 
                         if (meetingId) {
-                          console.log("[JoiningScreen] ✅ Комната создана:", meetingId);
+                         
                           setMeetingId(meetingId);
                           return { meetingId, err: null };
                         } else {
-                          console.error("[JoiningScreen] ❌ Ошибка при создании:", err);
+                          
                           return { meetingId: null, err };
                         }
                       }}
