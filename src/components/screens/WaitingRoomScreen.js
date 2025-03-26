@@ -1,51 +1,51 @@
-// WaitingRoomScreen.js
 import React, { useEffect, useState } from "react";
-import { validateMeeting, getToken } from "../../api"; // Replace with the correct path to these functions
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import { MeetingContainer } from "../meeting/MeetingContainer";
+import { MeetingProvider } from "@videosdk.live/react-sdk";
 
-export default function WaitingRoomScreen({
-                                              meetingId,
-                                              onMeetingAvailable,
-                                          }) {
-    // onMeetingAvailable — callback that will be triggered when the meeting becomes available
-    // (we will pass meetingId, token, etc. to it)
+const SERVER_URL = process.env.REACT_APP_SERVER_URL;
 
-    const [waiting, setWaiting] = useState(true);
+export function StaticMeetingJoiner({ meetingId, token, userName }) {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const intervalId = setInterval(async () => {
-            try {
-                // Check if the meeting exists
-                const token = await getToken();
-                const { meetingId: validId, err } = await validateMeeting({
-                    roomId: meetingId,
-                    token,
-                });
+  useEffect(() => {
+    const validate = async () => {
+      try {
+        if (!meetingId || !token) {
+          toast.error("Missing meeting info.");
+          navigate("/");
+          return;
+        }
+      } catch (error) {
+        toast.error("Error joining meeting.");
+        navigate("/");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-                // If validId matches our meetingId, the meeting is created
-                if (validId === meetingId) {
-                    clearInterval(intervalId);
-                    setWaiting(false);
-                    onMeetingAvailable({ meetingId, token });
-                }
-            } catch (err) {
-                // If an error occurs, keep waiting, meaning the teacher has not created the meeting yet
-                console.log("Meeting not available yet:", err);
-            }
-        }, 5000); // Check every 5 seconds if the meeting has been created
+    validate();
+  }, [meetingId, token, navigate]);
 
-        return () => clearInterval(intervalId);
-    }, [meetingId]);
+  if (loading) return <div>Loading meeting...</div>;
 
-    return (
-        <div className="h-screen w-screen flex flex-col items-center justify-center bg-gray-800 text-white">
-            <h1 className="text-3xl mb-4">Waiting Room</h1>
-            {waiting ? (
-                <p className="mb-2">
-                    The teacher has not started the lesson or created the meeting yet. Please wait...
-                </p>
-            ) : (
-                <p>Meeting found. Joining now…</p>
-            )}
-        </div>
-    );
+  return (
+    <MeetingProvider
+      config={{
+        meetingId,
+        micEnabled: true,
+        webcamEnabled: true,
+        name: userName || "Guest",
+        multiStream: true,
+      }}
+      token={token}
+      joinWithoutUserInteraction={true}
+    >
+      <MeetingContainer onMeetingLeave={() => navigate("/")} />
+    </MeetingProvider>
+  );
 }
+
+export default StaticMeetingJoiner;

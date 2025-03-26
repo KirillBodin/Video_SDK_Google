@@ -674,8 +674,8 @@ export default function TeacherDashboard() {
                 </thead>
                 <tbody>
                   {lessons.map((lesson) => {
-         
-                    const classURL = `${window.location.origin}/${lesson.classUrl}`;
+  
+         const classURL = new URL(lesson.classUrl, window.location.origin).href;
                     return (
                       <tr key={lesson.id} className="bg-gray-800 border-b border-gray-700">
                         <td className="px-4 py-3 font-semibold">{lesson.className}</td>
