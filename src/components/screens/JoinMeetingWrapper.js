@@ -20,18 +20,18 @@ export default function JoinMeetingWrapper() {
 
   const handleEmailSubmit = async () => {
     if (!userEmail) return;
-
+  
     try {
       const res = await fetch(`${SERVER_URL}/api/student/check-access`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ meetingId, email: userEmail }),
+        body: JSON.stringify({ slug, email: userEmail }),
       });
-
+  
       const data = await res.json();
-
+  
       if (res.ok && data.access) {
-        setRealMeetingId(data.meetingId); 
+        setRealMeetingId(data.meetingId);
         setStep("waiting");
       } else {
         setError("You do not have access to this class.");
@@ -41,7 +41,7 @@ export default function JoinMeetingWrapper() {
       setError("Server error. Please try again later.");
     }
   };
-
+  
   if (step === "email") {
     return (
       <div className="h-screen w-screen bg-black text-white flex flex-col items-center justify-center">
