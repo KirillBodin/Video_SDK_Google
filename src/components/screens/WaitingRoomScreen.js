@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { MeetingContainer } from "../meeting/MeetingContainer";
+import { MeetingContainer } from "../../meeting/MeetingContainer";
 import { MeetingProvider } from "@videosdk.live/react-sdk";
 
 const SERVER_URL = process.env.REACT_APP_SERVER_URL;
