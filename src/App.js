@@ -111,6 +111,7 @@ function App() {
 <Route element={<ProtectedRoute allowedRoles={["teacher"]} />}>
   <Route path="/teacher/:teacherId/:name" element={<TeacherDashboard />} />
 </Route>
+
 <Route path="/:slug/:teacherName/:className" element={<JoinMeetingWrapper />} />
 
 
