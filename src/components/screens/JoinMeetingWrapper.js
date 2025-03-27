@@ -4,7 +4,7 @@ import WaitingRoomScreen from "./WaitingRoomScreen";
 import StaticMeetingJoiner from "../StaticMeetingJoiner";
 
 export default function JoinMeetingWrapper() {
-  const { slug: meetingId, teacherName, className } = useParams();
+  const { slug: meetingId } = useParams();
   const [step, setStep] = useState("email");
   const [userEmail, setUserEmail] = useState("");
   const [token, setToken] = useState(null);
@@ -12,32 +12,33 @@ export default function JoinMeetingWrapper() {
 
   const SERVER_URL = process.env.REACT_APP_SERVER_URL;
 
-  const handleMeetingAvailable = ({ token }) => {
-    setToken(token);
+  const handleMeetingAvailable = () => {
     setStep("meeting");
   };
 
   const handleEmailSubmit = async () => {
     if (!userEmail) return;
-  
+
     try {
+      // 1. Проверка доступа
       const res = await fetch(`${SERVER_URL}/api/student/check-access`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ meetingId, email: userEmail }),
       });
-  
+
       const data = await res.json();
-  
+
       if (res.ok && data.access) {
+        // 2. Получение токена
         const tokenRes = await fetch(`${SERVER_URL}/api/get-token`);
         const tokenData = await tokenRes.json();
-  
+
         if (!tokenData.token) {
           setError("Failed to retrieve token.");
           return;
         }
-  
+
         setToken(tokenData.token);
         setStep("waiting");
       } else {
@@ -48,7 +49,6 @@ export default function JoinMeetingWrapper() {
       setError("Server error. Please try again later.");
     }
   };
-  
 
   if (step === "email") {
     return (
@@ -75,8 +75,9 @@ export default function JoinMeetingWrapper() {
   if (step === "waiting") {
     return (
       <WaitingRoomScreen
-        meetingId={meetingId} 
-        onMeetingAvailable={({ token }) => handleMeetingAvailable({ token })}
+        meetingId={meetingId}
+        token={token}
+        onMeetingAvailable={handleMeetingAvailable}
       />
     );
   }
@@ -84,7 +85,7 @@ export default function JoinMeetingWrapper() {
   if (step === "meeting") {
     return (
       <StaticMeetingJoiner
-        meetingId={meetingId} 
+        meetingId={meetingId}
         token={token}
         userName={userEmail.split("@")[0]}
       />
