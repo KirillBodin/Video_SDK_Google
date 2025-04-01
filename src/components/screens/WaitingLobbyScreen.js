@@ -7,16 +7,16 @@ function WaitingRoomContent({ onJoined }) {
 
   const { join } = useMeeting({
     onMeetingJoined: () => {
-      console.log("✅ Access granted by host. Joining meeting...");
+    
       onJoined();
     },
     onEntryResponded: (data) => {
-      console.log("🔁 Entry responded:", data);
+     
       if (data.status === "denied") {
         console.warn("❌ Entry DENIED by host.");
         setDenied(true);
       } else if (data.status === "allowed") {
-        console.log("✅ Entry ALLOWED by host.");
+        
       } else {
         console.log("ℹ️ Unknown entry response status:", data.status);
       }
@@ -28,7 +28,7 @@ function WaitingRoomContent({ onJoined }) {
 
   useEffect(() => {
     if (!hasRequestedRef.current) {
-      console.log("🔔 Sending entry request using join()...");
+      
       join();
       hasRequestedRef.current = true;
     }
@@ -51,12 +51,6 @@ function WaitingRoomContent({ onJoined }) {
 }
 
 export default function WaitingLobbyScreen({ meetingId, token, userName, role, onJoined }) {
-  console.log("📥 WaitingLobbyScreen mounted with props:", {
-    meetingId,
-    token: token?.substring(0, 10) + "...",
-    userName,
-    role,
-  });
 
   return (
     <MeetingProvider

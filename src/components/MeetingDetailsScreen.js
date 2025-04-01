@@ -154,7 +154,7 @@ const loginWithGoogle = async () => {
             <button
               className="w-full bg-green-500 text-white px-2 py-3 rounded-xl mt-3"
               onClick={async () => {
-                console.log("[MeetingDetailsScreen] 🔥 'Confirm & Create' clicked!");
+                
 
                 try {
                   const tokenResponse = await fetch(`${SERVER_URL}/api/get-token`);

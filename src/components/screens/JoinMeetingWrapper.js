@@ -82,7 +82,7 @@ export default function JoinMeetingWrapper() {
     if (!userEmail) return;
 
     try {
-      console.log("📧 Student submitted email:", userEmail);
+
       const accessRes = await fetch(`${SERVER_URL}/api/meet/check-access`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -90,7 +90,7 @@ export default function JoinMeetingWrapper() {
       });
 
       const accessData = await accessRes.json();
-      console.log("🔐 Access check response:", accessData);
+   
 
       if (!accessRes.ok || !accessData.access) {
         setError("You do not have access to this class.");
@@ -104,7 +104,7 @@ export default function JoinMeetingWrapper() {
       });
 
       const tokenData = await tokenRes.json();
-      console.log("🔑 Student token response:", tokenData);
+     
 
       if (!tokenData.token) throw new Error("No token");
 
@@ -112,7 +112,7 @@ export default function JoinMeetingWrapper() {
       const meetingData = await meetingRes.json();
       const meetingId = meetingData?.meeting?.meetingId;
 
-      console.log("📚 Retrieved meetingId:", meetingId);
+      
 
       if (!meetingId) {
         setError("No meeting found for this class.");

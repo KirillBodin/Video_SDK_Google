@@ -183,7 +183,7 @@ function DataTable({ title, data, columns, onAdd, onMenuToggle }) {
 /* ========== Модальное окно для учителя ========== */
 function AddTeacherModal({ onClose, onSave, isEdit = false, initialData = {}, classes = [], students = [] }) {
 
-  console.log("AddTeacherModal initialData:", initialData);
+  
   const [form, setForm] = useState({
     firstName: initialData.name ? initialData.name.split(" ")[0] : "",
     lastName: initialData.name ? initialData.name.split(" ").slice(1).join(" ") : "",
@@ -426,9 +426,6 @@ function AddStudentModal({ onClose, onSave, teachers, classes, isEdit = false, i
 
 function AddClassModal({ onClose, onSave, teachers, students, isEdit = false, initialData = {} }) {
 
-
-
-  console.log("AddClassModal initialData:", initialData);
   const { adminId } = useParams();
 
   const [form, setForm] = useState({
@@ -547,7 +544,6 @@ useEffect(() => {
           try {
             const res = await authorizedFetch(`${SERVER_URL}/api/lessons/${initialData.id}/students`);
             const data = await res.json();
-            console.log("Fetched linked students for class:", data);
             const ids = data.map((s) => s.id);
             setForm((prev) => ({ ...prev, studentIds: ids }));
           } catch (err) {
@@ -802,7 +798,6 @@ export default function PrincipalDashboardScreen() {
     try {
       const res = await authorizedFetch(`${SERVER_URL}/api/admin/${adminId}/teachers`);
       const data = await res.json();
-      console.log("Fetched teachers:", data);
       setTeachers(data || []);
     } catch (err) {
       console.error("Error fetching teachers:", err);
@@ -814,7 +809,7 @@ export default function PrincipalDashboardScreen() {
     try {
       const res = await authorizedFetch(`${SERVER_URL}/api/admin/${adminId}/classes`);
       const data = await res.json();
-      console.log("Fetched classes:", data);
+
       setClasses(data || []);
     } catch (err) {
       console.error("Error fetching classes:", err);

@@ -9,7 +9,7 @@ function WaitingRoom({ meetingId, token, onJoined }) {
 
     const checkParticipants = async () => {
       try {
-        console.log("🔁 Checking active sessions...");
+        
         const sessionRes = await fetch(
           `https://api.videosdk.live/v2/sessions/?roomId=${meetingId}`,
           {
@@ -21,25 +21,25 @@ function WaitingRoom({ meetingId, token, onJoined }) {
         );
 
         const sessionData = await sessionRes.json();
-        console.log("📦 Sessions data:", sessionData);
+        
 
         const activeSession = sessionData.data?.find(
           (s) => s.status === "ongoing"
         );
 
         if (!activeSession) {
-          console.log("🕓 No active session yet.");
+        
           return;
         }
 
         const participants = activeSession.participants || [];
-        console.log(`👥 Found ${participants.length} participant(s)`);
+        
 
         if (participants.length > 0) {
           clearInterval(interval);
           onJoined();
         } else {
-          console.log("🕓 Session started but no participants.");
+         
         }
       } catch (err) {
         console.error("❌ Error checking session:", err);
