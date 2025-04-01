@@ -12,7 +12,7 @@ export default function SchoolAdminDashboard() {
   const [teacherPassword, setTeacherPassword] = useState("");
   const SERVER_URL = process.env.REACT_APP_SERVER_URL;
 
-  // 📡 Загружаем список учителей
+
   const fetchTeachers = async () => {
     try {
       const res = await fetch(`${SERVER_URL}/api/${adminId}/teachers`);
@@ -20,7 +20,7 @@ export default function SchoolAdminDashboard() {
   
       if (res.ok) {
         setTeachers(data);
-        fetchLessons(); // Загружаем все уроки для этой школы
+        fetchLessons(); 
       } else {
         toast.error(data.error || "Failed to load teachers");
         setTeachers([]);

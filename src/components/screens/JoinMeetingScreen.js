@@ -1,9 +1,11 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import WaitingRoomScreen from "./WaitingRoomScreen";
 
 export default function JoinMeetingScreen({ slug, teacherName, className }) {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const navigate = useNavigate();
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -13,7 +15,6 @@ export default function JoinMeetingScreen({ slug, teacherName, className }) {
       return;
     }
 
-    // Optional: Save to localStorage or backend
     setSubmitted(true);
   };
 
@@ -23,8 +24,7 @@ export default function JoinMeetingScreen({ slug, teacherName, className }) {
         meetingId={slug}
         userEmail={email}
         onMeetingAvailable={({ meetingId, token }) => {
-          // Replace this with navigation to StaticMeetingJoiner with props
-          window.location.href = `/join/${meetingId}?token=${token}&email=${encodeURIComponent(email)}`;
+          navigate(`/join/${meetingId}?token=${token}&email=${encodeURIComponent(email)}`);
         }}
       />
     );

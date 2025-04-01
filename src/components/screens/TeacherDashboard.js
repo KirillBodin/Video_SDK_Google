@@ -182,7 +182,7 @@ function EditClassModal({ onClose, lessonToEdit, onUpdateClass }) {
   const [allStudents, setAllStudents] = useState([]);
 
   useEffect(() => {
-    fetch(`${SERVER_URL}/api/teacher/${lessonToEdit.teacherId}/students`)
+    authorizedFetch(`${SERVER_URL}/api/teacher/${lessonToEdit.teacherId}/students`)
       .then((res) => res.json())
       .then((data) => setAllStudents(data))
       .catch((err) => console.error("Error loading students:", err));
@@ -265,6 +265,45 @@ function StudentModal({ onClose, onSave, initialData }) {
   const [firstName, setFirstName] = useState(initialData?.firstName || "");
   const [lastName, setLastName] = useState(initialData?.lastName || "");
   const [email, setEmail] = useState(initialData?.email || "");
+  const [classIds, setClassIds] = useState(initialData?.classIds || []);
+  const [lessons, setLessons] = useState([]);
+
+  const teacherId = useParams().teacherId;
+
+  useEffect(() => {
+    const fetchLessons = async () => {
+      try {
+        const res = await authorizedFetch(`${SERVER_URL}/api/teachers/${teacherId}/lessons`);
+        const data = await res.json();
+        setLessons(data || []);
+      } catch (err) {
+        console.error("Error fetching lessons:", err);
+        toast.error("Failed to load lessons");
+      }
+    };
+
+    fetchLessons();
+  }, [teacherId]);
+
+  useEffect(() => {
+    if (isEdit && initialData?.id) {
+      authorizedFetch(`${SERVER_URL}/api/student/${initialData.id}/classes`)
+        .then(res => res.json())
+        .then(data => {
+          const ids = data.map(cls => cls.id);
+          setClassIds(ids);
+        })
+        .catch(err => {
+          console.error("Error fetching student classes:", err);
+        });
+    }
+  }, [initialData?.id, isEdit]);
+
+  const toggleClassId = (id) => {
+    setClassIds(prev =>
+      prev.includes(id) ? prev.filter((cid) => cid !== id) : [...prev, id]
+    );
+  };
 
   const handleSubmit = () => {
     if (!firstName || !lastName || !email) {
@@ -272,12 +311,18 @@ function StudentModal({ onClose, onSave, initialData }) {
       return;
     }
 
-    onSave({ firstName, lastName, email, id: initialData?.id });
+    onSave({
+      firstName,
+      lastName,
+      email,
+      classIds,
+      id: initialData?.id,
+    });
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white text-black rounded-md p-6 w-[400px]">
+      <div className="bg-white text-black rounded-md p-6 w-[400px] max-h-[90vh] overflow-y-auto">
         <h2 className="text-xl font-bold mb-4">{isEdit ? "Edit" : "Add"} Student</h2>
 
         <label className="font-semibold">First Name</label>
@@ -304,6 +349,21 @@ function StudentModal({ onClose, onSave, initialData }) {
           onChange={(e) => setEmail(e.target.value)}
         />
 
+        <label className="font-semibold mb-1">Assign to Classes</label>
+        <div className="border rounded p-2 mb-4 max-h-40 overflow-y-auto bg-white/10">
+          {lessons.map((cls) => (
+            <label key={cls.id} className="flex items-center gap-2 mb-1">
+              <input
+                type="checkbox"
+                value={cls.id}
+                checked={classIds.includes(cls.id)}
+                onChange={() => toggleClassId(cls.id)}
+              />
+              {cls.className}
+            </label>
+          ))}
+        </div>
+
         <div className="flex justify-end gap-2">
           <button
             onClick={onClose}
@@ -322,6 +382,7 @@ function StudentModal({ onClose, onSave, initialData }) {
     </div>
   );
 }
+
 
 /* =================== Основной компонент =================== */
 export default function TeacherDashboard() {
@@ -344,6 +405,10 @@ export default function TeacherDashboard() {
   const [showAddClassModal, setShowAddClassModal] = useState(false);
   const [showEditClassModal, setShowEditClassModal] = useState(false);
   const [lessonToEdit, setLessonToEdit] = useState(null);
+
+  useEffect(() => {
+    document.title = "TAMAMAT Teacher";
+  }, []);
 
   useEffect(() => {
     fetchLessons();
@@ -380,7 +445,7 @@ export default function TeacherDashboard() {
     } catch (error) {
       toast.error("Server error.");
     }
-    setStudentMenuData(null); // Закрыть меню после удаления
+    setStudentMenuData(null); 
   };
 
   
@@ -526,8 +591,14 @@ export default function TeacherDashboard() {
         return;
       }
   
-      const slug = `meet-${Math.random().toString(36).substring(7)}`;
-      const body = { className, slug, teacherEmail, studentIds };
+      const slug = `meet-${Math.random().toString(36).substring(2, 8)}`; 
+  
+      const body = {
+        className, 
+        slug,
+        teacherEmail,
+        studentIds,
+      };
   
       const res = await authorizedFetch(`${SERVER_URL}/api/teachers/${teacherId}/lessons`, {
         method: "POST",
@@ -536,12 +607,14 @@ export default function TeacherDashboard() {
       });
   
       if (!res.ok) throw new Error("Failed to create class");
+  
       toast.success("Class created!");
       fetchLessons();
     } catch (error) {
       toast.error("Failed to save class");
     }
   };
+  
   
   
   const handleSaveStudent = async ({ firstName, lastName, email }) => {
@@ -626,7 +699,21 @@ export default function TeacherDashboard() {
   };
 
   return (
+    
     <div className="min-h-screen w-full bg-gradient-to-br from-[#111111] to-black text-white p-6 flex flex-col items-center">
+      
+      <div className="w-full flex justify-end items-center mb-4">
+  <span className="text-white font-semibold mr-4">{decodeURIComponent(name)}</span>
+  <button
+    onClick={() => {
+      localStorage.removeItem("teacherEmail");
+      window.location.href = `${window.location.origin}/admin/login`;
+    }}
+    className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md"
+  >
+    Logout
+  </button>
+</div>
       <h1 className="text-4xl font-bold text-center mb-10">Teacher Dashboard</h1>
 
       {/* Вкладки */}
@@ -675,7 +762,8 @@ export default function TeacherDashboard() {
                 <tbody>
                   {lessons.map((lesson) => {
   
-         const classURL = new URL(lesson.classUrl, window.location.origin).href;
+  const classURL = new URL(lesson.classUrl, window.location.origin).href + "?role=teacher";
+
                     return (
                       <tr key={lesson.id} className="bg-gray-800 border-b border-gray-700">
                         <td className="px-4 py-3 font-semibold">{lesson.className}</td>
@@ -687,7 +775,20 @@ export default function TeacherDashboard() {
                             rel="noopener noreferrer"
                             className="underline"
                           >
-                            {classURL}
+                            <a
+  href="#"
+  onClick={(e) => {
+    e.preventDefault();
+    const url = new URL(lesson.classUrl, window.location.origin);
+    url.searchParams.set("role", "teacher");
+    localStorage.setItem("teacherEmail", teacherEmail);
+    window.location.href = url.toString();
+  }}
+  className="underline text-blue-400"
+>
+  {new URL(lesson.classUrl, window.location.origin).href}
+</a>
+
                           </a>
                         </td>
                         <td className="px-4 py-3 text-right">

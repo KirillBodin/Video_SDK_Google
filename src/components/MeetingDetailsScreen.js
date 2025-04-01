@@ -81,12 +81,6 @@ const loginWithGoogle = async () => {
   return (
     <div className="flex flex-col justify-center w-full md:p-[6px] sm:p-1 p-1.5 relative">
   
-      <button
-        className="fixed top-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-md z-50"
-        onClick={() => navigate("/admin/login")}
-      >
-        Admin Panel
-      </button>
 
     
       <input
@@ -179,7 +173,8 @@ const loginWithGoogle = async () => {
                       "Content-Type": "application/json",
                       Authorization: `${token}`,
                     },
-                    body: JSON.stringify({ userMeetingId: roomName }),
+                    body: JSON.stringify({ userMeetingId: roomName,
+                      lobby: true  }),
                   });
 
                   const meetingData = await meetingResponse.json();
@@ -219,32 +214,33 @@ const loginWithGoogle = async () => {
               onClick={async () => {
                 try {
                   const response = await fetch(`${SERVER_URL}/api/savemeeting/byclassname/${roomName}`);
-const data = await response.json();
-
-if (!data.meetingId) {
-  toast.error("Meeting not found!");
-  return;
-}
-
-
-                  const meetingId = data.meetingId;
-
+                  const data = await response.json();
+              
+                  const { meetingId, slug, className, teacherName } = data;
+              
+                  if (!meetingId || !slug || !className || !teacherName) {
+                    toast.error("Meeting not found or data incomplete!");
+                    return;
+                  }
+              
                   const tokenResponse = await fetch(`${SERVER_URL}/api/get-token`);
                   const { token } = await tokenResponse.json();
-
+              
                   if (!token) {
                     toast.error("Failed to get token!");
                     return;
                   }
+              
                   setToken(token);
-
                   setMeetingId(meetingId);
                   toast.success("Joining class...");
-                  onClickJoin(token, meetingId);
+              
+              
+                  navigate(`/${slug}/${teacherName}/${className}`);
                 } catch (error) {
                   toast.error("Server error while joining!");
                 }
-              }}
+              }}              
             >
               Confirm & Join
             </button>

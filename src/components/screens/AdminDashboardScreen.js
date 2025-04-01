@@ -1,534 +1,30 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { toast } from "react-toastify";
-import { FiMoreVertical, FiTrash2 } from "react-icons/fi";
+import {
+  FiMoreVertical,
+  FiTrash2,
+  FiClipboard,
+  FiEdit,
+  FiCopy
+} from "react-icons/fi";
 import ReactDOM from "react-dom";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { authorizedFetch } from "../../utils/api";
 
 const SERVER_URL = process.env.REACT_APP_SERVER_URL;
 
-export default function AdminDashboard() {
-  const { adminId } = useParams();
-  const [activeTab, setActiveTab] = useState("teachers");
-  const [teachers, setTeachers] = useState([]);
-  const [classes, setClasses] = useState([]);
-  const [students, setStudents] = useState([]);
-  const [menuData, setMenuData] = useState(null);
-  const [showAddTeacherModal, setShowAddTeacherModal] = useState(false);
-  const [showAddStudentModal, setShowAddStudentModal] = useState(false);
-  const [showAddClassModal, setShowAddClassModal] = useState(false);
-  const [editData, setEditData] = useState(null); // объект с id и type
 
-
-  useEffect(() => {
-    fetchAll();
-  }, [adminId]);
-
-  const fetchAll = () => {
-    fetchTeachers();
-    fetchClasses();
-    fetchStudents();
-  };
-
-  const fetchTeachers = async () => {
-    const res = await authorizedFetch(`${SERVER_URL}/api/admin/${adminId}/teachers`);
-    const data = await res.json();
-    setTeachers(data || []);
-  };
-
-  const fetchClasses = async () => {
-    const res = await authorizedFetch(`${SERVER_URL}/api/admin/${adminId}/classes`);
-    const data = await res.json();
-    setClasses(data || []);
-  };
-
-  const fetchStudents = async () => {
-    const res = await authorizedFetch(`${SERVER_URL}/api/admin/${adminId}/students`);
-    const data = await res.json();
-    setStudents(data || []);
-  };
-
-  const deleteItem = async (id, type) => {
- 
-    
-    if (!window.confirm("Are you sure you want to delete this?")) return;
-  
-    let url = "";
-  
-    switch (type) {
-      case "teachers":
-        url = `${SERVER_URL}/api/teachers/${id}`;
-        break;
-  
-      case "students": {
-        const student = students.find((s) => s.id === id);
-        const teacherId = student?.teacherId;
-        if (!teacherId) {
-          toast.error("Teacher ID not found for this student");
-          return;
-        }
-        url = `${SERVER_URL}/api/teacher/${teacherId}/students/${id}`;
-        break;
-      }
-  
-      case "classes": {
-        url = `${SERVER_URL}/api/lessons/${id}`; // ✅ Используем только lessonId
-        break;
-      }
-  
-      default:
-        toast.error("Unknown type");
-        return;
-    }
-  
-    try {
-      const res = await authorizedFetch(url, { method: "DELETE" });
-      if (!res.ok) throw new Error("Failed to delete");
-  
-      toast.success(`${type.slice(0, -1)} deleted!`);
-      fetchAll();
-    } catch (err) {
-      console.error("❌ Delete error:", err);
-      toast.error("Failed to delete");
-    }
-  };
-  
-  const onEdit = (id, type) => {
-    setEditData({ id, type });
-    setMenuData(null); 
-  };
-  
-  
-
-  const toggleMenu = (id, type, e) => {
-    e.stopPropagation();
-    const rect = e.currentTarget.getBoundingClientRect();
-    setMenuData({ id, type, x: rect.x + rect.width, y: rect.y + window.scrollY });
-  };
-
-  const handleUpdateTeacher = async ({ id, name, email }) => {
-    await authorizedFetch(`${SERVER_URL}/api/teachers/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email }),
-    });
-    toast.success("Teacher updated!");
-    fetchTeachers();
-  };
-  
-  const handleUpdateStudent = async ({ id, teacherId, name, email }) => {
-    await authorizedFetch(`${SERVER_URL}/api/teacher/${teacherId}/students/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email }),
-    });
-    toast.success("Student updated!");
-    fetchStudents();
-  };
-  
-  const handleUpdateClass = async ({ id, className, studentIds }) => {
-    await authorizedFetch(`${SERVER_URL}/api/lessons/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ className, studentIds }),
-    });
-    toast.success("Class updated!");
-    fetchClasses();
-  };
-  
-
-  const handleSaveTeacher = async ({ name, email, password }) => {
-    const res = await authorizedFetch(`${SERVER_URL}/api/admin/${adminId}/teachers`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password }),
-    });
-    if (res.ok) {
-      toast.success("Teacher added!");
-      fetchTeachers();
-    }
-  };
-
-  const handleSaveStudent = async ({ name, email, teacherId }) => {
-    const res = await authorizedFetch(`${SERVER_URL}/api/admin/${adminId}/students`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, teacherId }),
-    });
-    if (res.ok) {
-      toast.success("Student added!");
-      fetchStudents();
-    }
-  };
-
-  const handleSaveClass = async ({ className, meetingId, teacherId, studentIds }) => {
-    const res = await authorizedFetch(`${SERVER_URL}/api/admin/${adminId}/classes`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ className, meetingId, teacherId, studentIds }),
-    });
-    if (res.ok) {
-      toast.success("Class added!");
-      fetchClasses();
-    }
-  };
-
-  return (
-    <div className="min-h-screen w-full bg-black text-white p-6">
-      <h1 className="text-4xl font-bold text-center mb-10">Admin Dashboard</h1>
-
-      <div className="flex gap-4 mb-6">
-        {["teachers", "classes", "students"].map((tab) => (
-          <button
-            key={tab}
-            className={`px-4 py-2 rounded ${activeTab === tab ? "bg-blue-600" : "bg-gray-700"}`}
-            onClick={() => setActiveTab(tab)}
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
-
-      {activeTab === "teachers" && (
-        <DataTable
-          title="teachers"
-          data={teachers}
-          columns={["name", "email"]}
-          onAdd={() => setShowAddTeacherModal(true)}
-          onMenuToggle={toggleMenu}
-        />
-      )}
-{activeTab === "students" && (
-  <DataTable
-    title="students"
-    data={students}
-    columns={["name", "email", "classes"]}
-    onAdd={() => setShowAddStudentModal(true)}
-    onMenuToggle={toggleMenu}
-  />
-)}
-
-      {activeTab === "classes" && (
-        <DataTable
-          title="classes"
-          data={classes}
-          columns={["className", "meetingId", "teacherName"]}
-          onAdd={() => setShowAddClassModal(true)}
-          onMenuToggle={toggleMenu}
-        />
-      )}
-{editData?.type === "teachers" && (
-  <AddTeacherModal
-    onClose={() => setEditData(null)}
-    onSave={(data) => handleUpdateTeacher({ ...data, id: editData.id })}
-    isEdit
-    initialData={teachers.find((t) => t.id === editData.id)}
-  />
-)}
-
-{editData?.type === "students" && (
-  <AddStudentModal
-    onClose={() => setEditData(null)}
-    onSave={(data) =>
-      handleUpdateStudent({ ...data, id: editData.id, teacherId: data.teacherId || students.find((s) => s.id === editData.id)?.teacherId })
-    }
-    isEdit
-    initialData={students.find((s) => s.id === editData.id)}
-    teachers={teachers}
-  />
-)}
-
-{editData?.type === "classes" && (
-  <AddClassModal
-    onClose={() => setEditData(null)}
-    onSave={(data) => handleUpdateClass({ ...data, id: editData.id })}
-    isEdit
-    initialData={classes.find((c) => c.id === editData.id)}
-    teachers={teachers}
-    students={students}
-  />
-)}
-
-
-
-      {menuData && (
-        <ContextMenu data={menuData} onDelete={deleteItem} setMenuData={setMenuData} onEdit={onEdit}/>
-      )}
-
-      {showAddTeacherModal && (
-        <AddTeacherModal onClose={() => setShowAddTeacherModal(false)} onSave={handleSaveTeacher} />
-      )}
-      {showAddStudentModal && (
-        <AddStudentModal
-          onClose={() => setShowAddStudentModal(false)}
-          onSave={handleSaveStudent}
-          teachers={teachers}
-        />
-      )}
-      {showAddClassModal && (
-        <AddClassModal
-          onClose={() => setShowAddClassModal(false)}
-          onSave={handleSaveClass}
-          teachers={teachers}
-          students={students}
-        />
-      )}
-    </div>
-  );
-}
-
-function DataTable({ title, data, columns, onAdd, onMenuToggle }) {
-  return (
-    <div className="bg-white bg-opacity-10 p-4 rounded-lg border border-gray-700 w-full max-w-5xl mx-auto mb-10">
-      <div className="flex justify-between mb-4">
-        <h2 className="text-xl font-bold capitalize">{title}</h2>
-        <button onClick={onAdd} className="bg-blue-600 px-4 py-2 rounded text-white">
-          Add {title.slice(0, -1)}
-        </button>
-      </div>
-      <table className="w-full text-left">
-        <thead>
-          <tr>
-            {columns.map((col) => (
-              <th key={col} className="capitalize px-3 py-2">{col}</th>
-            ))}
-            <th className="px-3 py-2 text-right"></th> 
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((row) => (
-            <tr key={row.id}>
-    {columns.map((col) => (
-  <td key={col} className="px-3 py-2">
-    {col === "classes"
-      ? row.classes?.map((cls) => cls.className).join(", ")
-      : row[col]}
-  </td>
-))}
-
-              <td className="text-right px-3 py-2">
-                <button
-                  onClick={(e) => onMenuToggle(row.id, title, e)}
-                  className="text-white"
-                >
-                  <FiMoreVertical />
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function ContextMenu({ data, onDelete, setMenuData, onEdit }) {
-  const menuRef = useRef();
-  useEffect(() => {
-    const click = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) setMenuData(null);
-    };
-    document.addEventListener("mousedown", click);
-    return () => document.removeEventListener("mousedown", click);
-  }, [setMenuData]);
-
-  const type =
-    data.type === "teachers" ? "teachers" :
-    data.type === "students" ? "students" : "classes";
-
-  return ReactDOM.createPortal(
-    <div
-      ref={menuRef}
-      className="fixed z-50 bg-gray-900 text-white rounded shadow-lg w-44"
-      style={{ top: data.y + 10, left: data.x }}
-    >
-      <button
-        className="px-4 py-2 w-full text-left hover:bg-gray-700"
-        onClick={() => onDelete(data.id, type)}
-      >
-        <FiTrash2 className="inline mr-2" /> Delete
-      </button>
-      <button
-  className="px-4 py-2 w-full text-left hover:bg-gray-700"
-  onClick={() => onEdit(data.id, type)}
->
-  ✏️ Edit
-</button>
-
-    </div>,
-    document.body
-  );
-}
-
-function AddTeacherModal({ onClose, onSave }) {
-  const [form, setForm] = useState({ name: "", email: "", password: "" });
-
-  const handleSubmit = () => {
-    if (!form.name || !form.email || !form.password) {
-      toast.error("All fields are required");
-      return;
-    }
-    onSave(form);
-    onClose();
-  };
-
-  return renderModal("Add Teacher", form, setForm, handleSubmit, onClose);
-}
-
-function AddStudentModal({ onClose, onSave, teachers }) {
-  const [form, setForm] = useState({ name: "", email: "", teacherId: "" });
-
-  const handleSubmit = () => {
-    if (!form.name || !form.email || !form.teacherId) {
-      toast.error("All fields are required");
-      return;
-    }
-    onSave(form);
-    onClose();
-  };
-
-  return renderModal("Add Student", form, setForm, handleSubmit, onClose, {
-    teacherId: (
-      <select
-        name="teacherId"
-        value={form.teacherId}
-        onChange={(e) => setForm({ ...form, teacherId: e.target.value })}
-        className="w-full mb-3 px-3 py-2 border rounded"
-      >
-        <option value="">Select teacher</option>
-        {teachers.map((t) => (
-          <option key={t.id} value={t.id}>{t.name}</option>
-        ))}
-      </select>
-    ),
-  });
-}
-
-function AddClassModal({
-  onClose,
-  onSave,
-  teachers,
-  students,
-  isEdit = false,
-  initialData = {}
-}) {
-  const [form, setForm] = useState({
-    className: initialData.className || "",
-    meetingId: initialData.meetingId || `meet-${Math.random().toString(36).substring(7)}`,
-    teacherId: initialData.teacherId || "",
-    studentIds: [],
-  });
-
-
-useEffect(() => {
-  const fetchLinkedStudents = async () => {
-    try {
-      const res = await fetch(`${SERVER_URL}/api/lessons/${initialData.id}/students`);
-      const data = await res.json();
-      const ids = data.map((s) => s.id); 
-      setForm((prev) => ({ ...prev, studentIds: ids }));
-    } catch (err) {
-      console.error("❌ Failed to fetch lesson's students:", err);
-    }
-  };
-
-  if (isEdit && initialData.id) {
-    fetchLinkedStudents();
-  }
-}, [isEdit, initialData.id]);
-
-
-
-  useEffect(() => {
-    if (!isEdit) {
-      const generatedId = `meet-${Math.random().toString(36).substring(7)}`;
-      setForm((prev) => ({ ...prev, meetingId: generatedId }));
-    }
-  }, [isEdit]);
-
-  const handleCheckbox = (id) => {
-    setForm((prev) => ({
-      ...prev,
-      studentIds: prev.studentIds.includes(id)
-        ? prev.studentIds.filter((s) => s !== id)
-        : [...prev.studentIds, id],
-    }));
-  };
-
-  const handleSubmit = () => {
-    if (!form.className || !form.teacherId) {
-      toast.error("Class name and teacher are required");
-      return;
-    }
-    onSave(form);
-    onClose();
-  };
-
-  return ReactDOM.createPortal(
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-      <div className="bg-white text-black p-6 rounded w-[450px] max-h-[90vh] overflow-y-auto">
-        <h2 className="text-xl font-bold mb-4">{isEdit ? "Edit Class" : "Add Class"}</h2>
-        <input
-          className="w-full mb-3 px-3 py-2 border rounded"
-          placeholder="Class Name"
-          value={form.className}
-          onChange={(e) => setForm({ ...form, className: e.target.value })}
-        />
-
-        <select
-          value={form.teacherId}
-          onChange={(e) => setForm({ ...form, teacherId: e.target.value })}
-          className="w-full mb-3 px-3 py-2 border rounded"
-        >
-          <option value="">Select teacher</option>
-          {teachers.map((t) => (
-            <option key={t.id} value={t.id}>{t.name}</option>
-          ))}
-        </select>
-
-        <div className="mb-3">
-          <label className="block font-semibold mb-1">Select students:</label>
-          <div className="border rounded p-2 max-h-40 overflow-y-auto bg-white/20">
-            {students.map((s) => (
-              <label key={s.id} className="flex items-center gap-2 mb-1">
-                <input
-                  type="checkbox"
-                  value={s.id}
-                  checked={form.studentIds.includes(s.id)}
-                  onChange={() => handleCheckbox(s.id)}
-                />
-                {s.name}
-              </label>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex justify-end gap-2">
-          <button onClick={onClose} className="border px-4 py-2 rounded text-gray-600">
-            Cancel
-          </button>
-          <button onClick={handleSubmit} className="bg-green-600 text-white px-4 py-2 rounded">
-            Save
-          </button>
-        </div>
-      </div>
-    </div>,
-    document.body
-  );
-}
-
-
-
-
+/* ========== Общая функция для модальных окон ========== */
 function renderModal(title, form, setForm, onSubmit, onClose, customFields = {}) {
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
-
   return ReactDOM.createPortal(
     <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
       <div className="bg-white text-black p-6 rounded w-96">
         <h2 className="text-xl font-bold mb-4">{title}</h2>
         {Object.keys(form).map((field) => {
-          if (customFields[field]) return customFields[field];
+          if (customFields[field]) {
+            return <React.Fragment key={field}>{customFields[field]}</React.Fragment>;
+          }
           return (
             <input
               key={field}
@@ -553,3 +49,1060 @@ function renderModal(title, form, setForm, onSubmit, onClose, customFields = {})
     document.body
   );
 }
+/* ========== Контекстное меню ========== */
+function ContextMenu({ data, onDelete, setMenuData, onEdit }) {
+  const menuRef = useRef();
+  useEffect(() => {
+    const click = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) setMenuData(null);
+    };
+    document.addEventListener("mousedown", click);
+    return () => document.removeEventListener("mousedown", click);
+  }, [setMenuData]);
+
+  const handleCopy = () => {
+    const fullUrl = `${window.location.origin}/class/${data.classUrl}`;
+    navigator.clipboard.writeText(fullUrl);
+    toast.success("Class URL copied!");
+    setMenuData(null);
+  };
+
+  return ReactDOM.createPortal(
+    <div
+      ref={menuRef}
+      className="fixed z-50 bg-gray-900 text-white rounded shadow-lg w-44"
+      style={{ top: data.y + 10, left: data.x }}
+    >
+      {data.type === "classes" && data.classUrl && (
+        <button
+          className="px-4 py-2 w-full text-left hover:bg-gray-700 flex items-center gap-2"
+          onClick={handleCopy}
+        >
+          <FiClipboard />
+          Copy URL
+        </button>
+      )}
+      <button
+        className="px-4 py-2 w-full text-left hover:bg-gray-700"
+        onClick={() => {
+          onDelete(data.id, data.type);
+          setMenuData(null);
+        }}
+      >
+        <FiTrash2 className="inline mr-2" /> Delete
+      </button>
+      <button
+        className="px-4 py-2 w-full text-left hover:bg-gray-700"
+        onClick={() => {
+          onEdit(data.id, data.type);
+          setMenuData(null);
+        }}
+      >
+        <FiEdit className="inline mr-2" /> Edit
+      </button>
+    </div>,
+    document.body
+  );
+}
+
+/* ========== Таблица ========== */
+function DataTable({ title, data, columns, onAdd, onMenuToggle }) {
+  const addButtonLabel =
+    title.toLowerCase() === "classes" ? "Add Class" : `Add ${title.slice(0, -1)}`;
+  return (
+    <div className="bg-white bg-opacity-10 p-4 rounded-lg border border-gray-700 w-full max-w-5xl mx-auto mb-10">
+      <div className="flex justify-between mb-4">
+        <h2 className="text-xl font-bold">{title}</h2>
+        <button onClick={onAdd} className="bg-blue-600 px-4 py-2 rounded text-white">
+          {addButtonLabel}
+        </button>
+      </div>
+      <table className="w-full text-left">
+        <thead>
+          <tr>
+            {columns.map((col) => (
+              <th key={col} className="capitalize px-3 py-2">
+                {col}
+              </th>
+            ))}
+            <th className="px-3 py-2 text-right"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((row) => {
+            const fullUrl =
+              row.classUrl && title.toLowerCase() === "classes"
+                ? `${window.location.origin}/class/${row.classUrl}`
+                : null;
+            return (
+              <tr key={row.id}>
+                {columns.map((col) => {
+                  if (col === "url") {
+                    return (
+                      <td key={col} className="px-3 py-2">
+                        {fullUrl || "—"}
+                      </td>
+                    );
+                  } else if (col === "classes") {
+                    return (
+                      <td key={col} className="px-3 py-2">
+                        {row.classes?.map((cls) => cls.className).join(", ") || "—"}
+                      </td>
+                    );
+                  }
+                  return (
+                    <td key={col} className="px-3 py-2">
+                      {row[col] || "—"}
+                    </td>
+                  );
+                })}
+                <td className="text-right px-3 py-2">
+                  <button
+                    onClick={(e) =>
+                      onMenuToggle(
+                        row.id,
+                        title,
+                        e,
+                        title.toLowerCase() === "classes" ? row.classUrl : undefined
+                      )
+                    }
+                    className="text-white"
+                  >
+                    <FiMoreVertical />
+                  </button>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/* ========== Модальное окно для учителя ========== */
+function AddTeacherModal({ onClose, onSave, isEdit = false, initialData = {}, classes = [], students = [] }) {
+
+  console.log("AddTeacherModal initialData:", initialData);
+  const [form, setForm] = useState({
+    firstName: initialData.name ? initialData.name.split(" ")[0] : "",
+    lastName: initialData.name ? initialData.name.split(" ").slice(1).join(" ") : "",
+    email: initialData.email || "",
+    password: isEdit ? initialData.password || "" : "",
+    classIds: initialData.lessons ? initialData.lessons.map((l) => l.id) : (initialData.classIds || []),
+    studentIds: initialData.students ? initialData.students.map((s) => s.id) : (initialData.studentIds || []),
+  });
+
+  useEffect(() => {
+    if (isEdit && initialData?.id) {
+      const fetchTeacherData = async () => {
+        try {
+          const [lessonsRes, studentsRes] = await Promise.all([
+            authorizedFetch(`${SERVER_URL}/api/teachers/${initialData.id}/lessons`),
+            authorizedFetch(`${SERVER_URL}/api/teacher/${initialData.id}/students`)
+          ]);
+  
+          const lessonsData = await lessonsRes.json();
+          const studentsData = await studentsRes.json();
+  
+          setForm({
+            firstName: initialData.name ? initialData.name.split(" ")[0] : "",
+            lastName: initialData.name ? initialData.name.split(" ").slice(1).join(" ") : "",
+            email: initialData.email || "",
+            password: "", 
+            classIds: lessonsData.map((l) => l.id),
+            studentIds: studentsData.map((s) => s.id)
+          });
+        } catch (error) {
+          console.error("Error fetching teacher-related data:", error);
+          toast.error("Failed to load lessons or students");
+        }
+      };
+  
+      fetchTeacherData();
+    }
+  }, [isEdit, initialData]);
+  
+  const handleCheckbox = (field, id) => {
+    setForm((prev) => ({
+      ...prev,
+      [field]: prev[field].includes(id)
+        ? prev[field].filter((item) => item !== id)
+        : [...prev[field], id],
+    }));
+  };
+  
+
+  const handleSubmit = () => {
+    if (!form.firstName || !form.lastName || !form.email || (!isEdit && !form.password)) {
+      toast.error("All fields are required");
+      return;
+    }
+    onSave(form);
+    onClose();
+  };
+
+  return renderModal(
+    isEdit ? "Edit Teacher" : "Add Teacher",
+    form,
+    setForm,
+    handleSubmit,
+    onClose,
+    {
+      classIds: (
+        <div className="mb-3">
+          <label className="block font-semibold mb-1">Assign Classes:</label>
+          <div className="border rounded p-2 max-h-40 overflow-y-auto bg-white/20">
+            {classes.map((cls) => (
+              <label key={cls.id} className="flex items-center gap-2 mb-1">
+                <input
+                  type="checkbox"
+                  value={cls.id}
+                  checked={form.classIds.includes(cls.id)}
+                  onChange={() => handleCheckbox("classIds", cls.id)}
+                />
+                {cls.className}
+              </label>
+            ))}
+          </div>
+        </div>
+      ),
+      studentIds: (
+        <div className="mb-3">
+          <label className="block font-semibold mb-1">Assign Students:</label>
+          <div className="border rounded p-2 max-h-40 overflow-y-auto bg-white/20">
+            {students.map((s) => (
+              <label key={s.id} className="flex items-center gap-2 mb-1">
+                <input
+                  type="checkbox"
+                  value={s.id}
+                  checked={form.studentIds.includes(s.id)}
+                  onChange={() => handleCheckbox("studentIds", s.id)}
+                />
+                {s.name}
+              </label>
+            ))}
+          </div>
+        </div>
+      ),
+    }
+  );
+}
+
+
+function AddStudentModal({ onClose, onSave, teachers, classes, isEdit = false, initialData = {} }) {
+  
+  const initialForm = {
+    firstName: initialData.name ? initialData.name.split(" ")[0] : "",
+    lastName: initialData.name ? initialData.name.split(" ").slice(1).join(" ") : "",
+    email: initialData.email || "",
+    classIds: initialData.classes ? initialData.classes.map((cls) => cls.id) : [],
+    teacherId: initialData.teacherId || "",
+  };
+  
+  const [form, setForm] = useState(initialForm);
+
+
+ 
+  useEffect(() => {
+    if (isEdit && initialData) {
+      setForm({
+        firstName: initialData.name ? initialData.name.split(" ")[0] : "",
+        lastName: initialData.name ? initialData.name.split(" ").slice(1).join(" ") : "",
+        email: initialData.email || "",
+        classIds: initialData.classes ? initialData.classes.map((cls) => cls.id) : [],
+        teacherId: initialData.teacherId || "",
+      });
+    }
+  }, [initialData, isEdit]);
+
+
+  useEffect(() => {
+    if (isEdit && initialData.id) {
+
+      authorizedFetch(`${SERVER_URL}/api/student/${initialData.id}/classes`)
+        .then((res) => res.json())
+        .then((classesData) => {
+          setForm((prev) => ({
+            ...prev,
+            classIds: classesData.map((cls) => cls.id),
+          }));
+        })
+        .catch((err) => {
+          console.error("Error fetching student classes:", err);
+          toast.error("Failed to load student classes");
+        });
+  
+    
+      authorizedFetch(`${SERVER_URL}/api/student/teacher/${initialData.id}`)
+        .then((res) => res.json())
+        .then((teacher) => {
+          setForm((prev) => ({
+            ...prev,
+            teacherId: teacher.id,
+          }));
+        })
+        .catch((err) => {
+          console.error("Error fetching student teacher:", err);
+          toast.error("Failed to load teacher info");
+        });
+    }
+  }, [isEdit, initialData.id]);
+  
+
+  const sortedTeachers = useMemo(() => {
+    if (!form.teacherId) return teachers;
+    const index = teachers.findIndex((t) => String(t.id) === String(form.teacherId));
+    if (index === -1) return teachers;
+    const newArr = [...teachers];
+    const [assignedTeacher] = newArr.splice(index, 1);
+    newArr.unshift(assignedTeacher);
+    return newArr;
+  }, [teachers, form.teacherId]);
+  
+  const handleCheckbox = (field, id) => {
+    setForm((prev) => ({
+      ...prev,
+      [field]: prev[field].includes(id)
+        ? prev[field].filter((item) => item !== id)
+        : [...prev[field], id],
+    }));
+  };
+  
+  const handleSubmit = () => {
+    if (!form.firstName || !form.lastName || !form.email || !form.teacherId) {
+      toast.error("All fields are required");
+      return;
+    }
+    onSave(form);
+    onClose();
+  };
+
+  return renderModal(
+    isEdit ? "Edit Student" : "Add Student",
+    form,
+    setForm,
+    handleSubmit,
+    onClose,
+    {
+      teacherId: (
+        <select
+          name="teacherId"
+          value={form.teacherId}
+          onChange={(e) => setForm({ ...form, teacherId: e.target.value })}
+          className="w-full mb-3 px-3 py-2 border rounded"
+        >
+          <option value="">Select teacher</option>
+          {sortedTeachers.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.name}
+            </option>
+          ))}
+        </select>
+      ),
+      classIds: (
+        <div className="mb-3">
+          <label className="block font-semibold mb-1">Assign Classes:</label>
+          <div className="border rounded p-2 max-h-40 overflow-y-auto bg-white/20">
+            {classes.map((cls) => (
+              <label key={cls.id} className="flex items-center gap-2 mb-1">
+                <input
+                  type="checkbox"
+                  value={cls.id}
+                  checked={form.classIds.includes(cls.id)}
+                  onChange={() => handleCheckbox("classIds", cls.id)}
+                />
+                {cls.className}
+              </label>
+            ))}
+          </div>
+        </div>
+      ),
+      
+    }
+  );
+}
+
+
+function AddClassModal({ onClose, onSave, teachers, students, isEdit = false, initialData = {} }) {
+
+
+
+  console.log("AddClassModal initialData:", initialData);
+  const { adminId } = useParams();
+
+  const [form, setForm] = useState({
+    className: initialData.className || "",
+    meetingId: initialData.meetingId || `meet-${Math.random().toString(36).substring(7)}`,
+    teacherId: initialData.teacherId || "",
+    studentIds: initialData.studentIds || [],
+  });
+
+  
+  const [showTeacherForm, setShowTeacherForm] = useState(false);
+  const [showStudentForm, setShowStudentForm] = useState(false);
+  const [formNewTeacher, setFormNewTeacher] = useState({});
+  const [formNewStudent, setFormNewStudent] = useState({});  
+useEffect(() => {
+  if (isEdit && initialData?.id) {
+    const fetchLessonData = async () => {
+      try {
+
+        const studentsRes = await authorizedFetch(`${SERVER_URL}/api/lessons/${initialData.id}/students`);
+        const studentsData = await studentsRes.json();
+        const studentIds = studentsData.map((s) => s.id);
+
+   
+        const teacherRes = await authorizedFetch(`${SERVER_URL}/api/lessons/${initialData.id}/teacher`);
+        const teacherData = await teacherRes.json();
+
+
+        setForm({
+          className: initialData.className || "",
+          meetingId: initialData.meetingId || `meet-${Math.random().toString(36).substring(7)}`,
+          teacherId: teacherData.id,
+          studentIds
+        });
+      } catch (err) {
+        console.error("❌ Error fetching class data:", err);
+        toast.error("Failed to load class details");
+      }
+    };
+
+    fetchLessonData();
+  }
+}, [isEdit, initialData]);
+
+  const handleSaveNewTeacher = async () => {
+    const { firstName, lastName, email, password } = formNewTeacher;
+    if (!firstName || !lastName || !email || !password) {
+      toast.error("Fill all teacher fields");
+      return;
+    }
+
+
+    
+    const fullName = `${firstName} ${lastName}`;
+    try {
+      const res = await authorizedFetch(`${SERVER_URL}/api/admin/${adminId}/teachers`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: fullName, email, password }),
+      });
+      if (res.ok) {
+        const newTeacher = await res.json();
+        toast.success("Teacher added!");
+
+        setForm({ ...form, teacherId: newTeacher.id });
+        setShowTeacherForm(false);
+      } else {
+        throw new Error("Failed to add teacher");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Error adding teacher");
+    }
+  };
+
+
+  const handleSaveNewStudent = async () => {
+    const { firstName, lastName, email, password } = formNewStudent;
+    if (!firstName || !lastName || !email || !password) {
+      toast.error("Fill all student fields");
+      return;
+    }
+    const fullName = `${firstName} ${lastName}`;
+    try {
+      const res = await authorizedFetch(`${SERVER_URL}/api/admin/${formNewStudent.teacherId}/students`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: fullName, email, password }),
+      });
+      if (res.ok) {
+        const newStudent = await res.json();
+        toast.success("Student added!");
+     
+        setForm({ ...form, studentIds: [...form.studentIds, newStudent.id] });
+        setShowStudentForm(false);
+      } else {
+        throw new Error("Failed to add student");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Error adding student");
+    }
+  };
+
+
+  useEffect(() => {
+    if (isEdit && initialData) {
+      setForm((prev) => ({
+        ...prev,
+        className: initialData.className || "",
+        meetingId: initialData.meetingId || prev.meetingId,
+        teacherId: initialData.teacherId || "",
+      }));
+      if (initialData.id) {
+        const fetchLinkedStudents = async () => {
+          try {
+            const res = await authorizedFetch(`${SERVER_URL}/api/lessons/${initialData.id}/students`);
+            const data = await res.json();
+            console.log("Fetched linked students for class:", data);
+            const ids = data.map((s) => s.id);
+            setForm((prev) => ({ ...prev, studentIds: ids }));
+          } catch (err) {
+            console.error("Failed to fetch lesson's students:", err);
+          }
+        };
+        fetchLinkedStudents();
+      }
+    }
+  }, [isEdit, initialData]);
+
+  const handleCheckbox = (id) => {
+    setForm((prev) => ({
+      ...prev,
+      studentIds: prev.studentIds.includes(id)
+        ? prev.studentIds.filter((s) => s !== id)
+        : [...prev.studentIds, id],
+    }));
+  };
+
+  const handleSubmit = () => {
+    if (!form.className || !form.teacherId) {
+      toast.error("Class name and teacher are required");
+      return;
+    }
+    onSave(form);
+    onClose();
+  };
+
+ 
+  return ReactDOM.createPortal(
+    <>
+  
+      <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+        <div className="bg-white text-black p-6 rounded w-[450px] max-h-[90vh] overflow-y-auto">
+          <h2 className="text-xl font-bold mb-4">{isEdit ? "Edit Class" : "Add Class"}</h2>
+          <input
+            className="w-full mb-3 px-3 py-2 border rounded"
+            placeholder="Class Name"
+            value={form.className}
+            onChange={(e) => setForm({ ...form, className: e.target.value })}
+          />
+          <select
+            value={form.teacherId}
+            onChange={(e) => setForm({ ...form, teacherId: e.target.value })}
+            className="w-full mb-3 px-3 py-2 border rounded"
+          >
+            <option value="">Select teacher</option>
+            {teachers.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+          {/* 7. Вставляем кнопку "Add New Teacher" сразу после селекта учителя */}
+          <button
+            className="w-full bg-blue-500 text-white px-3 py-2 rounded mb-3"
+            onClick={() => setShowTeacherForm(true)}
+          >
+            + Add New Teacher
+          </button>
+          <div className="mb-3">
+            <label className="block font-semibold mb-1">Select Students:</label>
+            <div className="border rounded p-2 max-h-40 overflow-y-auto bg-white/20">
+              {students.map((s) => (
+                <label key={s.id} className="flex items-center gap-2 mb-1">
+                  <input
+                    type="checkbox"
+                    value={s.id}
+                    checked={form.studentIds.includes(s.id)}
+                    onChange={() => handleCheckbox(s.id)}
+                  />
+                  {s.name}
+                </label>
+              ))}
+            </div>
+          </div>
+          {/* 8. Вставляем кнопку "Add New Student" сразу после списка учеников */}
+          <button
+            className="w-full bg-blue-500 text-white px-3 py-2 rounded mb-3"
+            onClick={() => setShowStudentForm(true)}
+          >
+            + Add New Student
+          </button>
+          <div className="flex justify-end gap-2">
+            <button onClick={onClose} className="border px-4 py-2 rounded text-gray-600">
+              Cancel
+            </button>
+            <button onClick={handleSubmit} className="bg-green-600 text-white px-4 py-2 rounded">
+              Save
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* 9. Модальное окно для добавления нового учителя (появляется справа) */}
+      {showTeacherForm && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+    <div className="bg-white text-black p-6 rounded w-[450px] max-h-[90vh] overflow-y-auto">
+      <h2 className="text-lg font-bold mb-4">Add Teacher</h2>
+      <input
+        className="w-full mb-2 px-3 py-2 border rounded"
+        placeholder="First Name"
+        onChange={(e) =>
+          setFormNewTeacher({ ...formNewTeacher, firstName: e.target.value })
+        }
+      />
+      <input
+        className="w-full mb-2 px-3 py-2 border rounded"
+        placeholder="Last Name"
+        onChange={(e) =>
+          setFormNewTeacher({ ...formNewTeacher, lastName: e.target.value })
+        }
+      />
+      <input
+        className="w-full mb-2 px-3 py-2 border rounded"
+        placeholder="Email"
+        onChange={(e) =>
+          setFormNewTeacher({ ...formNewTeacher, email: e.target.value })
+        }
+      />
+      <input
+        type="password"
+        className="w-full mb-4 px-3 py-2 border rounded"
+        placeholder="Password"
+        onChange={(e) =>
+          setFormNewTeacher({ ...formNewTeacher, password: e.target.value })
+        }
+      />
+      <div className="flex justify-between">
+        <button
+          onClick={() => setShowTeacherForm(false)}
+          className="border px-4 py-2 rounded text-gray-600"
+        >
+          Cancel
+        </button>
+        <button
+          className="bg-green-600 text-white px-4 py-2 rounded"
+          onClick={handleSaveNewTeacher}
+        >
+          Save
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+{showStudentForm && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+    <div className="bg-white text-black p-6 rounded w-[450px] max-h-[90vh] overflow-y-auto">
+      <h2 className="text-lg font-bold mb-4">Add Student</h2>
+      <input
+        className="w-full mb-2 px-3 py-2 border rounded"
+        placeholder="First Name"
+        onChange={(e) =>
+          setFormNewStudent({ ...formNewStudent, firstName: e.target.value })
+        }
+      />
+      <input
+        className="w-full mb-2 px-3 py-2 border rounded"
+        placeholder="Last Name"
+        onChange={(e) =>
+          setFormNewStudent({ ...formNewStudent, lastName: e.target.value })
+        }
+      />
+      <input
+        className="w-full mb-2 px-3 py-2 border rounded"
+        placeholder="Email"
+        onChange={(e) =>
+          setFormNewStudent({ ...formNewStudent, email: e.target.value })
+        }
+      />
+      <input
+        type="password"
+        className="w-full mb-4 px-3 py-2 border rounded"
+        placeholder="Password"
+        onChange={(e) =>
+          setFormNewStudent({ ...formNewStudent, password: e.target.value })
+        }
+      />
+      {/* Здесь нужно вставить новый блок для выбора учителя */}
+      <div className="mb-3">
+        <label className="block font-semibold mb-1">Select Teacher:</label>
+        <select
+          className="w-full px-3 py-2 border rounded"
+          onChange={(e) =>
+            setFormNewStudent({ ...formNewStudent, teacherId: e.target.value })
+          }
+        >
+          <option value="">Select teacher</option>
+          {teachers.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.name}
+            </option>
+          ))}
+        </select>
+      </div>
+      {/* Конец нового блока выбора учителя */}
+      <div className="flex justify-between">
+        <button
+          onClick={() => setShowStudentForm(false)}
+          className="border px-4 py-2 rounded text-gray-600"
+        >
+          Cancel
+        </button>
+        <button
+          className="bg-green-600 text-white px-4 py-2 rounded"
+          onClick={handleSaveNewStudent}
+        >
+          Save
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+    </>,
+    document.body
+  );
+}
+
+/* ========== Главный компонент ========== */
+export default function PrincipalDashboardScreen() {
+  const { adminId, name } = useParams();
+  const navigate = useNavigate();
+  useEffect(() => {
+    document.title = "TAMAMAT Principal";
+  }, []);
+  const [activeTab, setActiveTab] = useState("teachers");
+  const [teachers, setTeachers] = useState([]);
+  const [classes, setClasses] = useState([]);
+  const [students, setStudents] = useState([]);
+  const [menuData, setMenuData] = useState(null);
+  const [showAddTeacherModal, setShowAddTeacherModal] = useState(false);
+  const [showAddStudentModal, setShowAddStudentModal] = useState(false);
+  const [showAddClassModal, setShowAddClassModal] = useState(false);
+  const [editData, setEditData] = useState(null);
+
+  const principalName = name;
+
+  useEffect(() => {
+    fetchAll();
+  }, [adminId]);
+
+  const fetchAll = () => {
+    fetchTeachers();
+    fetchClasses();
+    fetchStudents();
+  };
+
+  const fetchTeachers = async () => {
+    try {
+      const res = await authorizedFetch(`${SERVER_URL}/api/admin/${adminId}/teachers`);
+      const data = await res.json();
+      console.log("Fetched teachers:", data);
+      setTeachers(data || []);
+    } catch (err) {
+      console.error("Error fetching teachers:", err);
+      toast.error("Failed to load teachers");
+    }
+  };
+
+  const fetchClasses = async () => {
+    try {
+      const res = await authorizedFetch(`${SERVER_URL}/api/admin/${adminId}/classes`);
+      const data = await res.json();
+      console.log("Fetched classes:", data);
+      setClasses(data || []);
+    } catch (err) {
+      console.error("Error fetching classes:", err);
+      toast.error("Failed to load classes");
+    }
+  };
+
+  const fetchStudents = async () => {
+    try {
+      const res = await authorizedFetch(`${SERVER_URL}/api/admin/${adminId}/students`);
+      const data = await res.json();
+      console.log("Fetched students:", data);
+      setStudents(data || []);
+    } catch (err) {
+      console.error("Error fetching students:", err);
+      toast.error("Failed to load students");
+    }
+  };
+
+  const deleteItem = async (id, type) => {
+    if (!window.confirm("Are you sure you want to delete this?")) return;
+    let url = "";
+    switch (type) {
+      case "teachers":
+        url = `${SERVER_URL}/api/teachers/${id}`;
+        break;
+      case "students": {
+        const student = students.find((s) => s.id === id);
+        const teacherId = student?.teacherId;
+        if (!teacherId) {
+          toast.error("Teacher ID not found for this student");
+          return;
+        }
+        url = `${SERVER_URL}/api/admin/students/${id}`;
+        break;
+      }
+      case "classes":
+        url = `${SERVER_URL}/api/admin/classes/${id}`;
+        break;
+      default:
+        toast.error("Unknown type");
+        return;
+    }
+    try {
+      const res = await authorizedFetch(url, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete");
+      toast.success(`Successfully deleted!`);
+      fetchAll();
+    } catch (err) {
+      console.error("Delete error:", err);
+      toast.error("Failed to delete");
+    }
+  };
+
+  const toggleMenu = (id, type, e, classUrl) => {
+    e.stopPropagation();
+    const rect = e.currentTarget.getBoundingClientRect();
+    setMenuData({
+      id,
+      type: type.toLowerCase(),
+      x: rect.x + rect.width,
+      y: rect.y + window.scrollY,
+      classUrl,
+    });
+  };
+
+  const onEdit = (id, type) => {
+    setEditData({ id, type });
+    setMenuData(null);
+  };
+
+ 
+  const handleUpdateTeacher = async (data) => {
+    await handleUpdateTeacherInternal(data);
+  };
+
+  const handleUpdateTeacherInternal = async ({
+    id,
+    firstName,
+    lastName,
+    email,
+    password,
+    classIds,
+    studentIds,
+  }) => {
+    const fullName = `${firstName} ${lastName}`;
+    await authorizedFetch(`${SERVER_URL}/api/teachers/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: fullName, email, password, classIds, studentIds }),
+    });
+    toast.success("Teacher updated!");
+    fetchTeachers();
+  };
+
+  const handleSaveTeacher = async (data) => {
+    const { firstName, lastName, email, password, classIds, studentIds } = data;
+    const fullName = `${firstName} ${lastName}`;
+    const res = await authorizedFetch(`${SERVER_URL}/api/admin/${adminId}/teachers`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: fullName, email, password, classIds, studentIds }),
+    });
+    if (res.ok) {
+      toast.success("Teacher added!");
+      fetchTeachers();
+    }
+  };
+
+ 
+  const handleUpdateStudent = async (data) => {
+    const { id, teacherId, firstName, lastName, email, password, classIds } = data;
+    const fullName = `${firstName} ${lastName}`;
+    await authorizedFetch(`${SERVER_URL}/api/teacher/${teacherId}/students/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: fullName, email, password, classIds }),
+    });
+    toast.success("Student updated!");
+    fetchStudents();
+  };
+
+  const handleSaveStudent = async (data) => {
+    const { firstName, lastName, email, teacherId, password, classIds } = data;
+    const fullName = `${firstName} ${lastName}`;
+    const res = await authorizedFetch(`${SERVER_URL}/api/admin/${adminId}/students`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: fullName, email, teacherId, password, classIds }),
+    });
+    if (res.ok) {
+      toast.success("Student added!");
+      fetchStudents();
+    }
+  };
+
+ 
+  const handleUpdateClass = async (data) => {
+    const { id, className, studentIds, teacherId } = data;
+    await authorizedFetch(`${SERVER_URL}/api/lessons/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ className, studentIds, teacherId }),
+    });
+    toast.success("Class updated!");
+    fetchClasses();
+  };
+
+  const handleSaveClass = async (data) => {
+    const { className, meetingId, teacherId, studentIds } = data;
+    const res = await authorizedFetch(`${SERVER_URL}/api/admin/${adminId}/classes`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ className, meetingId, teacherId, studentIds }),
+    });
+    if (res.ok) {
+      toast.success("Class added!");
+      fetchClasses();
+    }
+  };
+
+  const handleLogout = () => {
+    window.location.href = `${window.location.origin}/admin/login`;
+  };  
+
+  return (
+    <div className="min-h-screen w-full bg-black text-white p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-4xl font-bold">Principal Dashboard</h1>
+        <div className="flex items-center gap-4">
+          <span className="text-lg">{principalName}</span>
+          <button onClick={handleLogout} className="bg-red-600 px-4 py-2 rounded">
+            Log Out
+          </button>
+        </div>
+      </div>
+      <div className="flex gap-4 mb-6">
+        {["Teachers", "Classes", "Students"].map((tab) => (
+          <button
+            key={tab}
+            className={`px-4 py-2 rounded ${
+              activeTab === tab.toLowerCase() ? "bg-blue-600" : "bg-gray-700"
+            }`}
+            onClick={() => setActiveTab(tab.toLowerCase())}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+      {activeTab === "teachers" && (
+        <DataTable
+          title="Teachers"
+          data={teachers}
+          columns={["name", "email"]}
+          onAdd={() => setShowAddTeacherModal(true)}
+          onMenuToggle={toggleMenu}
+        />
+      )}
+      {activeTab === "students" && (
+        <DataTable
+          title="Students"
+          data={students}
+          columns={["name", "email", "classes"]}
+          onAdd={() => setShowAddStudentModal(true)}
+          onMenuToggle={toggleMenu}
+        />
+      )}
+      {activeTab === "classes" && (
+        <DataTable
+          title="Classes"
+          data={classes}
+          columns={["className", "teacherName", "meetingId", "url"]}
+          onAdd={() => setShowAddClassModal(true)}
+          onMenuToggle={(id, title, e, classUrl) => toggleMenu(id, title, e, classUrl)}
+        />
+      )}
+      {editData?.type === "teachers" && (
+        <AddTeacherModal
+          onClose={() => setEditData(null)}
+          onSave={(data) => handleUpdateTeacher({ ...data, id: editData.id })}
+          isEdit
+          initialData={teachers.find((t) => t.id === editData.id) || {}}
+          classes={classes}
+          students={students}
+        />
+      )}
+      {editData?.type === "students" && (
+        <AddStudentModal
+          onClose={() => setEditData(null)}
+          onSave={(data) =>
+            handleUpdateStudent({
+              ...data,
+              id: editData.id,
+              teacherId:
+                data.teacherId || (students.find((s) => s.id === editData.id)?.teacherId),
+            })
+          }
+          isEdit
+          initialData={students.find((s) => s.id === editData.id) || {}}
+          teachers={teachers}
+          classes={classes}
+        />
+      )}
+      {editData?.type === "classes" && (
+        <AddClassModal
+          onClose={() => setEditData(null)}
+          onSave={(data) => handleUpdateClass({ ...data, id: editData.id })}
+          isEdit
+          initialData={classes.find((c) => c.id === editData.id) || {}}
+          teachers={teachers}
+          students={students}
+        />
+      )}
+      {showAddTeacherModal && (
+        <AddTeacherModal
+          onClose={() => setShowAddTeacherModal(false)}
+          onSave={handleSaveTeacher}
+          classes={classes}
+          students={students}
+        />
+      )}
+      {showAddStudentModal && (
+        <AddStudentModal
+          onClose={() => setShowAddStudentModal(false)}
+          onSave={handleSaveStudent}
+          teachers={teachers}
+          classes={classes}
+        />
+      )}
+      {showAddClassModal && (
+        <AddClassModal
+          onClose={() => setShowAddClassModal(false)}
+          onSave={handleSaveClass}
+          teachers={teachers}
+          students={students}
+          
+        />
+      )}
+      {menuData && (
+        <ContextMenu
+          data={menuData}
+          onDelete={deleteItem}
+          setMenuData={setMenuData}
+          onEdit={onEdit}
+        />
+      )}
+    </div>
+  );
+}
+
+export { renderModal };

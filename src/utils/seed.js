@@ -4,7 +4,7 @@ const { initDB, User, ClassMeeting, Student, sequelize } = require("../backend/m
 
 const users = [
   { name: "Super Admin", email: "superadmin@example.com", password: "superadmin123", role: "superadmin" },
-  { name: "Andriy Dykyy", email: "meet.tamamat@gmail.com", password: "1234", role: "superadmin" },
+  { name: "Andriy Dykyy", email: "meet.tamamat@gmail.com", password: "superadmin123", role: "superadmin" },
   { name: "Admin One", email: "admin1@example.com", password: "adminpassword1", role: "admin" },
   { name: "Teacher One", email: "teacher1@example.com", password: "teacherpassword1", role: "teacher", adminEmail: "admin1@example.com" },
   { name: "Teacher Two", email: "teacher2@example.com", password: "teacherpassword2", role: "teacher", adminEmail: "admin1@example.com" }

@@ -1,51 +1,81 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
-import { MeetingContainer } from "../../meeting/MeetingContainer";
 import { MeetingProvider } from "@videosdk.live/react-sdk";
 
-const SERVER_URL = process.env.REACT_APP_SERVER_URL;
-
-export function StaticMeetingJoiner({ meetingId, token, userName }) {
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
+function WaitingRoom({ meetingId, token, onJoined }) {
+  const [checking, setChecking] = useState(false);
 
   useEffect(() => {
-    const validate = async () => {
+    let interval;
+
+    const checkParticipants = async () => {
       try {
-        if (!meetingId || !token) {
-          toast.error("Missing meeting info.");
-          navigate("/");
+        console.log("🔁 Checking active sessions...");
+        const sessionRes = await fetch(
+          `https://api.videosdk.live/v2/sessions/?roomId=${meetingId}`,
+          {
+            headers: {
+              Authorization: token,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        const sessionData = await sessionRes.json();
+        console.log("📦 Sessions data:", sessionData);
+
+        const activeSession = sessionData.data?.find(
+          (s) => s.status === "ongoing"
+        );
+
+        if (!activeSession) {
+          console.log("🕓 No active session yet.");
           return;
         }
-      } catch (error) {
-        toast.error("Error joining meeting.");
-        navigate("/");
-      } finally {
-        setLoading(false);
+
+        const participants = activeSession.participants || [];
+        console.log(`👥 Found ${participants.length} participant(s)`);
+
+        if (participants.length > 0) {
+          clearInterval(interval);
+          onJoined();
+        } else {
+          console.log("🕓 Session started but no participants.");
+        }
+      } catch (err) {
+        console.error("❌ Error checking session:", err);
       }
     };
 
-    validate();
-  }, [meetingId, token, navigate]);
+    setChecking(true);
+    interval = setInterval(checkParticipants, 5000);
+    checkParticipants(); // initial
 
-  if (loading) return <div>Loading meeting...</div>;
+    return () => clearInterval(interval);
+  }, [meetingId, token, onJoined]);
 
+  return (
+    <div className="h-screen w-screen bg-gray-900 text-white flex items-center justify-center">
+      <h2 className="text-xl font-bold">
+        {checking ? "Waiting for the teacher to start the meeting..." : "Loading..."}
+      </h2>
+    </div>
+  );
+}
+
+export default function WaitingLobbyScreen({ meetingId, token, userName, role, onJoined }) {
   return (
     <MeetingProvider
       config={{
         meetingId,
-        micEnabled: true,
-        webcamEnabled: true,
-        name: userName || "Guest",
+        micEnabled: false,
+        webcamEnabled: false,
+        name: userName,
         multiStream: true,
+        role,
       }}
       token={token}
-      joinWithoutUserInteraction={true}
     >
-      <MeetingContainer onMeetingLeave={() => navigate("/")} />
+      <WaitingRoom meetingId={meetingId} token={token} onJoined={onJoined} />
     </MeetingProvider>
   );
 }
-
-export default StaticMeetingJoiner;

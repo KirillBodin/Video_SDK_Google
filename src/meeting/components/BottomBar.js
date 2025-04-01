@@ -33,6 +33,7 @@ import { Dialog, Popover, Transition } from "@headlessui/react";
 import { createPopper } from "@popperjs/core";
 import { useMeetingAppContext } from "../../MeetingAppContextDef";
 import useMediaStream from "../../hooks/useMediaStream";
+import { useNavigate } from "react-router-dom";
 
 function PipBTN({ isMobile, isTab }) {
   const { pipMode, setPipMode } = useMeetingAppContext();
@@ -213,8 +214,10 @@ const MicBTN = () => {
       <OutlinedButton
         Icon={localMicOn ? MicOnIcon : MicOffIcon}
         onClick={() => {
+          if (!mMeeting || !mMeeting.toggleMic) return;
           mMeeting.toggleMic();
         }}
+        
         bgColor={localMicOn ? "bg-gray-750" : "bg-white"}
         borderColor={localMicOn && "#ffffff33"}
         isFocused={localMicOn}
@@ -271,21 +274,24 @@ const MicBTN = () => {
                                 {mics.map(({ deviceId, label }, index) => (
                                   <div
                                     className={`px-3 py-1 my-1 pl-6 text-white text-left ${
-                                      deviceId === selectedMic.id &&
+                                      deviceId === selectedMic?.id &&
                                       "bg-gray-150"
                                     }`}
                                   >
                                     <button
                                       className={`flex flex-1 w-full text-left ${
-                                        deviceId === selectedMic.id &&
+                                        deviceId === selectedMic?.id &&
                                         "bg-gray-150"
                                       }`}
                                       key={`mics_${deviceId}`}
+                                      
                                       onClick={() => {
+                                        if (!setSelectedMic || !changeMic) return;
                                         setSelectedMic({ id: deviceId });
                                         changeMic(deviceId);
                                         close();
                                       }}
+                                      
                                     >
                                       {label || `Mic ${index + 1}`}
                                     </button>
@@ -451,13 +457,13 @@ const WebCamBTN = () => {
                                 {webcams.map(({ deviceId, label }, index) => (
                                   <div
                                     className={`px-3 py-1 my-1 pl-6 text-white ${
-                                      deviceId === selectedWebcam.id &&
+                                      deviceId === selectedWebcam?.id &&
                                       "bg-gray-150"
                                     }`}
                                   >
                                     <button
                                       className={`flex flex-1 w-full text-left ${
-                                        deviceId === selectedWebcam.id &&
+                                        deviceId === selectedWebcam?.id&&
                                         "bg-gray-150"
                                       }`}
                                       key={`output_webcams_${deviceId}`}
@@ -499,8 +505,10 @@ const WebCamBTN = () => {
   );
 };
 
-export function BottomBar({ bottomBarHeight, setIsMeetingLeft }) {
+export function BottomBar({ bottomBarHeight, setIsMeetingLeft, isHost }) {
+  const navigate = useNavigate();
   const { sideBarMode, setSideBarMode } = useMeetingAppContext();
+  console.log("🔑 User Role in BottomBar:", isHost ? "host" : "participant");
   const RaiseHandBTN = ({ isMobile, isTab }) => {
     const { publish } = usePubSub("RAISE_HAND");
     const RaiseHand = () => {
@@ -638,22 +646,31 @@ export function BottomBar({ bottomBarHeight, setIsMeetingLeft }) {
       />
     );
   };
-
   const LeaveBTN = () => {
-    const { leave } = useMeeting();
-
+    const { leave, end } = useMeeting();
+    const navigate = useNavigate();
+  
+    const handleLeave = async () => {
+      try {
+        await leave(); 
+        setIsMeetingLeft(true); 
+        navigate("/"); 
+      } catch (error) {
+        console.error("❌ Error while leaving:", error);
+      }
+    };
+  
     return (
       <OutlinedButton
         Icon={EndIcon}
         bgColor="bg-red-150"
-        onClick={() => {
-          leave();
-          setIsMeetingLeft(true);
-        }}
-        tooltip="Leave Meeting"
+        onClick={handleLeave}
+        tooltip={"Leave Meeting"}
       />
     );
   };
+  
+  
 
   const ChatBTN = ({ isMobile, isTab }) => {
     return isMobile || isTab ? (
@@ -712,7 +729,7 @@ export function BottomBar({ bottomBarHeight, setIsMeetingLeft }) {
       />
     );
   };
-
+  console.log("🔑 User Role in BottomBar:", isHost ? "host" : "participant"); // 👈 Вставь здесь
   const MeetingIdCopyBTN = () => {
     const { meetingId } = useMeeting();
     const [isCopied, setIsCopied] = useState(false);

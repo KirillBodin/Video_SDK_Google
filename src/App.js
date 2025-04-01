@@ -11,6 +11,7 @@ import TeacherDashboard from "./components/screens/TeacherDashboard";
 import AdminLoginScreen from "./components/screens/AdminLoginScreen";
 import JoinMeetingWrapper from "./components/screens/JoinMeetingWrapper";
 import ProtectedRoute from "./components/ProtectedRoute";
+import StaticMeetingJoinerWrapper from "./components/StaticMeetingJoinerWrapper";
 
 function App() {
   const [token, setToken] = useState("");
@@ -113,6 +114,7 @@ function App() {
 </Route>
 
 <Route path="/:slug/:teacherName/:className" element={<JoinMeetingWrapper />} />
+
 
 
 

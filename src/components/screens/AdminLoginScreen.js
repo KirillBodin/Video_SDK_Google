@@ -128,9 +128,12 @@ export default function AdminLoginScreen() {
               placeholder="Enter password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 rounded-md text-white placeholder-gray-500 
-                         bg-gray-800 border border-gray-700 
-                         focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  handleLogin();
+                }
+              }}
+              className="w-full pl-10 pr-4 py-2 rounded-md text-white placeholder-gray-500 bg-gray-800 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
         </div>

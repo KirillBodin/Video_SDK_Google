@@ -13,21 +13,23 @@ function ParticipantsViewer({ isPresenting, highlightedParticipantId }) {
   } = useMeeting();
 
   const participantIds = useMemo(() => {
+    if (!localParticipant) return [];
+  
     const pinnedParticipantId = [...pinnedParticipants.keys()].filter(
-        (participantId) => participantId !== localParticipant.id
+      (participantId) => participantId !== localParticipant.id
     );
     const regularParticipantIds = [...participants.keys()].filter(
-        (participantId) =>
-            ![...pinnedParticipants.keys()].includes(participantId) &&
-            localParticipant.id !== participantId
+      (participantId) =>
+        ![...pinnedParticipants.keys()].includes(participantId) &&
+        localParticipant.id !== participantId
     );
-
+  
     const ids = [
       localParticipant.id,
       ...pinnedParticipantId,
       ...regularParticipantIds,
     ].slice(0, isPresenting ? 6 : 16);
-
+  
     if (activeSpeakerId && !ids.includes(activeSpeakerId)) {
       ids[ids.length - 1] = activeSpeakerId;
     }
@@ -38,7 +40,9 @@ function ParticipantsViewer({ isPresenting, highlightedParticipantId }) {
     pinnedParticipants,
     presenterId,
     localScreenShareOn,
+    localParticipant,
   ]);
+  
 
   return (
       <MemoizedParticipantGrid
