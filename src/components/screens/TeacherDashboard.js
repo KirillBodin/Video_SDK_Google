@@ -780,14 +780,14 @@ export default function TeacherDashboard() {
                             rel="noopener noreferrer"
                             className="underline"
                           >
-                            <a
+<a
   href="#"
   onClick={(e) => {
     e.preventDefault();
     const url = new URL(lesson.classUrl, window.location.origin);
     url.searchParams.set("role", "teacher");
     localStorage.setItem("teacherEmail", teacherEmail);
-    window.location.href = url.toString();
+    window.open(url.toString(), "_blank");
   }}
   className="underline text-blue-400"
 >
