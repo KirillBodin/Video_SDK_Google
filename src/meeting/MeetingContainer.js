@@ -16,23 +16,45 @@ import { useMeetingAppContext } from "../MeetingAppContextDef";
 
 const ParticipantMicStream = memo(({ participantId }) => {
   const { micStream } = useParticipant(participantId);
+
   useEffect(() => {
+    let audioElement;
+
     navigator.mediaDevices.enumerateDevices().then((devices) => {
       const audioInputs = devices.filter((device) => device.kind === "audioinput");
-      
+
+      if (audioInputs.length === 0) {
+        console.warn("⚠️ No audio input devices found.");
+      }
     });
 
-    if (micStream) {
+    if (micStream?.track) {
       const mediaStream = new MediaStream();
       mediaStream.addTrack(micStream.track);
-      const audioElement = new Audio();
+
+      audioElement = new Audio();
       audioElement.srcObject = mediaStream;
-      audioElement.play();
-      
+      audioElement.autoplay = true;
+      audioElement.oncanplaythrough = () => {
+        audioElement.play().catch((err) => {
+          console.warn("❌ Unable to play audio stream:", err);
+        });
+      };
+    } else {
+      console.warn("⚠️ No mic track available for participant:", participantId);
     }
+
+    return () => {
+      if (audioElement) {
+        audioElement.pause();
+        audioElement.srcObject = null;
+      }
+    };
   }, [micStream, participantId]);
+
   return null;
 });
+
 
 export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft, role }) {
   const { setSelectedMic, setSelectedWebcam, setSelectedSpeaker, useRaisedHandParticipants } = useMeetingAppContext();
