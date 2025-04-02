@@ -23,6 +23,7 @@ function App() {
   const [customVideoStream, setCustomVideoStream] = useState(null);
   const [isMeetingStarted, setMeetingStarted] = useState(false);
   const [isMeetingLeft, setIsMeetingLeft] = useState(false);
+  const [role, setRole] = useState("");
 
   const handleStartMeeting = (currentToken, currentMeetingId) => {
     if (!currentToken || !currentMeetingId) {
@@ -69,6 +70,7 @@ function App() {
                         setMeetingStarted(false);
                       }}
                       setIsMeetingLeft={setIsMeetingLeft}
+                      role={role}
                     />
                   </MeetingProvider>
                 ) : (
@@ -95,6 +97,7 @@ function App() {
                   onClickStartMeeting={handleStartMeeting}
                   startMeeting={isMeetingStarted}
                   setIsMeetingLeft={setIsMeetingLeft}
+                  role={role}
                 />
               )
             }

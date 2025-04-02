@@ -34,7 +34,7 @@ const ParticipantMicStream = memo(({ participantId }) => {
   return null;
 });
 
-export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
+export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft, role }) {
   const { setSelectedMic, setSelectedWebcam, setSelectedSpeaker, useRaisedHandParticipants } = useMeetingAppContext();
   const { participantRaisedHand } = useRaisedHandParticipants();
   const [participantsData, setParticipantsData] = useState([]);
@@ -202,9 +202,10 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
 
   
   useEffect(() => {
+   
     const handleGlobalKeyDown = (event) => {
       const key = event.key;
-      
+      if (role !== "host") return;
 
       if (!mMeeting) {
         console.warn("❌ Meeting instance is not available!");

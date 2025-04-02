@@ -62,7 +62,7 @@ export function JoiningScreen({
   const [dlgMuted, setDlgMuted] = useState(false);
   const [dlgDevices, setDlgDevices] = useState(false);
   const [didDeviceChange, setDidDeviceChange] = useState(false);
-  const [meetingId, setMeetingId] = useState(""); // Переконайся, що цей стан є!
+  const [meetingId, setMeetingId] = useState(""); 
 
 
 

@@ -10,25 +10,37 @@ export default function JoinMeetingWrapper() {
   const [step, setStep] = useState("email");
   const [userEmail, setUserEmail] = useState("");
   const [token, setToken] = useState("");
+  const [userRole, setUserRole] = useState("participant");
   const [actualMeetingId, setActualMeetingId] = useState("");
   const [error, setError] = useState("");
 
-  const isTeacherFromURL = new URLSearchParams(window.location.search).get("role") === "teacher";
-  const userRole = isTeacherFromURL ? "host" : "participant";
   const hasCreatedRef = useRef(false);
 
-
   useEffect(() => {
-    const email = localStorage.getItem("teacherEmail") || "anonymous@teacher.com";
-    if (isTeacherFromURL && !hasCreatedRef.current) {
-      hasCreatedRef.current = true;
-      setUserEmail(email);
-      createMeeting(email);
+    const params = new URLSearchParams(window.location.search);
+    const roleFromURL = params.get("role");
+
+   
+
+    if (roleFromURL === "teacher") {
+      const email = localStorage.getItem("teacherEmail");
+    
+
+      if (email && !hasCreatedRef.current) {
+        hasCreatedRef.current = true;
+       
+        setUserEmail(email);
+        setUserRole("host");
+        createMeeting(email);
+      } else {
+        console.warn("❌ No teacher email found in localStorage.");
+      }
     }
   }, []);
 
   const createMeeting = async (email) => {
     try {
+      
       const tokenResponse = await fetch(`${SERVER_URL}/api/get-token`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -44,10 +56,12 @@ export default function JoinMeetingWrapper() {
       });
 
       const tokenData = await tokenResponse.json();
+      
       if (!tokenData.token) throw new Error("No token");
 
       setToken(tokenData.token);
 
+      
       const meetingRes = await fetch("https://api.videosdk.live/v1/meetings", {
         method: "POST",
         headers: {
@@ -58,8 +72,10 @@ export default function JoinMeetingWrapper() {
       });
 
       const meetingData = await meetingRes.json();
+    
       if (!meetingData.meetingId) throw new Error("Failed to create meeting");
 
+      
       await fetch(`${SERVER_URL}/api/savemeeting/new`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -73,16 +89,36 @@ export default function JoinMeetingWrapper() {
       setActualMeetingId(meetingData.meetingId);
       setStep("meeting");
     } catch (err) {
-      console.error("Error creating meeting:", err);
+      console.error("❌ Error creating meeting:", err);
       toast.error("Failed to create meeting.");
     }
   };
 
   const handleEmailSubmit = async () => {
     if (!userEmail) return;
+   
 
     try {
+    
+      const userRes = await fetch(`${SERVER_URL}/api/users/by-email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: userEmail }),
+      });
 
+      const userData = await userRes.json();
+     
+
+      if (!userRes.ok || !userData.role) {
+        setError("User not found or invalid.");
+        return;
+      }
+
+      const isTeacher = userData.role === "teacher";
+      setUserRole(isTeacher ? "host" : "participant");
+     
+
+     
       const accessRes = await fetch(`${SERVER_URL}/api/meet/check-access`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -97,39 +133,82 @@ export default function JoinMeetingWrapper() {
         return;
       }
 
+      
       const tokenRes = await fetch(`${SERVER_URL}/api/get-token`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ permissions: ["allow_join"] }),
+        body: JSON.stringify({
+          permissions: isTeacher
+            ? [
+                "allow_join",
+                "allow_mod",
+                "allow_create",
+                "allow_publish",
+                "allow_subscribe",
+              ]
+            : ["allow_join"],
+        }),
       });
 
       const tokenData = await tokenRes.json();
-     
-
+    
       if (!tokenData.token) throw new Error("No token");
 
-      const meetingRes = await fetch(`${SERVER_URL}/api/savemeeting/by-classname/${className}`);
-      const meetingData = await meetingRes.json();
-      const meetingId = meetingData?.meeting?.meetingId;
-
-      
-
-      if (!meetingId) {
-        setError("No meeting found for this class.");
-        return;
-      }
-
       setToken(tokenData.token);
-      setActualMeetingId(meetingId);
-      setStep("waiting-room");
+
+      if (isTeacher) {
+       
+        const meetingRes = await fetch("https://api.videosdk.live/v1/meetings", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: tokenData.token,
+          },
+          body: JSON.stringify({ userMeetingId: meetingIdSlug, lobby: false }),
+        });
+
+        const meetingData = await meetingRes.json();
+      
+        if (!meetingData.meetingId) {
+          setError("Failed to create meeting");
+          return;
+        }
+
+        await fetch(`${SERVER_URL}/api/savemeeting/new`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            className,
+            meetingId: meetingData.meetingId,
+            teacherEmail: userEmail,
+          }),
+        });
+
+        setActualMeetingId(meetingData.meetingId);
+        setStep("meeting");
+      } else {
+    
+        const meetingRes = await fetch(`${SERVER_URL}/api/savemeeting/by-classname/${className}`);
+        const meetingData = await meetingRes.json();
+        const meetingId = meetingData?.meeting?.meetingId;
+
+
+        if (!meetingId) {
+          setError("No meeting found for this class.");
+          return;
+        }
+
+        setActualMeetingId(meetingId);
+        setStep("waiting-room");
+      }
     } catch (err) {
-      console.error("Error submitting email:", err);
+      console.error("❌ Error submitting email:", err);
       setError("Server error. Please try again.");
     }
   };
 
-
   if (step === "email") {
+ 
     return (
       <div className="h-screen w-screen bg-black text-white flex flex-col items-center justify-center">
         <h1 className="text-3xl mb-4">Enter Your Email</h1>
@@ -140,7 +219,10 @@ export default function JoinMeetingWrapper() {
           placeholder="your@email.com"
           onChange={(e) => setUserEmail(e.target.value)}
         />
-        <button className="mt-4 bg-blue-600 px-6 py-2 rounded" onClick={handleEmailSubmit}>
+        <button
+          className="mt-4 bg-blue-600 px-6 py-2 rounded"
+          onClick={handleEmailSubmit}
+        >
           Continue
         </button>
         {error && <p className="mt-2 text-red-400">{error}</p>}
@@ -149,6 +231,7 @@ export default function JoinMeetingWrapper() {
   }
 
   if (step === "waiting-room" && actualMeetingId && token) {
+   
     return (
       <WaitingRoomScreen
         meetingId={actualMeetingId}
@@ -161,6 +244,7 @@ export default function JoinMeetingWrapper() {
   }
 
   if (step === "meeting" && actualMeetingId && token) {
+   
     const StaticMeetingJoiner = require("../StaticMeetingJoiner").default;
     return (
       <StaticMeetingJoiner
@@ -172,5 +256,6 @@ export default function JoinMeetingWrapper() {
     );
   }
 
+  
   return null;
 }

@@ -61,7 +61,7 @@ function ContextMenu({ data, onDelete, setMenuData, onEdit }) {
   }, [setMenuData]);
 
   const handleCopy = () => {
-    const fullUrl = `${window.location.origin}/class/${data.classUrl}`;
+    const fullUrl = `${window.location.origin}/${data.classUrl}`;
     navigator.clipboard.writeText(fullUrl);
     toast.success("Class URL copied!");
     setMenuData(null);
@@ -132,30 +132,38 @@ function DataTable({ title, data, columns, onAdd, onMenuToggle }) {
           {data.map((row) => {
             const fullUrl =
               row.classUrl && title.toLowerCase() === "classes"
-                ? `${window.location.origin}/class/${row.classUrl}`
+                ? `${window.location.origin}/${row.classUrl}`
                 : null;
             return (
               <tr key={row.id}>
-                {columns.map((col) => {
-                  if (col === "url") {
-                    return (
-                      <td key={col} className="px-3 py-2">
-                        {fullUrl || "—"}
-                      </td>
-                    );
-                  } else if (col === "classes") {
-                    return (
-                      <td key={col} className="px-3 py-2">
-                        {row.classes?.map((cls) => cls.className).join(", ") || "—"}
-                      </td>
-                    );
-                  }
-                  return (
-                    <td key={col} className="px-3 py-2">
-                      {row[col] || "—"}
-                    </td>
-                  );
-                })}
+               {columns.map((col) => {
+  if (col === "url") {
+    return (
+      <td key={col} className="px-3 py-2">
+        {fullUrl || "—"}
+      </td>
+    );
+  } else if (col === "classes") {
+    return (
+      <td key={col} className="px-3 py-2">
+        {row.classes?.map((cls) => cls.className).join(", ") || "—"}
+      </td>
+    );
+  } else if (col === "teachers") {
+    return (
+      <td key={col} className="px-3 py-2">
+        {row.teachers?.map((t) => t.name).join(", ") || "—"}
+      </td>
+    );
+  }
+
+  return (
+    <td key={col} className="px-3 py-2">
+      {row[col] || "—"}
+    </td>
+  );
+})}
+
                 <td className="text-right px-3 py-2">
                   <button
                     onClick={(e) =>
@@ -291,35 +299,18 @@ function AddTeacherModal({ onClose, onSave, isEdit = false, initialData = {}, cl
 
 
 function AddStudentModal({ onClose, onSave, teachers, classes, isEdit = false, initialData = {} }) {
-  
   const initialForm = {
     firstName: initialData.name ? initialData.name.split(" ")[0] : "",
     lastName: initialData.name ? initialData.name.split(" ").slice(1).join(" ") : "",
     email: initialData.email || "",
     classIds: initialData.classes ? initialData.classes.map((cls) => cls.id) : [],
-    teacherId: initialData.teacherId || "",
+    teacherIds: initialData.teachers ? initialData.teachers.map((t) => t.id) : [],
   };
-  
+
   const [form, setForm] = useState(initialForm);
-
-
- 
-  useEffect(() => {
-    if (isEdit && initialData) {
-      setForm({
-        firstName: initialData.name ? initialData.name.split(" ")[0] : "",
-        lastName: initialData.name ? initialData.name.split(" ").slice(1).join(" ") : "",
-        email: initialData.email || "",
-        classIds: initialData.classes ? initialData.classes.map((cls) => cls.id) : [],
-        teacherId: initialData.teacherId || "",
-      });
-    }
-  }, [initialData, isEdit]);
-
 
   useEffect(() => {
     if (isEdit && initialData.id) {
-
       authorizedFetch(`${SERVER_URL}/api/student/${initialData.id}/classes`)
         .then((res) => res.json())
         .then((classesData) => {
@@ -332,34 +323,24 @@ function AddStudentModal({ onClose, onSave, teachers, classes, isEdit = false, i
           console.error("Error fetching student classes:", err);
           toast.error("Failed to load student classes");
         });
-  
-    
-      authorizedFetch(`${SERVER_URL}/api/student/teacher/${initialData.id}`)
+
+        authorizedFetch(`${SERVER_URL}/api/student/teachers/${initialData.id}`)
         .then((res) => res.json())
-        .then((teacher) => {
+        .then((teacherData) => {
+          const ids = teacherData.map((t) => t.id);
           setForm((prev) => ({
             ...prev,
-            teacherId: teacher.id,
+            teacherIds: ids,
           }));
         })
         .catch((err) => {
-          console.error("Error fetching student teacher:", err);
+          console.error("Error fetching student teachers:", err);
           toast.error("Failed to load teacher info");
         });
+      
     }
   }, [isEdit, initialData.id]);
-  
 
-  const sortedTeachers = useMemo(() => {
-    if (!form.teacherId) return teachers;
-    const index = teachers.findIndex((t) => String(t.id) === String(form.teacherId));
-    if (index === -1) return teachers;
-    const newArr = [...teachers];
-    const [assignedTeacher] = newArr.splice(index, 1);
-    newArr.unshift(assignedTeacher);
-    return newArr;
-  }, [teachers, form.teacherId]);
-  
   const handleCheckbox = (field, id) => {
     setForm((prev) => ({
       ...prev,
@@ -368,10 +349,10 @@ function AddStudentModal({ onClose, onSave, teachers, classes, isEdit = false, i
         : [...prev[field], id],
     }));
   };
-  
+
   const handleSubmit = () => {
-    if (!form.firstName || !form.lastName || !form.email || !form.teacherId) {
-      toast.error("All fields are required");
+    if (!form.firstName || !form.lastName || !form.email || form.teacherIds.length === 0) {
+      toast.error("All fields are required, including at least one teacher.");
       return;
     }
     onSave(form);
@@ -385,20 +366,23 @@ function AddStudentModal({ onClose, onSave, teachers, classes, isEdit = false, i
     handleSubmit,
     onClose,
     {
-      teacherId: (
-        <select
-          name="teacherId"
-          value={form.teacherId}
-          onChange={(e) => setForm({ ...form, teacherId: e.target.value })}
-          className="w-full mb-3 px-3 py-2 border rounded"
-        >
-          <option value="">Select teacher</option>
-          {sortedTeachers.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.name}
-            </option>
-          ))}
-        </select>
+      teacherIds: (
+        <div className="mb-3">
+          <label className="block font-semibold mb-1">Assign Teachers:</label>
+          <div className="border rounded p-2 max-h-40 overflow-y-auto bg-white/20">
+            {teachers.map((t) => (
+              <label key={t.id} className="flex items-center gap-2 mb-1">
+                <input
+                  type="checkbox"
+                  value={t.id}
+                  checked={form.teacherIds.includes(t.id)}
+                  onChange={() => handleCheckbox("teacherIds", t.id)}
+                />
+                {t.name}
+              </label>
+            ))}
+          </div>
+        </div>
       ),
       classIds: (
         <div className="mb-3">
@@ -418,10 +402,10 @@ function AddStudentModal({ onClose, onSave, teachers, classes, isEdit = false, i
           </div>
         </div>
       ),
-      
     }
   );
 }
+
 
 
 function AddClassModal({ onClose, onSave, teachers, students, isEdit = false, initialData = {} }) {
@@ -544,6 +528,7 @@ useEffect(() => {
           try {
             const res = await authorizedFetch(`${SERVER_URL}/api/lessons/${initialData.id}/students`);
             const data = await res.json();
+   
             const ids = data.map((s) => s.id);
             setForm((prev) => ({ ...prev, studentIds: ids }));
           } catch (err) {
@@ -586,18 +571,30 @@ useEffect(() => {
             value={form.className}
             onChange={(e) => setForm({ ...form, className: e.target.value })}
           />
-          <select
-            value={form.teacherId}
-            onChange={(e) => setForm({ ...form, teacherId: e.target.value })}
-            className="w-full mb-3 px-3 py-2 border rounded"
-          >
-            <option value="">Select teacher</option>
-            {teachers.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
-              </option>
-            ))}
-          </select>
+          <div className="mb-3">
+  <label className="block font-semibold mb-1">Select Teacher:</label>
+  <div className="border rounded p-2 max-h-40 overflow-y-auto bg-white/20">
+    {teachers.map((t) => (
+      <label key={t.id} className="flex items-center gap-2 mb-1">
+<input
+  type="radio"
+  name="teacher"
+  value={t.id}
+  checked={form.teacherId === t.id}
+  onChange={() =>
+    setForm((prev) => ({
+      ...prev,
+      teacherId: t.id,
+    }))
+  }
+/>
+
+        {t.name}
+      </label>
+    ))}
+  </div>
+</div>
+
           {/* 7. Вставляем кнопку "Add New Teacher" сразу после селекта учителя */}
           <button
             className="w-full bg-blue-500 text-white px-3 py-2 rounded mb-3"
@@ -798,6 +795,7 @@ export default function PrincipalDashboardScreen() {
     try {
       const res = await authorizedFetch(`${SERVER_URL}/api/admin/${adminId}/teachers`);
       const data = await res.json();
+      console.log("Fetched teachers:", data);
       setTeachers(data || []);
     } catch (err) {
       console.error("Error fetching teachers:", err);
@@ -809,7 +807,7 @@ export default function PrincipalDashboardScreen() {
     try {
       const res = await authorizedFetch(`${SERVER_URL}/api/admin/${adminId}/classes`);
       const data = await res.json();
-
+      console.log("Fetched classes:", data);
       setClasses(data || []);
     } catch (err) {
       console.error("Error fetching classes:", err);
@@ -837,12 +835,6 @@ export default function PrincipalDashboardScreen() {
         url = `${SERVER_URL}/api/teachers/${id}`;
         break;
       case "students": {
-        const student = students.find((s) => s.id === id);
-        const teacherId = student?.teacherId;
-        if (!teacherId) {
-          toast.error("Teacher ID not found for this student");
-          return;
-        }
         url = `${SERVER_URL}/api/admin/students/${id}`;
         break;
       }
@@ -899,7 +891,7 @@ export default function PrincipalDashboardScreen() {
     await authorizedFetch(`${SERVER_URL}/api/teachers/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: fullName, email, password, classIds, studentIds }),
+      body: JSON.stringify({ id, name: fullName, email, password, classIds, studentIds }),
     });
     toast.success("Teacher updated!");
     fetchTeachers();
@@ -916,60 +908,103 @@ export default function PrincipalDashboardScreen() {
     if (res.ok) {
       toast.success("Teacher added!");
       fetchTeachers();
+      fetchAll(); 
     }
   };
 
  
   const handleUpdateStudent = async (data) => {
-    const { id, teacherId, firstName, lastName, email, password, classIds } = data;
+    const { id, teacherIds, firstName, lastName, email, password, classIds } = data;
     const fullName = `${firstName} ${lastName}`;
-    await authorizedFetch(`${SERVER_URL}/api/teacher/${teacherId}/students/${id}`, {
+    await authorizedFetch(`${SERVER_URL}/api/students/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: fullName, email, password, classIds }),
-    });
+      body: JSON.stringify({ name: fullName, email, password, classIds, teacherIds }),
+    });    
     toast.success("Student updated!");
     fetchStudents();
   };
 
   const handleSaveStudent = async (data) => {
-    const { firstName, lastName, email, teacherId, password, classIds } = data;
+    const { id, teacherIds, firstName, lastName, email, password, classIds } = data;
     const fullName = `${firstName} ${lastName}`;
     const res = await authorizedFetch(`${SERVER_URL}/api/admin/${adminId}/students`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: fullName, email, teacherId, password, classIds }),
+      body: JSON.stringify({ name: fullName, email, password, classIds, teacherIds }),
     });
     if (res.ok) {
       toast.success("Student added!");
       fetchStudents();
+      fetchAll();
     }
   };
 
  
   const handleUpdateClass = async (data) => {
-    const { id, className, studentIds, teacherId } = data;
-    await authorizedFetch(`${SERVER_URL}/api/lessons/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ className, studentIds, teacherId }),
-    });
-    toast.success("Class updated!");
-    fetchClasses();
+    const { id, className, studentIds, teacherId, meetingId } = data;
+  
+    if (!teacherId) {
+      toast.error("A class must have a teacher assigned.");
+      return;
+    }
+  
+    const formattedMeetingId = meetingId.replace(/\s+/g, "_");
+    const formattedClassName = className.replace(/\s+/g, "_");
+  
+    try {
+      await authorizedFetch(`${SERVER_URL}/api/lessons/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          className: formattedClassName,
+          meetingId: formattedMeetingId,
+          teacherId,
+          studentIds,
+        }),
+      });
+      toast.success("Class updated!");
+      fetchClasses();
+    } catch (error) {
+      console.error("❌ Failed to update class:", error);
+      toast.error("Failed to update class.");
+    }
   };
+  
+  
 
   const handleSaveClass = async (data) => {
     const { className, meetingId, teacherId, studentIds } = data;
+  
+    if (!teacherId) {
+      toast.error("A class must have a teacher assigned.");
+      return;
+    }
+  
+    const formattedMeetingId = meetingId.replace(/\s+/g, "_");
+    const formattedClassName = className.replace(/\s+/g, "_");
+  
     const res = await authorizedFetch(`${SERVER_URL}/api/admin/${adminId}/classes`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ className, meetingId, teacherId, studentIds }),
+      body: JSON.stringify({
+        className: formattedClassName,
+        meetingId: formattedMeetingId,
+        teacherId,
+        studentIds,
+      }),
     });
+  
     if (res.ok) {
       toast.success("Class added!");
       fetchClasses();
+      fetchAll();
+    } else {
+      toast.error("Failed to add class.");
     }
   };
+  
+
 
   const handleLogout = () => {
     window.location.href = `${window.location.origin}/admin/login`;
@@ -1010,9 +1045,9 @@ export default function PrincipalDashboardScreen() {
       )}
       {activeTab === "students" && (
         <DataTable
-          title="Students"
-          data={students}
-          columns={["name", "email", "classes"]}
+        title="Students"
+        data={students}
+        columns={["name", "email", "classes", "teachers"]}
           onAdd={() => setShowAddStudentModal(true)}
           onMenuToggle={toggleMenu}
         />

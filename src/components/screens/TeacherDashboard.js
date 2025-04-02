@@ -631,8 +631,13 @@ export default function TeacherDashboard() {
       const res = await authorizedFetch(`${SERVER_URL}/api/teacher/${teacherId}/students`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email }),
+        body: JSON.stringify({
+          name,
+          email,
+          teacherIds: [teacherId], 
+        }),
       });
+      
 
       if (!res.ok) throw new Error("Failed to add student");
       const newStudent = await res.json();

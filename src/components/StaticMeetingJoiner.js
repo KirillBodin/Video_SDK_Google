@@ -23,16 +23,15 @@ export function StaticMeetingJoiner({
 
   return (
     <MeetingProvider
-      config={{
-        meetingId,
-        micEnabled: true,
-        webcamEnabled: true,
-        name: userName,
-        multiStream: true,
-        role,
-        micEnabled: role === "host",
-webcamEnabled: role === "host",
-      }}
+    config={{
+      meetingId,
+      micEnabled: role === "host",
+      webcamEnabled: role === "host",
+      name: userName,
+      multiStream: true,
+      role,
+    }}
+    
       token={token}
       joinWithoutUserInteraction={true} 
     >

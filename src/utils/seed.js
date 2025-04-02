@@ -1,6 +1,12 @@
 require("dotenv").config();
 const bcrypt = require("bcrypt");
-const { initDB, User, ClassMeeting, Student, sequelize } = require("../backend/models");
+const {
+  initDB,
+  User,
+  ClassMeeting,
+  Student,
+  sequelize,
+} = require("../backend/models");
 
 const users = [
   { name: "Super Admin", email: "superadmin@example.com", password: "superadmin123", role: "superadmin" },
@@ -16,27 +22,32 @@ const lessons = [
 ];
 
 const students = [
-  { name: "Peter Piper", email: "peter.piper@example.com", teacherEmail: "teacher1@example.com" },
-  { name: "Fred Flintstone", email: "fred.flintstone@example.com", teacherEmail: "teacher2@example.com" }
+  {
+    name: "Peter Piper",
+    email: "peter.piper@example.com",
+    teacherEmails: ["teacher1@example.com"]
+  },
+  {
+    name: "Fred Flintstone",
+    email: "fred.flintstone@example.com",
+    teacherEmails: ["teacher1@example.com", "teacher2@example.com"]
+  }
 ];
 
 const seedDB = async () => {
   const transaction = await sequelize.transaction();
   try {
     await sequelize.authenticate();
-    console.log("✅ Подключение к БД успешно!");
+    console.log("✅ Connected to the DB!");
 
-    // 🔥 Полное удаление всех таблиц
     await sequelize.drop({ transaction });
-    console.log("🗑 База данных очищена!");
+    console.log("🗑 Dropped all tables!");
 
-    // 🔄 Пересоздание таблиц
     await sequelize.sync({ force: true, transaction });
-    console.log("📦 Структура БД пересоздана!");
+    console.log("📦 Recreated all tables!");
 
     const createdUsers = {};
 
-    // ✅ Создание пользователей
     for (const userData of users) {
       const hashedPassword = await bcrypt.hash(userData.password, 10);
 
@@ -44,7 +55,7 @@ const seedDB = async () => {
       if (userData.role === "teacher" && userData.adminEmail) {
         const admin = createdUsers[userData.adminEmail];
         if (!admin) {
-          console.warn(`⚠️ Администратор ${userData.adminEmail} не найден, учитель без adminId.`);
+          console.warn(`⚠️ Admin ${userData.adminEmail} not found.`);
         } else {
           adminId = admin.id;
         }
@@ -55,14 +66,13 @@ const seedDB = async () => {
         email: userData.email,
         password: hashedPassword,
         role: userData.role,
-        adminId
+        adminId,
       }, { transaction });
 
       createdUsers[userData.email] = newUser;
-      console.log(`✅ Пользователь ${userData.email} добавлен!`);
+      console.log(`✅ Created ${userData.role}: ${userData.email}`);
     }
 
-    // ✅ Создание уроков
     const createdLessons = {};
     for (const lessonData of lessons) {
       const teacher = createdUsers[lessonData.teacherEmail];
@@ -82,36 +92,38 @@ const seedDB = async () => {
       }, { transaction });
 
       createdLessons[lessonData.className] = lesson;
-      console.log(`✅ Урок "${lesson.className}" создан!`);
+      console.log(`✅ Created lesson: "${lesson.className}"`);
     }
 
-    // ✅ Создание студентов и привязка к урокам
     for (const studentData of students) {
-      const teacher = createdUsers[studentData.teacherEmail];
-      if (!teacher) continue;
-
       const student = await Student.create({
         name: studentData.name,
         email: studentData.email,
-        teacherId: teacher.id
       }, { transaction });
 
-      // Привязываем студента ко всем урокам его учителя
-      for (const lesson of Object.values(createdLessons)) {
-        if (lesson.teacherId === teacher.id) {
-          await student.addClass(lesson, { transaction });
+      for (const teacherEmail of studentData.teacherEmails) {
+        const teacher = createdUsers[teacherEmail];
+        if (teacher) {
+          await teacher.addStudent(student, { transaction });
+          console.log(`➡️ Linked student "${student.name}" to teacher "${teacher.name}"`);
         }
       }
 
-      console.log(`✅ Студент ${student.name} добавлен и привязан к урокам!`);
+      for (const lesson of Object.values(createdLessons)) {
+        const lessonTeacher = Object.values(createdUsers).find(u => u.id === lesson.teacherId);
+        if (studentData.teacherEmails.includes(lessonTeacher?.email)) {
+          await student.addClass(lesson, { transaction });
+          console.log(`➡️ Added "${student.name}" to lesson "${lesson.className}"`);
+        }
+      }
     }
 
     await transaction.commit();
-    console.log("🎉 База данных успешно заполнена!");
+    console.log("🎉 Database seeded successfully!");
     process.exit();
   } catch (error) {
     await transaction.rollback();
-    console.error("❌ Ошибка при заполнении базы:", error);
+    console.error("❌ Error seeding database:", error);
     process.exit(1);
   }
 };

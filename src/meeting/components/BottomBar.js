@@ -508,7 +508,7 @@ const WebCamBTN = () => {
 export function BottomBar({ bottomBarHeight, setIsMeetingLeft, isHost }) {
   const navigate = useNavigate();
   const { sideBarMode, setSideBarMode } = useMeetingAppContext();
-  console.log("🔑 User Role in BottomBar:", isHost ? "host" : "participant");
+  
   const RaiseHandBTN = ({ isMobile, isTab }) => {
     const { publish } = usePubSub("RAISE_HAND");
     const RaiseHand = () => {
@@ -729,7 +729,7 @@ export function BottomBar({ bottomBarHeight, setIsMeetingLeft, isHost }) {
       />
     );
   };
-  console.log("🔑 User Role in BottomBar:", isHost ? "host" : "participant"); // 👈 Вставь здесь
+ 
   const MeetingIdCopyBTN = () => {
     const { meetingId } = useMeeting();
     const [isCopied, setIsCopied] = useState(false);
