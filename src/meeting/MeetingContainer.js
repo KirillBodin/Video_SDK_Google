@@ -202,7 +202,7 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft, role }) {
 
   
   useEffect(() => {
-   
+    console.log("Current role:", role);
     const handleGlobalKeyDown = (event) => {
       const key = event.key;
       if (role !== "host") return;
