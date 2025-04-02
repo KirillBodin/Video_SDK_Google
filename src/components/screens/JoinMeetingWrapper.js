@@ -13,6 +13,8 @@ export default function JoinMeetingWrapper() {
   const [userRole, setUserRole] = useState("participant");
   const [actualMeetingId, setActualMeetingId] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
 
   const hasCreatedRef = useRef(false);
 
@@ -96,44 +98,41 @@ export default function JoinMeetingWrapper() {
 
   const handleEmailSubmit = async () => {
     if (!userEmail) return;
-   
-
+  
+    setLoading(true); 
+  
     try {
-    
       const userRes = await fetch(`${SERVER_URL}/api/users/by-email`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: userEmail }),
       });
-
+  
       const userData = await userRes.json();
-     
-
+  
       if (!userRes.ok || !userData.role) {
         setError("User not found or invalid.");
+        setLoading(false); // 🔴 Снимаем загрузку
         return;
       }
-
+  
       const isTeacher = userData.role === "teacher";
       setUserRole(isTeacher ? "host" : "participant");
-     
-
-     
+  
       const accessRes = await fetch(`${SERVER_URL}/api/meet/check-access`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ className, email: userEmail }),
       });
-
+  
       const accessData = await accessRes.json();
-   
-
+  
       if (!accessRes.ok || !accessData.access) {
         setError("You do not have access to this class.");
+        setLoading(false); // 🔴 Снимаем загрузку
         return;
       }
-
-      
+  
       const tokenRes = await fetch(`${SERVER_URL}/api/get-token`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -149,15 +148,14 @@ export default function JoinMeetingWrapper() {
             : ["allow_join"],
         }),
       });
-
+  
       const tokenData = await tokenRes.json();
-    
+  
       if (!tokenData.token) throw new Error("No token");
-
+  
       setToken(tokenData.token);
-
+  
       if (isTeacher) {
-       
         const meetingRes = await fetch("https://api.videosdk.live/v1/meetings", {
           method: "POST",
           headers: {
@@ -166,14 +164,15 @@ export default function JoinMeetingWrapper() {
           },
           body: JSON.stringify({ userMeetingId: meetingIdSlug, lobby: false }),
         });
-
+  
         const meetingData = await meetingRes.json();
-      
+  
         if (!meetingData.meetingId) {
           setError("Failed to create meeting");
+          setLoading(false);
           return;
         }
-
+  
         await fetch(`${SERVER_URL}/api/savemeeting/new`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -183,29 +182,31 @@ export default function JoinMeetingWrapper() {
             teacherEmail: userEmail,
           }),
         });
-
+  
         setActualMeetingId(meetingData.meetingId);
         setStep("meeting");
       } else {
-    
         const meetingRes = await fetch(`${SERVER_URL}/api/savemeeting/by-classname/${className}`);
         const meetingData = await meetingRes.json();
         const meetingId = meetingData?.meeting?.meetingId;
-
-
+  
         if (!meetingId) {
           setError("No meeting found for this class.");
+          setLoading(false);
           return;
         }
-
+  
         setActualMeetingId(meetingId);
         setStep("waiting-room");
       }
     } catch (err) {
       console.error("❌ Error submitting email:", err);
       setError("Server error. Please try again.");
+    } finally {
+      setLoading(false); // ✅ снимаем загрузку в любом случае
     }
   };
+  
 
   if (step === "email") {
  
@@ -219,12 +220,13 @@ export default function JoinMeetingWrapper() {
           placeholder="your@email.com"
           onChange={(e) => setUserEmail(e.target.value)}
         />
-        <button
-          className="mt-4 bg-blue-600 px-6 py-2 rounded"
-          onClick={handleEmailSubmit}
-        >
-          Continue
-        </button>
+<button
+  className="mt-4 bg-blue-600 px-6 py-2 rounded disabled:opacity-50"
+  onClick={handleEmailSubmit}
+  disabled={loading}
+>
+  {loading ? "Loading..." : "Continue"}
+</button>
         {error && <p className="mt-2 text-red-400">{error}</p>}
       </div>
     );
