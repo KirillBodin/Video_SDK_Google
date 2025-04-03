@@ -42,6 +42,7 @@ export function JoiningScreen({
     isMicrophonePermissionAllowed,
     setIsCameraPermissionAllowed,
     setIsMicrophonePermissionAllowed,
+    
   } = useMeetingAppContext();
 
   const [{ webcams, mics, speakers }, setDevices] = useState({
@@ -82,6 +83,21 @@ export function JoiningScreen({
   useEffect(() => {
     micRef.current = micOn;
   }, [micOn]);
+
+
+  useEffect(() => {
+    return () => {
+      if (audioTrackRef.current) {
+        audioTrackRef.current.stop();
+        audioTrackRef.current = null;
+      }
+      if (videoTrackRef.current) {
+        videoTrackRef.current.stop();
+        videoTrackRef.current = null;
+      }
+    };
+  }, []);
+  
 
   useEffect(() => {
     permissonAvaialble.current = {
@@ -226,27 +242,52 @@ export function JoiningScreen({
   
 
   const getDefaultMediaTracks = async ({ mic, webcam }) => {
-
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const hasMic = devices.some((d) => d.kind === "audioinput");
+    const hasCam = devices.some((d) => d.kind === "videoinput");
+  
+    // ✅ Микрофон
     if (mic) {
-      const stream = await getAudioTrack({
-        micId: selectedMic.id,
+      if (!hasMic || !selectedMic?.id) {
+        console.warn("🚫 Нет доступного микрофона или micId отсутствует");
+        setDlgDevices(true);
+        return;
+      }
+  
+      const stream = await getAudioTrack({ micId: selectedMic.id }).catch((e) => {
+        console.warn("Ошибка получения аудио:", e);
+        return null;
       });
-      setCustomAudioStream(stream);
-      const audioTracks = stream?.getAudioTracks();
-      const audioTrack = audioTracks.length ? audioTracks[0] : null;
-      setAudioTrack(audioTrack);
+  
+      if (stream) {
+        setCustomAudioStream(stream);
+        const audioTracks = stream.getAudioTracks();
+        setAudioTrack(audioTracks?.[0] || null);
+      }
     }
-
+  
+    // ✅ Камера
     if (webcam) {
-      const stream = await getVideoTrack({
-        webcamId: selectedWebcam.id,
+      if (!hasCam || !selectedWebcam?.id) {
+        console.warn("🚫 Нет доступной камеры или webcamId отсутствует");
+        setDlgDevices(true);
+        return;
+      }
+  
+      const stream = await getVideoTrack({ webcamId: selectedWebcam.id }).catch((e) => {
+        console.warn("Ошибка получения видео:", e);
+        return null;
       });
-      setCustomVideoStream(stream);
-      const videoTracks = stream?.getVideoTracks();
-      const videoTrack = videoTracks?.length ? videoTracks[0] : null;
-      setVideoTrack(videoTrack);
+  
+      if (stream) {
+        setCustomVideoStream(stream);
+        const videoTracks = stream.getVideoTracks();
+        setVideoTrack(videoTracks?.[0] || null);
+      }
     }
   };
+  
+  
 
   async function startMuteListener() {
     const currentAudioTrack = audioTrackRef.current;
@@ -624,8 +665,8 @@ export function JoiningScreen({
         onSuccess={() => {
           setDlgDevices(false);
         }}
-        title="Mic or webcam not available"
-        subTitle="Please connect a mic and webcam to speak and share your video in the meeting. You can also join without them."
+        
+        subTitle="Please connect a mic and webcam to speak and share your video in the meeting. You can't join without them."
       />
     </div>
   );

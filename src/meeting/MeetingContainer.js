@@ -56,7 +56,7 @@ const ParticipantMicStream = memo(({ participantId }) => {
 });
 
 
-export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft, role }) {
+export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
   const { setSelectedMic, setSelectedWebcam, setSelectedSpeaker, useRaisedHandParticipants } = useMeetingAppContext();
   const { participantRaisedHand } = useRaisedHandParticipants();
   const [participantsData, setParticipantsData] = useState([]);
@@ -74,8 +74,10 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft, role }) {
   const [participantsArray, setParticipantsArray] = useState([]);
   //const [lastUnmutedParticipantId, setLastUnmutedParticipantId] = useState(null);
   const [globalMuteState, setGlobalMuteState] = useState(false);
-  const lastUnmutedParticipantIdRef = useRef(null); // Запоминаем последнего размьюченного ученика
+  const lastUnmutedParticipantIdRef = useRef(null);
   const [highlightedParticipantId, setHighlightedParticipantId] = useState(null);
+  const role = localStorage.getItem("participantRole");
+  
   const { publish: highlightPublish, messages: highlightMessages } = usePubSub("HIGHLIGHT");
   const praiseMessages = [
     "Good job!",
@@ -166,6 +168,18 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft, role }) {
     });
   };
 
+  async function checkMicrophonePermission() {
+    try {
+      if (!navigator.permissions) return false;
+      const status = await navigator.permissions.query({ name: "microphone" });
+      return status.state === "granted";
+    } catch (e) {
+      console.warn("❌ Failed to check mic permission:", e);
+      return false;
+    }
+  }
+  
+
   const _handleOnRecordingStateChanged = ({ status }) => {
     
     if (
@@ -194,20 +208,35 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft, role }) {
 
 
   const mMeeting = useMeeting({
+    micEnabled: false,
     onParticipantJoined,
     onEntryResponded,
-    onMeetingJoined: () => {
-     
-
-      setTimeout(() => {
-        if (mMeeting.muteMic) {
-          mMeeting.muteMic(); 
+    onMeetingJoined: async () => {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const hasMic = devices.some((d) => d.kind === "audioinput");
+  
+        if (!hasMic) {
+          console.warn("⚠️ No microphone found. Skipping mic init.");
+          if (mMeeting.muteMic) await mMeeting.muteMic();
+          return;
         }
-        if (mMeeting.disableWebcam) {
-          mMeeting.disableWebcam(); 
+  
+        const permissions = await navigator.permissions.query({ name: "microphone" });
+        if (permissions.state === "denied") {
+          console.warn("🚫 Microphone permission denied.");
+          if (mMeeting.muteMic) await mMeeting.muteMic();
+          return;
         }
-      }, 1000); 
+  
+        // Всё ок, но вебка нам тоже не нужна
+        await mMeeting.disableWebcam?.();
+      } catch (err) {
+        console.error("❌ Error during device check:", err);
+        if (mMeeting.muteMic) await mMeeting.muteMic();
+      }
     },
+    
     onMeetingLeft,
     onError: _handleOnError,
     onRecordingStateChanged: _handleOnRecordingStateChanged,
@@ -227,7 +256,7 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft, role }) {
     console.log("Current role:", role);
     const handleGlobalKeyDown = (event) => {
       const key = event.key;
-      if (role !== "host") return;
+      if (role !== "teacher") return;
 
       if (!mMeeting) {
         console.warn("❌ Meeting instance is not available!");

@@ -128,8 +128,8 @@ function App() {
             webcamEnabled: webcamOn,
             name: participantName || "TestUser",
             multiStream: true,
-            customCameraVideoTrack: customVideoStream,
-            customMicrophoneAudioTrack: customAudioStream,
+            ...(customVideoStream && { customCameraVideoTrack: customVideoStream }),
+            ...(customAudioStream && { customMicrophoneAudioTrack: customAudioStream }), 
           }}
           token={token}
           reinitialiseMeetingOnConfigChange={true}

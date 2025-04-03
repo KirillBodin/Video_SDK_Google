@@ -34,6 +34,8 @@ import { createPopper } from "@popperjs/core";
 import { useMeetingAppContext } from "../../MeetingAppContextDef";
 import useMediaStream from "../../hooks/useMediaStream";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+
 
 function PipBTN({ isMobile, isTab }) {
   const { pipMode, setPipMode } = useMeetingAppContext();
@@ -184,7 +186,17 @@ const MicBTN = () => {
     }
     
   }
-
+  async function checkMicrophonePermission() {
+    try {
+      if (!navigator.permissions) return false;
+      const status = await navigator.permissions.query({ name: "microphone" });
+      return status.state === "granted";
+    } catch (e) {
+      console.warn("❌ Failed to check mic permission:", e);
+      return false;
+    }
+  }
+  
 
 
   const getMics = async () => {
@@ -213,10 +225,31 @@ const MicBTN = () => {
     <>
       <OutlinedButton
         Icon={localMicOn ? MicOnIcon : MicOffIcon}
-        onClick={() => {
-          if (!mMeeting || !mMeeting.toggleMic) return;
-          mMeeting.toggleMic();
+        onClick={async () => {
+          try {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const hasMic = devices.some((d) => d.kind === "audioinput");
+        
+            if (!hasMic) {
+              toast.error("⚠️ Микрофон не найден. Подключите микрофон или разрешите доступ.");
+              return;
+            }
+        
+            const permissions = await navigator.permissions.query({ name: "microphone" });
+            if (permissions.state === "denied") {
+              toast.error("🚫 Доступ к микрофону запрещён в настройках браузера.");
+              return;
+            }
+        
+            await mMeeting.toggleMic(); // безопасно
+          } catch (err) {
+            console.error("❌ Ошибка при попытке включить микрофон:", err);
+            toast.error("❌ Не удалось включить микрофон.");
+          }
         }}
+        
+        
+        
         
         bgColor={localMicOn ? "bg-gray-750" : "bg-white"}
         borderColor={localMicOn && "#ffffff33"}

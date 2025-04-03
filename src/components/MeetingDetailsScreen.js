@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { jwtDecode } from "jwt-decode"; 
 import { useParams } from "react-router-dom";
-
+import { useMeetingAppContext } from "../MeetingAppContextDef";
+import WaitingRoomScreen from "./screens/WaitingRoomScreen";
 
 
 const SERVER_URL = process.env.REACT_APP_SERVER_URL;
@@ -21,6 +22,10 @@ export function MeetingDetailsScreen({
   const [isJoinMeetingClicked, setIsJoinMeetingClicked] = useState(false);
   const { className } = useParams();
   const navigate = useNavigate();
+  const { isMicrophonePermissionAllowed } = useMeetingAppContext();
+  const [waitingRoomVisible, setWaitingRoomVisible] = useState(false);
+  const [localToken, setLocalToken] = useState("");
+  const [meetingId, setMeetingIdLocal] = useState("");
 
 
   const checkEmail = async () => {
@@ -60,14 +65,14 @@ export function MeetingDetailsScreen({
       }
     }
   
-// ✅ Новый способ — просто взять из localStorage
+
 const email = localStorage.getItem("teacherEmail");
 if (email) {
   setUserEmail(email);
 }
 
     if (className) {
-      setRoomName(className); // <-- устанавливаем имя урока
+      setRoomName(className); 
     }
   }, [className]);
 
@@ -108,7 +113,23 @@ const loginWithGoogle = async () => {
   }
 };
  
+if (waitingRoomVisible) {
+  const role = "student";
+  return (
+    <div className="fixed inset-0 z-50">
+      <WaitingRoomScreen
+        meetingId={meetingId}
+        token={localToken}
+        userName={userEmail}
+        role="student"
+        onJoined={() => {
+          onClickStartMeeting(localToken, meetingId);
+        }}
+      />
+    </div>
+  );
   
+}
 
   return (
     <div className="flex flex-col justify-center w-full md:p-[6px] sm:p-1 p-1.5 relative">
@@ -152,17 +173,20 @@ const loginWithGoogle = async () => {
                   }`}
                 disabled={!userEmail || !roomName}
                 onClick={async () => {
-       
+                  if (!isMicrophonePermissionAllowed) {
+                    toast.error("Please allow microphone access to continue.");
+                    return;
+                  }
+                
                   const isValid = await checkEmail();
-
                   if (!isValid) {
                     toast.error("❌ Email not found. Access denied.");
                     return;
                   }
-
+                
                   setIsCreateMeetingClicked(true);
-
                 }}
+                
               >
                 Create a class
               </button>
@@ -174,7 +198,15 @@ const loginWithGoogle = async () => {
                   ${userEmail && roomName ? "" : "cursor-not-allowed opacity-50"}
                 `}
                 disabled={!userEmail || !roomName}
-                onClick={() => setIsJoinMeetingClicked(true)}
+                onClick={() => {
+                  if (!isMicrophonePermissionAllowed) {
+                    toast.error("Please allow microphone access to continue.");
+                    return;
+                  }
+                
+                  setIsJoinMeetingClicked(true);
+                }}
+                
               >
                 Join a class
               </button>
@@ -239,6 +271,7 @@ const loginWithGoogle = async () => {
                   
 
                   setTimeout(() => {
+                    localStorage.setItem("participantRole", "teacher");
                     onClickStartMeeting(token, meetingData.meetingId);
                   }, 2000);
                 } catch (error) {
@@ -256,23 +289,24 @@ const loginWithGoogle = async () => {
               className="w-full bg-green-500 text-white px-2 py-3 rounded-xl mt-3"
               onClick={async () => {
                 try {
-                  const response = await fetch(`${SERVER_URL}/api/savemeeting/byclassname/${roomName}`);
+                  const response = await fetch(`${SERVER_URL}/api/getmeeting/by-classname/${roomName}`);
                   const data = await response.json();
               
-                  const { meetingId, slug, className, teacherName } = data;
-              
-                  if (!meetingId || !slug || !className || !teacherName) {
+                  const meetingId = data.meeting?.meetingId;
+
+                  if (!meetingId) {
                     toast.error("Meeting not found or data incomplete!");
                     return;
                   }
               
-                  const tokenResponse =await fetch(`${SERVER_URL}/api/get-token`, {
+                  const tokenResponse = await fetch(`${SERVER_URL}/api/get-token`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                       permissions: ["allow_join"]
                     }),
                   });
+              
                   const { token } = await tokenResponse.json();
               
                   if (!token) {
@@ -280,16 +314,18 @@ const loginWithGoogle = async () => {
                     return;
                   }
               
+                  localStorage.setItem("participantRole", "student");
                   setToken(token);
-                  setMeetingId(meetingId);
+                  setLocalToken(token); 
+
+                  setMeetingIdLocal(meetingId);
                   toast.success("Joining class...");
               
-              
-                  navigate(`/${slug}/${teacherName}/${className}`);
+                  setWaitingRoomVisible(true); 
                 } catch (error) {
                   toast.error("Server error while joining!");
                 }
-              }}              
+              }}                        
             >
               Confirm & Join
             </button>
