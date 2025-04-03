@@ -116,7 +116,66 @@ function App() {
   <Route path="/teacher/:teacherId/:name" element={<TeacherDashboard />} />
 </Route>
 
-<Route path="/:slug/:teacherName/:className" element={<JoinMeetingWrapper />} />
+<Route
+  path="/:slug/:teacherName/:className"
+  element={
+    isMeetingStarted ? (
+      token && meetingId ? (
+        <MeetingProvider
+          config={{
+            meetingId,
+            micEnabled: micOn,
+            webcamEnabled: webcamOn,
+            name: participantName || "TestUser",
+            multiStream: true,
+            customCameraVideoTrack: customVideoStream,
+            customMicrophoneAudioTrack: customAudioStream,
+          }}
+          token={token}
+          reinitialiseMeetingOnConfigChange={true}
+          joinWithoutUserInteraction={true}
+        >
+          <MeetingContainer
+            onMeetingLeave={() => {
+              setMeetingId("");
+              setParticipantName("");
+              setWebcamOn(false);
+              setMicOn(false);
+              setMeetingStarted(false);
+            }}
+            setIsMeetingLeft={setIsMeetingLeft}
+            role={role}
+          />
+        </MeetingProvider>
+      ) : (
+        <h1 className="text-red-500 text-center">
+          ❌ Token или Meeting ID отсутствуют!
+        </h1>
+      )
+    ) : isMeetingLeft ? (
+      <LeaveScreen setIsMeetingLeft={setIsMeetingLeft} />
+    ) : (
+      <JoiningScreen
+        participantName={participantName}
+        setParticipantName={setParticipantName}
+        setMeetingId={setMeetingId}
+        setToken={setToken}
+        micOn={micOn}
+        setMicOn={setMicOn}
+        webcamOn={webcamOn}
+        setWebcamOn={setWebcamOn}
+        customAudioStream={customAudioStream}
+        setCustomAudioStream={setCustomAudioStream}
+        customVideoStream={customVideoStream}
+        setCustomVideoStream={setCustomVideoStream}
+        onClickStartMeeting={handleStartMeeting}
+        startMeeting={isMeetingStarted}
+        setIsMeetingLeft={setIsMeetingLeft}
+        role={role}
+      />
+    )
+  }
+/>
 
 
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { jwtDecode } from "jwt-decode"; 
+import { useParams } from "react-router-dom";
 
 
 
@@ -18,7 +19,7 @@ export function MeetingDetailsScreen({
   const [userEmail, setUserEmail] = useState("");
   const [isCreateMeetingClicked, setIsCreateMeetingClicked] = useState(false);
   const [isJoinMeetingClicked, setIsJoinMeetingClicked] = useState(false);
-
+  const { className } = useParams();
   const navigate = useNavigate();
 
 
@@ -38,6 +39,37 @@ export function MeetingDetailsScreen({
       return false;
     }
   };
+
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tokenFromUrl = urlParams.get("token");
+  
+    if (tokenFromUrl) {
+      localStorage.setItem("sessionToken", tokenFromUrl); 
+      window.history.replaceState({}, document.title, window.location.pathname); 
+    }
+  
+    const token = localStorage.getItem("sessionToken");
+    if (token) {
+      try {
+        const decoded = jwtDecode(token);
+        setUserEmail(decoded.email);
+      } catch (error) {
+        console.error("❌ Invalid token:", error);
+      }
+    }
+  
+// ✅ Новый способ — просто взять из localStorage
+const email = localStorage.getItem("teacherEmail");
+if (email) {
+  setUserEmail(email);
+}
+
+    if (className) {
+      setRoomName(className); // <-- устанавливаем имя урока
+    }
+  }, [className]);
 
 useEffect(() => {
   const urlParams = new URLSearchParams(window.location.search);
@@ -90,15 +122,14 @@ const loginWithGoogle = async () => {
         className="px-4 py-3 bg-gray-650 rounded-xl text-white w-full text-center mb-4"
       />
 
-      {userEmail && (
-        <input
-          value={roomName}
-          onChange={(e) => setRoomName(e.target.value.trim())}
-          placeholder="Enter class name (e.g., classroom-101)"
-          className="px-4 py-3 bg-gray-650 rounded-xl text-white w-full text-center mb-4"
-        />
-      )}
-
+{userEmail && !className && (
+  <input
+    value={roomName}
+    onChange={(e) => setRoomName(e.target.value.trim())}
+    placeholder="Enter class name (e.g., classroom-101)"
+    className="px-4 py-3 bg-gray-650 rounded-xl text-white w-full text-center mb-4"
+  />
+)}
 
       {!userEmail && (
         <button
@@ -157,7 +188,19 @@ const loginWithGoogle = async () => {
                 
 
                 try {
-                  const tokenResponse = await fetch(`${SERVER_URL}/api/get-token`);
+                  const tokenResponse = await fetch(`${SERVER_URL}/api/get-token`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      permissions: [
+                        "allow_join",
+                        "allow_mod",
+                        "allow_create",
+                        "allow_publish",
+                        "allow_subscribe",
+                      ],
+                    }),
+                  });
                   const { token } = await tokenResponse.json();
 
                   if (!token) {
@@ -223,7 +266,13 @@ const loginWithGoogle = async () => {
                     return;
                   }
               
-                  const tokenResponse = await fetch(`${SERVER_URL}/api/get-token`);
+                  const tokenResponse =await fetch(`${SERVER_URL}/api/get-token`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      permissions: ["allow_join"]
+                    }),
+                  });
                   const { token } = await tokenResponse.json();
               
                   if (!token) {
