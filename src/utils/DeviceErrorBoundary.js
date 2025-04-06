@@ -14,7 +14,7 @@ class DeviceErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    // Логируем только критические ошибки, а ошибку устройства игнорируем
+    
     if (!(error.message && error.message.toLowerCase().includes("requested device not found"))) {
       console.error("Meeting error:", error, errorInfo);
     }
@@ -22,7 +22,7 @@ class DeviceErrorBoundary extends React.Component {
 
   render() {
     if (this.state.hasDeviceError) {
-      // Можно вернуть пустой UI или какой‑либо fallback, чтобы не ломался весь рендер.
+     
       return this.props.fallback || null;
     }
     return this.props.children;

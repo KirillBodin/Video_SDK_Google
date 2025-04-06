@@ -112,7 +112,7 @@ export default function JoinMeetingWrapper() {
   
       if (!userRes.ok || !userData.role) {
         setError("User not found or invalid.");
-        setLoading(false); // 🔴 Снимаем загрузку
+        setLoading(false); 
         return;
       }
   
@@ -129,7 +129,7 @@ export default function JoinMeetingWrapper() {
   
       if (!accessRes.ok || !accessData.access) {
         setError("You do not have access to this class.");
-        setLoading(false); // 🔴 Снимаем загрузку
+        setLoading(false); 
         return;
       }
   
@@ -203,7 +203,7 @@ export default function JoinMeetingWrapper() {
       console.error("❌ Error submitting email:", err);
       setError("Server error. Please try again.");
     } finally {
-      setLoading(false); // ✅ снимаем загрузку в любом случае
+      setLoading(false); 
     }
   };
   

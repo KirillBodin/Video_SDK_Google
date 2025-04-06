@@ -57,7 +57,7 @@ export function PresenterView({ height }) {
               height - "xl:p-6 lg:p-[52px] md:p-[26px] p-1"
           }]`}
       >
-        {/* Автоплей для шаримого аудио */}
+        
         <audio autoPlay playsInline controls={false} ref={audioPlayer} />
 
         <div className="video-contain absolute h-full w-full">
@@ -99,10 +99,8 @@ export function PresenterView({ height }) {
             </p>
           </div>
 
-          {/*
-          УБРАН блок с оверлеем "You are presenting to everyone"
-          и кнопкой "STOP PRESENTING".
-        */}
+          {
+        }
 
           {isLocal && (
               <CornerDisplayName

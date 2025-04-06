@@ -14,7 +14,7 @@ import { authorizedFetch } from "../../utils/api";
 const SERVER_URL = process.env.REACT_APP_SERVER_URL;
 
 
-/* ========== Общая функция для модальных окон ========== */
+
 function renderModal(title, form, setForm, onSubmit, onClose, customFields = {}) {
   const fieldPlaceholders = {
     firstName: "First Name",
@@ -60,7 +60,7 @@ function renderModal(title, form, setForm, onSubmit, onClose, customFields = {})
     document.body
   );
 }
-/* ========== Контекстное меню ========== */
+
 function ContextMenu({ data, onDelete, setMenuData, onEdit }) {
   const menuRef = useRef();
   useEffect(() => {
@@ -613,7 +613,7 @@ useEffect(() => {
   </div>
 </div>
 
-          {/* 7. Вставляем кнопку "Add New Teacher" сразу после селекта учителя */}
+       
           <button
             className="w-full bg-blue-500 text-white px-3 py-2 rounded mb-3"
             onClick={() => setShowTeacherForm(true)}
@@ -636,7 +636,7 @@ useEffect(() => {
               ))}
             </div>
           </div>
-          {/* 8. Вставляем кнопку "Add New Student" сразу после списка учеников */}
+        
           <button
             className="w-full bg-blue-500 text-white px-3 py-2 rounded mb-3"
             onClick={() => setShowStudentForm(true)}
@@ -654,7 +654,7 @@ useEffect(() => {
         </div>
       </div>
 
-      {/* 9. Модальное окно для добавления нового учителя (появляется справа) */}
+     
       {showTeacherForm && (
   <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
     <div className="bg-white text-black p-6 rounded w-[450px] max-h-[90vh] overflow-y-auto">
@@ -780,7 +780,7 @@ useEffect(() => {
   );
 }
 
-/* ========== Главный компонент ========== */
+
 export default function PrincipalDashboardScreen() {
   const { adminId, name } = useParams();
   const navigate = useNavigate();

@@ -5,11 +5,11 @@ import useIsTab from "../../hooks/useIsTab";
 import useIsMobile from "../../hooks/useIsMobile";
 
 const WaitingToJoinScreen = ({ role }) => {
-  // Если роль "student", используем сообщения для ученика, иначе стандартные
+ 
   const waitingMessages = role === "student"
     ? [
         { index: 0, text: "Almost there..." },
-        { index: 1, text: "Please wait until the teacher admits you..." },
+        { index: 1, text: "Please wait until the teacher allows you to enter..." },
       ]
     : [
         { index: 0, text: "Creating a room for you..." },

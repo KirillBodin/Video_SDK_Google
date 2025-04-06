@@ -382,7 +382,7 @@ export default function SuperAdminDashboard() {
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-[#111111] to-black text-white p-6">
-      {/* Заголовок */}
+    
       <div className="grid grid-cols-3 items-center mb-10">
         <div></div>
         <h1 className="text-4xl font-bold text-center">SuperAdmin Page</h1>
@@ -505,7 +505,7 @@ export default function SuperAdminDashboard() {
         </div>
       )}
 
-      {/* Модальные окна для редактирования */}
+     
       {editData?.type === "teachers" && (
         <TeacherModal
           visible={true}
@@ -546,7 +546,7 @@ export default function SuperAdminDashboard() {
         />
       )}
 
-      {/* Модальные окна для добавления */}
+     
       {showTeacherModal && (
         <TeacherModal
           visible={true}
@@ -716,12 +716,7 @@ function ContextMenu({ data, onDelete, onEdit, onView, setMenuData }) {
   );
 }
 
-/* --------------------- Модальные окна --------------------- */
 
-/* TeacherModal – теперь разделяет имя на firstName и lastName.
-   При редактировании дополнительно выполняется запрос для получения директора,
-   к которому привязан учитель.
-*/
 function TeacherModal({ visible, onClose, onSave, initialData, admins, isEdit = false }) {
   const [form, setForm] = useState({
     firstName: initialData.name ? initialData.name.split(" ")[0] : "",
@@ -814,7 +809,7 @@ function TeacherModal({ visible, onClose, onSave, initialData, admins, isEdit = 
   );
 }
 
-/* ClassModal – поддерживает режим редактирования */
+
 function ClassModal({ visible, onClose, onSave, initialData, teachers, isEdit = false }) {
   const [form, setForm] = useState({
     className: initialData.className || "",
@@ -869,7 +864,7 @@ function ClassModal({ visible, onClose, onSave, initialData, teachers, isEdit = 
   );
 }
 
-/* StudentModal – теперь разделяет имя на firstName и lastName */
+
 function StudentModal({ visible, onClose, onSave, initialData, classes, isEdit = false }) {
   const [form, setForm] = useState({
     firstName: initialData.name ? initialData.name.split(" ")[0] : "",
@@ -942,7 +937,7 @@ function StudentModal({ visible, onClose, onSave, initialData, classes, isEdit =
   );
 }
 
-/* DirectorModal – поддерживает режим редактирования */
+
 function DirectorModal({ visible, onClose, onSave, initialData, isEdit = false }) {
   const [form, setForm] = useState({
     name: initialData.name || "",

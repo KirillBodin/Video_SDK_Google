@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { MeetingProvider, useMeeting } from "@videosdk.live/react-sdk";
 
 function WaitingRoomContent({ onJoined }) {
-  const hasRequestedRef = useRef(false); // 🔒 не даём вызывать join() повторно
+  const hasRequestedRef = useRef(false); 
   const [denied, setDenied] = useState(false);
 
   const { join } = useMeeting({

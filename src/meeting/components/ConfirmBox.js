@@ -18,7 +18,7 @@ export function ConfirmBox({ open, title, subTitle, successText, onSuccess, onCa
             <Dialog.Overlay className="fixed inset-0 bg-black opacity-30" />
           </Transition.Child>
 
-          {/* Центрирование модального окна */}
+         
           <span className="inline-block h-screen align-middle" aria-hidden="true">
             &#8203;
           </span>
@@ -46,7 +46,7 @@ export function ConfirmBox({ open, title, subTitle, successText, onSuccess, onCa
                   className="inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-gray-600 border border-transparent rounded-md hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-gray-500"
                   onClick={onCancel}
                 >
-                  Отмена
+                  Cancel
                 </button>
                 <button
                   type="button"

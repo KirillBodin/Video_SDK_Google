@@ -75,7 +75,7 @@ function App() {
                   </MeetingProvider>
                 ) : (
                   <h1 className="text-red-500 text-center">
-                    ❌ Token или Meeting ID отсутствуют!
+                    ❌ Token or Meeting ID is missing!
                   </h1>
                 )
               ) : isMeetingLeft ? (
@@ -147,7 +147,7 @@ function App() {
         </MeetingProvider>
       ) : (
         <h1 className="text-red-500 text-center">
-          ❌ Token или Meeting ID отсутствуют!
+          ❌ Token or Meeting ID is missing!
         </h1>
       )
     ) : isMeetingLeft ? (

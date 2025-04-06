@@ -133,7 +133,7 @@ if (waitingRoomVisible) {
 
 return (
   <div className="flex flex-col justify-center items-center w-full p-6">
-    {/* Показываем выбор: Start or Join */}
+    
     {!isCreateMeetingClicked && !isJoinMeetingClicked && (
       <>
         <button
@@ -151,7 +151,7 @@ return (
       </>
     )}
 
-{/* Общая форма для обеих опций */}
+
 {(isCreateMeetingClicked || isJoinMeetingClicked) && (
   <div className="w-full max-w-md mt-6">
     <input
@@ -160,7 +160,7 @@ return (
       placeholder="Enter your email"
       className="w-full px-4 py-3 bg-gray-650 rounded-xl text-white text-center mb-4"
     />
-    {/* Если параметр className передан, поле не показываем */}
+    
     {!className && (
       <input
         value={roomName}

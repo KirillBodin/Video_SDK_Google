@@ -234,7 +234,7 @@ export function JoiningScreen({
       }
       clearInterval(audioAnalyserIntervalRef.current);
     } catch (error) {
-      console.error("Ошибка при смене микрофона:", error);
+      console.error("Error:", error);
      
       setAudioTrack(null);
     }
@@ -246,10 +246,10 @@ export function JoiningScreen({
     const hasMic = devices.some((d) => d.kind === "audioinput");
     const hasCam = devices.some((d) => d.kind === "videoinput");
   
-    // ✅ Микрофон
+   
     if (mic) {
       if (!hasMic || !selectedMic?.id) {
-        console.warn("🚫 Нет доступного микрофона или micId отсутствует");
+        console.warn("🚫 No microphone available or micId missing");
         toast.info(
           "Please connect a mic and webcam to speak and share your video in the meeting. You can't join without them.",
           {
@@ -266,7 +266,7 @@ export function JoiningScreen({
       }
   
       const stream = await getAudioTrack({ micId: selectedMic.id }).catch((e) => {
-        console.warn("Ошибка получения аудио:", e);
+        console.warn("Error receiving audio", e);
         return null;
       });
   
@@ -276,17 +276,15 @@ export function JoiningScreen({
         setAudioTrack(audioTracks?.[0] || null);
       }
     }
-  
-    // ✅ Камера
     if (webcam) {
       if (!hasCam || !selectedWebcam?.id) {
-        console.warn("🚫 Нет доступной камеры или webcamId отсутствует");
+        console.warn("🚫 No camera available or webcamId missing");
         setDlgDevices(true);
         return;
       }
   
       const stream = await getVideoTrack({ webcamId: selectedWebcam.id }).catch((e) => {
-        console.warn("Ошибка получения видео:", e);
+        console.warn("Error receiving video:", e);
         return null;
       });
   
@@ -502,7 +500,6 @@ export function JoiningScreen({
                       ) : null}
 <div className="absolute xl:bottom-6 bottom-4 left-0 right-0 flex flex-col items-center space-y-3">
 <div className="container flex space-x-24 items-center justify-center">
-  {/* Микрофон */}
   {isMicrophonePermissionAllowed ? (
     <div className="relative flex flex-col items-center">
       <ButtonWithTooltip
@@ -517,7 +514,6 @@ export function JoiningScreen({
     <MicPermissionDenied />
   )}
 
-  {/* Камера */}
   {isCameraPermissionAllowed ? (
     <div className="relative flex flex-col items-center">
       <ButtonWithTooltip

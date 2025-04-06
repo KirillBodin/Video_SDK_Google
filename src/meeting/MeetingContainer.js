@@ -60,7 +60,7 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
   const { setSelectedMic, setSelectedWebcam, setSelectedSpeaker, useRaisedHandParticipants } = useMeetingAppContext();
   const { participantRaisedHand } = useRaisedHandParticipants();
   const [participantsData, setParticipantsData] = useState([]);
-  const [selectedParticipant, setSelectedParticipant] = useState(null); // ID выбранного участника
+  const [selectedParticipant, setSelectedParticipant] = useState(null); 
   const bottomBarHeight = 60;
   const [containerHeight, setContainerHeight] = useState(0);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -231,7 +231,7 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
     onEntryRequested: ({ participantId, name, allow, deny }) => {
       console.log(`${name} requested to join.`);
     
-      // Просто добавляем запрос в pendingJoinRequests
+     
       setPendingJoinRequests((prev) => [
         ...prev,
         { id: participantId, name, allow, deny },
@@ -255,8 +255,6 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
           if (mMeeting.muteMic) await mMeeting.muteMic();
           return;
         }
-  
-        // Всё ок, но вебка нам тоже не нужна
         await mMeeting.disableWebcam?.();
       } catch (err) {
         console.error("❌ Error during device check:", err);

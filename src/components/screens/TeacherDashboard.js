@@ -259,7 +259,7 @@ function EditClassModal({ onClose, lessonToEdit, onUpdateClass }) {
 
 
 
-/* =================== StudentModal (добавление / редактирование ученика) =================== */
+
 function StudentModal({ onClose, onSave, initialData }) {
   const isEdit = !!initialData;
   const [firstName, setFirstName] = useState(initialData?.firstName || "");
@@ -393,7 +393,7 @@ function StudentModal({ onClose, onSave, initialData }) {
 }
 
 
-/* =================== Основной компонент =================== */
+
 export default function TeacherDashboard() {
   const { teacherId, name } = useParams();
 
@@ -735,7 +735,7 @@ export default function TeacherDashboard() {
 </div>
       <h1 className="text-4xl font-bold text-center mb-10">Teacher Dashboard</h1>
 
-      {/* Вкладки */}
+      
       <div className="flex mb-4 border-b border-gray-700">
         <button
           className={`px-4 py-2 ${activeTab === "classes" ? "border-b-2 border-blue-500" : ""}`}
@@ -754,7 +754,7 @@ export default function TeacherDashboard() {
         </button>
       </div>
 
-      {/* ВКЛАДКА CLASSES */}
+     
       {activeTab === "classes" && (
         <div className="w-full max-w-5xl bg-white bg-opacity-10 rounded-xl p-6 shadow-lg border border-gray-700 backdrop-blur-md">
           <div className="flex justify-between items-center mb-4">
@@ -830,7 +830,7 @@ export default function TeacherDashboard() {
         </div>
       )}
 
-      {/* ВКЛАДКА STUDENTS */}
+     
 {activeTab === "students" && (
   <div className="w-full max-w-5xl bg-white bg-opacity-10 rounded-xl p-6 shadow-lg border border-gray-700 backdrop-blur-md">
     <div className="flex justify-between items-center mb-4">
@@ -895,7 +895,7 @@ export default function TeacherDashboard() {
   </div>
 )}
 
-{/* Модалка Add/Edit Student */}
+
 {showStudentModal && (
   <StudentModal
     onClose={() => setShowStudentModal(false)}
@@ -904,7 +904,7 @@ export default function TeacherDashboard() {
   />
 )}
 
-{/* Контекстное меню для студента */}
+
 {studentMenuData && (
   <div
     className="portal-menu fixed bg-gray-900 text-white shadow-lg rounded-md z-50 w-44"
@@ -926,7 +926,7 @@ export default function TeacherDashboard() {
   </div>
 )}
 
-      {/* Контекстное меню «три точки» */}
+    
       {menuData && (
         <MenuPortal
           menuData={menuData}
@@ -937,7 +937,7 @@ export default function TeacherDashboard() {
         />
       )}
 
-      {/* Модалка «Add Class» */}
+     
       {showAddClassModal && (
         <AddClassModal
           onClose={() => setShowAddClassModal(false)}
@@ -948,7 +948,7 @@ export default function TeacherDashboard() {
         />
       )}
 
-      {/* Модалка «Edit Class» (все поля) */}
+     
       {showEditClassModal && lessonToEdit && (
         <EditClassModal
           onClose={() => setShowEditClassModal(false)}
@@ -960,7 +960,7 @@ export default function TeacherDashboard() {
   );
 }
 
-/* =================== Контекстное меню (MenuPortal) =================== */
+
 function MenuPortal({
   menuData,
   copyToClipboard,
