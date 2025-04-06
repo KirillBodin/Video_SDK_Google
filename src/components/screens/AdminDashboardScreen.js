@@ -947,7 +947,7 @@ export default function PrincipalDashboardScreen() {
   const handleUpdateStudent = async (data) => {
     const { id, teacherIds, firstName, lastName, email, password, classIds } = data;
     const fullName = `${firstName} ${lastName}`;
-    await authorizedFetch(`${SERVER_URL}/api/students/${id}`, {
+    await authorizedFetch(`${SERVER_URL}/api/admin/${adminId}/students/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: fullName, email, password, classIds, teacherIds }),

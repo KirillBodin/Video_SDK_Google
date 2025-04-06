@@ -465,34 +465,39 @@ export default function TeacherDashboard() {
     setStudentMenuData(null);
   };
   
-  const handleSaveOrUpdateStudent = async ({ firstName, lastName, email, id }) => {
+  const handleSaveOrUpdateStudent = async ({ firstName, lastName, email, classIds, id }) => {
     if (!firstName || !lastName || !email) {
       toast.error("All fields are required!");
       return;
     }
     try {
-      const schoolRes = await authorizedFetch(`${SERVER_URL}/api/teacher/${teacherId}/students`);
-      if (!schoolRes.ok) throw new Error("Failed to fetch school");
-      
-  
       const name = `${firstName.trim()} ${lastName.trim()}`;
   
       if (id) {
+       
         const res = await authorizedFetch(`${SERVER_URL}/api/teacher/${teacherId}/students/${id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, email }),
+          body: JSON.stringify({ name, email, classIds }), 
         });
         if (!res.ok) throw new Error("Failed to update student");
         toast.success(`Student "${name}" updated!`);
       } else {
+       
         const res = await authorizedFetch(`${SERVER_URL}/api/teacher/${teacherId}/students`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, email }),
+          body: JSON.stringify({
+            name,
+            email,
+            teacherIds: [teacherId],
+            classIds, 
+          }),
         });
         if (!res.ok) throw new Error("Failed to add student");
-        toast.success(`Student "${name}" added!`);
+        const newStudent = await res.json();
+        toast.success(`Student "${newStudent.name}" added!`);
+        setStudents((prev) => [...prev, newStudent]);
       }
   
       fetchStudents();
@@ -502,6 +507,7 @@ export default function TeacherDashboard() {
       toast.error(error.message || "Failed to save student");
     }
   };
+  
   
 
 
@@ -801,6 +807,7 @@ export default function TeacherDashboard() {
     const url = new URL(lesson.classUrl, window.location.origin);
     url.searchParams.set("role", "teacher");
     localStorage.setItem("teacherEmail", teacherEmail);
+    localStorage.setItem("teacherName", name);
     window.open(url.toString(), "_blank");
   }}
   className="underline text-blue-400"
@@ -864,10 +871,11 @@ export default function TeacherDashboard() {
                 <td className="px-4 py-3 font-semibold">{student.name}</td>
                 <td className="px-4 py-3">{student.email}</td>
                 <td className="px-4 py-3">
-  {student.classes?.length > 0
-    ? student.classes.map((cls) => cls.className).join(", ")
+  {student.classNames?.length > 0
+    ? student.classNames.join(", ")
     : "—"}
 </td>
+
 
                 <td className="px-4 py-3 text-right">
                   <button

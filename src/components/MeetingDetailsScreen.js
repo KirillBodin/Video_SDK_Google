@@ -15,12 +15,15 @@ export function MeetingDetailsScreen({
   setToken,
   onClickJoin,
   onClickStartMeeting,
+  setParticipantName,
 }) {
   const [roomName, setRoomName] = useState("");
   const [userEmail, setUserEmail] = useState("");
+  const [userName, setUserName] = useState("");
   const [isCreateMeetingClicked, setIsCreateMeetingClicked] = useState(false);
   const [isJoinMeetingClicked, setIsJoinMeetingClicked] = useState(false);
-  const { className } = useParams();
+  const { name,className } = useParams();
+  
   const navigate = useNavigate();
   const { isMicrophonePermissionAllowed } = useMeetingAppContext();
   const [waitingRoomVisible, setWaitingRoomVisible] = useState(false);
@@ -52,29 +55,39 @@ export function MeetingDetailsScreen({
   
     if (tokenFromUrl) {
       localStorage.setItem("sessionToken", tokenFromUrl); 
-      window.history.replaceState({}, document.title, window.location.pathname); 
+      window.history.replaceState({}, document.title, "/"); 
     }
   
     const token = localStorage.getItem("sessionToken");
     if (token) {
       try {
         const decoded = jwtDecode(token);
-        setUserEmail(decoded.email);
+        if (decoded.email) {
+          setUserEmail(decoded.email);
+        }
+        if (decoded.name) {
+          setUserName(decoded.name);
+        }
       } catch (error) {
-        console.error("❌ Invalid token:", error);
+        console.error("Invalid token:", error);
       }
     }
   
-
-const email = localStorage.getItem("teacherEmail");
-if (email) {
-  setUserEmail(email);
-}
-
+    const email = localStorage.getItem("teacherEmail");
+    const storedTeacherName = localStorage.getItem("teacherName"); // 👈 добавлено
+  
+    if (email) {
+      setUserEmail(email);
+    }
+    if (storedTeacherName) { // 👈 заменено
+      setUserName(storedTeacherName);
+    }
+  
     if (className) {
       setRoomName(className); 
     }
   }, [className]);
+  
 
 useEffect(() => {
   const urlParams = new URLSearchParams(window.location.search);
@@ -89,10 +102,14 @@ useEffect(() => {
   if (token) {
     try {
       const decoded = jwtDecode(token);
-      setUserEmail(decoded.email);
-   
+      if (decoded.email) {
+        setUserEmail(decoded.email);
+      }
+      if (decoded.name) {
+        setUserName(decoded.name);
+      }
     } catch (error) {
-      console.error("❌ Invalid token:", error);
+      console.error("Invalid token:", error);
     }
   }
 }, []);
@@ -120,7 +137,7 @@ if (waitingRoomVisible) {
       <WaitingRoomScreen
         meetingId={meetingId}
         token={localToken}
-        userName={userEmail}
+        userName={userName}
         role="student"
         onJoined={() => {
           onClickStartMeeting(localToken, meetingId);
@@ -155,6 +172,12 @@ return (
 {(isCreateMeetingClicked || isJoinMeetingClicked) && (
   <div className="w-full max-w-md mt-6">
     <input
+        value={userName}
+        onChange={(e) => setUserName(e.target.value)}
+        placeholder="Enter your name"
+        className="w-full px-4 py-3 bg-gray-650 rounded-xl text-white text-center mb-4"
+      />
+    <input
       value={userEmail}
       onChange={(e) => setUserEmail(e.target.value)}
       placeholder="Enter your email"
@@ -179,83 +202,89 @@ return (
       </button>
     )}
 
-    {isCreateMeetingClicked && (
-      <button
-        className="w-full bg-green-500 text-white px-2 py-3 rounded-xl"
-        onClick={async () => {
-          if (!isMicrophonePermissionAllowed) {
-            toast.error("Please allow microphone access to continue.");
-            return;
-          }
+{isCreateMeetingClicked && (
+  <button
+    className="w-full bg-green-500 text-white px-2 py-3 rounded-xl"
+    onClick={async () => {
+      if (!isMicrophonePermissionAllowed) {
+        toast.error("Please allow microphone access to continue.");
+        return;
+      }
 
-          const isValid = await checkEmail();
-          if (!isValid) {
-            toast.error("❌ Email not found. Access denied.");
-            return;
-          }
+      const isValid = await checkEmail();
+      if (!isValid) {
+        toast.error("❌ Email not found. Access denied.");
+        return;
+      }
 
-          try {
-            const tokenResponse = await fetch(`${SERVER_URL}/api/get-token`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                permissions: [
-                  "allow_join",
-                  "allow_mod",
-                  "allow_create",
-                  "allow_publish",
-                  "allow_subscribe",
-                  "allow_join",
-                ],
-              }),
-            });
-            const { token } = await tokenResponse.json();
+      try {
+        const tokenResponse = await fetch(`${SERVER_URL}/api/get-token`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            permissions: [
+              "allow_join",
+              "allow_mod",
+              "allow_create",
+              "allow_publish",
+              "allow_subscribe",
+              "allow_join",
+            ],
+          }),
+        });
+        const { token } = await tokenResponse.json();
 
-            if (!token) {
-              toast.error("Failed to get token!");
-              return;
-            }
+        if (!token) {
+          toast.error("Failed to get token!");
+          return;
+        }
 
-            setToken(token);
+        setToken(token);
 
-            const meetingResponse = await fetch("https://api.videosdk.live/v1/meetings", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `${token}`,
-              },
-              body: JSON.stringify({ userMeetingId: roomName, lobby: true }),
-            });
+        const meetingResponse = await fetch("https://api.videosdk.live/v1/meetings", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `${token}`,
+          },
+          body: JSON.stringify({ userMeetingId: roomName, lobby: true }),
+        });
 
-            const meetingData = await meetingResponse.json();
+        const meetingData = await meetingResponse.json();
 
-            if (!meetingData.meetingId) {
-              toast.error("Error creating meeting!");
-              return;
-            }
+        if (!meetingData.meetingId) {
+          toast.error("Error creating meeting!");
+          return;
+        }
 
-            await fetch(`${SERVER_URL}/api/savemeeting/new`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                className: roomName,
-                meetingId: meetingData.meetingId,
-                teacherEmail: userEmail,
-              }),
-            });
+        // Передаём имя учителя на сервер
+        await fetch(`${SERVER_URL}/api/savemeeting/new`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            className: roomName,
+            meetingId: meetingData.meetingId,
+            teacherEmail: userEmail,
+            teacherName: userName, 
+          }),
+        });
 
-            setTimeout(() => {
-              sessionStorage.setItem("participantRole", "teacher");
-              onClickStartMeeting(token, meetingData.meetingId);
-            }, 2000);
-          } catch (error) {
-            toast.error("Server error while creating meeting!");
-          }
-        }}
-      >
-        Confirm
-      </button>
-    )}
+       
+        setParticipantName(userName);
+
+        setTimeout(() => {
+          sessionStorage.setItem("participantRole", "teacher");
+          onClickStartMeeting(token, meetingData.meetingId);
+        }, 2000);
+      } catch (error) {
+        toast.error("Server error while creating meeting!");
+      }
+    }}
+  >
+    Confirm
+  </button>
+)}
+
 
   
 
@@ -295,6 +324,7 @@ return (
                 setLocalToken(token);
                 setMeetingIdLocal(meetingId);
                 toast.success("Joining class...");
+                setParticipantName(userName);
                 setWaitingRoomVisible(true);
               } catch (error) {
                 toast.error("Server error while joining!");
