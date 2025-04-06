@@ -267,6 +267,7 @@ function StudentModal({ onClose, onSave, initialData }) {
   const [email, setEmail] = useState(initialData?.email || "");
   const [classIds, setClassIds] = useState(initialData?.classIds || []);
   const [lessons, setLessons] = useState([]);
+  
 
   const teacherId = useParams().teacherId;
 
@@ -403,7 +404,21 @@ export default function TeacherDashboard() {
   
   const [lessons, setLessons] = useState([]);
   const [students, setStudents] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
 
+
+  const itemsPerPage = 10;
+  const indexOfLastStudent = currentPage * itemsPerPage;
+  const indexOfFirstStudent = indexOfLastStudent - itemsPerPage;
+  const currentStudents = students.slice(indexOfFirstStudent, indexOfLastStudent);
+
+  const [classPage, setClassPage] = useState(1);
+const classesPerPage = 10;
+const indexOfLastClass = classPage * classesPerPage;
+const indexOfFirstClass = indexOfLastClass - classesPerPage;
+const currentLessons = lessons.slice(indexOfFirstClass, indexOfLastClass);
+
+  
   const [menuData, setMenuData] = useState(null);
   const [teacherEmail, setTeacherEmail] = useState("");
 
@@ -697,6 +712,10 @@ export default function TeacherDashboard() {
 
 
   const handleUpdateClass = async (updatedLesson) => {
+
+  
+    
+
     try {
   
       const body = {
@@ -785,7 +804,7 @@ export default function TeacherDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {lessons.map((lesson) => {
+                {currentLessons.map((lesson) => {
   
   const classURL = new URL(lesson.classUrl, window.location.origin).href + "?role=teacher";
 
@@ -830,6 +849,30 @@ export default function TeacherDashboard() {
                   })}
                 </tbody>
               </table>
+              <div className="flex justify-center mt-4">
+  <button
+    onClick={() => setClassPage((prev) => Math.max(prev - 1, 1))}
+    disabled={classPage === 1}
+    className="px-3 py-1 mx-1 bg-gray-700 hover:bg-gray-600 rounded disabled:opacity-50"
+  >
+    Prev
+  </button>
+  <span className="px-3 py-1 mx-1 text-white">
+    Page {classPage} of {Math.ceil(lessons.length / classesPerPage)}
+  </span>
+  <button
+    onClick={() =>
+      setClassPage((prev) =>
+        prev < Math.ceil(lessons.length / classesPerPage) ? prev + 1 : prev
+      )
+    }
+    disabled={classPage >= Math.ceil(lessons.length / classesPerPage)}
+    className="px-3 py-1 mx-1 bg-gray-700 hover:bg-gray-600 rounded disabled:opacity-50"
+  >
+    Next
+  </button>
+</div>
+
             </div>
           ) : (
             <p className="text-white text-center">No lessons found</p>
@@ -866,7 +909,7 @@ export default function TeacherDashboard() {
 </thead>
 
           <tbody>
-            {students.map((student) => (
+          {currentStudents.map((student) => (
               <tr key={student.id} className="bg-gray-800 border-b border-gray-700">
                 <td className="px-4 py-3 font-semibold">{student.name}</td>
                 <td className="px-4 py-3">{student.email}</td>
@@ -896,6 +939,30 @@ export default function TeacherDashboard() {
             ))}
           </tbody>
         </table>
+        <div className="flex justify-center mt-4">
+  <button
+    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+    disabled={currentPage === 1}
+    className="px-3 py-1 mx-1 bg-gray-700 hover:bg-gray-600 rounded disabled:opacity-50"
+  >
+    Prev
+  </button>
+  <span className="px-3 py-1 mx-1 text-white">
+    Page {currentPage} of {Math.ceil(students.length / itemsPerPage)}
+  </span>
+  <button
+    onClick={() =>
+      setCurrentPage((prev) =>
+        prev < Math.ceil(students.length / itemsPerPage) ? prev + 1 : prev
+      )
+    }
+    disabled={currentPage >= Math.ceil(students.length / itemsPerPage)}
+    className="px-3 py-1 mx-1 bg-gray-700 hover:bg-gray-600 rounded disabled:opacity-50"
+  >
+    Next
+  </button>
+</div>
+
       </div>
     ) : (
       <p className="text-white text-center">No students found</p>

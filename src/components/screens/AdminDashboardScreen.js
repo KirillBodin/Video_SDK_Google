@@ -117,9 +117,20 @@ function ContextMenu({ data, onDelete, setMenuData, onEdit }) {
 }
 
 
-function DataTable({ title, data, columns, onAdd, onMenuToggle }) {
+function DataTable({
+  title,
+  data,
+  columns,
+  onAdd,
+  onMenuToggle,
+  currentPage,
+  setCurrentPage,
+  itemsPerPage,
+  allData,
+}) {
   const addButtonLabel =
     title.toLowerCase() === "classes" ? "Add Class" : `Add ${title.slice(0, -1)}`;
+
   return (
     <div className="bg-white bg-opacity-10 p-4 rounded-lg border border-gray-700 w-full max-w-5xl mx-auto mb-10">
       <div className="flex justify-between mb-4">
@@ -201,9 +212,47 @@ function DataTable({ title, data, columns, onAdd, onMenuToggle }) {
           )}
         </tbody>
       </table>
+
+      <div className="flex justify-center mt-4">
+        <button
+          onClick={() =>
+            setCurrentPage((prev) => ({
+              ...prev,
+              [title.toLowerCase()]: Math.max(prev[title.toLowerCase()] - 1, 1),
+            }))
+          }
+          disabled={currentPage[title.toLowerCase()] === 1}
+          className="px-3 py-1 mx-1 bg-gray-700 hover:bg-gray-600 rounded disabled:opacity-50"
+        >
+          Prev
+        </button>
+        <span className="px-3 py-1 mx-1 text-white">
+          Page {currentPage[title.toLowerCase()]} of{" "}
+          {Math.ceil(allData.length === 0 ? 1 : allData.length / itemsPerPage)}
+        </span>
+        <button
+          onClick={() =>
+            setCurrentPage((prev) => ({
+              ...prev,
+              [title.toLowerCase()]:
+                prev[title.toLowerCase()] < Math.ceil(allData.length / itemsPerPage)
+                  ? prev[title.toLowerCase()] + 1
+                  : prev[title.toLowerCase()],
+            }))
+          }
+          disabled={
+            currentPage[title.toLowerCase()] >=
+            Math.ceil(allData.length / itemsPerPage)
+          }
+          className="px-3 py-1 mx-1 bg-gray-700 hover:bg-gray-600 rounded disabled:opacity-50"
+        >
+          Next
+        </button>
+      </div>
     </div>
   );
 }
+
 
 
 
@@ -796,9 +845,29 @@ export default function PrincipalDashboardScreen() {
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
   const [showAddClassModal, setShowAddClassModal] = useState(false);
   const [editData, setEditData] = useState(null);
-
+  const [currentPage, setCurrentPage] = useState({
+    teachers: 1,
+    students: 1,
+    classes: 1,
+  });
+  const itemsPerPage = 8;
+  
   const principalName = name;
-
+  const paginatedData = {
+    teachers: teachers.slice(
+      (currentPage.teachers - 1) * itemsPerPage,
+      currentPage.teachers * itemsPerPage
+    ),
+    students: students.slice(
+      (currentPage.students - 1) * itemsPerPage,
+      currentPage.students * itemsPerPage
+    ),
+    classes: classes.slice(
+      (currentPage.classes - 1) * itemsPerPage,
+      currentPage.classes * itemsPerPage
+    ),
+  };
+  
   useEffect(() => {
     fetchAll();
   }, [adminId]);
@@ -1068,28 +1137,40 @@ export default function PrincipalDashboardScreen() {
       {activeTab === "teachers" && (
         <DataTable
           title="Teachers"
-          data={teachers}
+          data={paginatedData.teachers}
           columns={["name", "email"]}
           onAdd={() => setShowAddTeacherModal(true)}
           onMenuToggle={toggleMenu}
+          currentPage={currentPage}
+  setCurrentPage={setCurrentPage}
+  itemsPerPage={itemsPerPage}
+  allData={teachers}
         />
       )}
       {activeTab === "students" && (
         <DataTable
         title="Students"
-        data={students}
+        data={paginatedData.students}
         columns={["name", "email", "classes", "teachers"]}
           onAdd={() => setShowAddStudentModal(true)}
           onMenuToggle={toggleMenu}
+          currentPage={currentPage}
+  setCurrentPage={setCurrentPage}
+  itemsPerPage={itemsPerPage}
+  allData={teachers}
         />
       )}
       {activeTab === "classes" && (
         <DataTable
           title="Classes"
-          data={classes}
+          data={paginatedData.classes}
           columns={["className", "teacherName", "meetingId", "url"]}
           onAdd={() => setShowAddClassModal(true)}
           onMenuToggle={(id, title, e, classUrl) => toggleMenu(id, title, e, classUrl)}
+          currentPage={currentPage}
+  setCurrentPage={setCurrentPage}
+  itemsPerPage={itemsPerPage}
+  allData={teachers}
         />
       )}
       {editData?.type === "teachers" && (
