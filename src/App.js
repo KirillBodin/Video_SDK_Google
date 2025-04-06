@@ -34,7 +34,27 @@ function App() {
     setToken(currentToken);
     setMeetingId(currentMeetingId);
   };
-
+  useEffect(() => {
+    const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+  
+    const isTelegram = userAgent.includes("Telegram");
+  
+    if (isTelegram) {
+      const redirectUrl = window.location.href;
+      const isAndroid = /android/i.test(userAgent);
+      const isIOS = /iPad|iPhone|iPod/.test(userAgent);
+  
+      // Попробуем открыть в другом браузере
+      if (isAndroid) {
+        window.location.href = `intent://${redirectUrl.replace(/^https?:\/\//, "")}#Intent;scheme=https;package=com.android.chrome;end;`;
+      } else if (isIOS) {
+        window.open(redirectUrl, "_blank");
+      } else {
+        window.open(redirectUrl, "_blank");
+      }
+    }
+  }, []);
+  
   useEffect(() => {
     if (token && meetingId && !isMeetingStarted) {
       setMeetingStarted(true);
