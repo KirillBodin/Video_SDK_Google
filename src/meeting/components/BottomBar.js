@@ -21,7 +21,7 @@ import WebcamOffIcon from "../../icons/Bottombar/WebcamOffIcon";
 import ScreenShareIcon from "../../icons/Bottombar/ScreenShareIcon";
 import ChatIcon from "../../icons/Bottombar/ChatIcon";
 import ParticipantsIcon from "../../icons/Bottombar/ParticipantsIcon"; 
-import ConfirmBox from "./ConfirmBox
+import { ConfirmBox } from "./ConfirmBox";
 import EndIcon from "../../icons/Bottombar/EndIcon";
 import RaiseHandIcon from "../../icons/Bottombar/RaiseHandIcon";
 import PipIcon from "../../icons/Bottombar/PipIcon";
