@@ -116,7 +116,7 @@ function ContextMenu({ data, onDelete, setMenuData, onEdit }) {
   );
 }
 
-/* ========== Таблица ========== */
+
 function DataTable({ title, data, columns, onAdd, onMenuToggle }) {
   const addButtonLabel =
     title.toLowerCase() === "classes" ? "Add Class" : `Add ${title.slice(0, -1)}`;
@@ -140,66 +140,73 @@ function DataTable({ title, data, columns, onAdd, onMenuToggle }) {
           </tr>
         </thead>
         <tbody>
-          {data.map((row) => {
-            const fullUrl =
-              row.classUrl && title.toLowerCase() === "classes"
-                ? `${window.location.origin}/${row.classUrl}`
-                : null;
-            return (
-              <tr key={row.id}>
-               {columns.map((col) => {
-  if (col === "url") {
-    return (
-      <td key={col} className="px-3 py-2">
-        {fullUrl || "—"}
-      </td>
-    );
-  } else if (col === "classes") {
-    return (
-      <td key={col} className="px-3 py-2">
-        {row.classes?.map((cls) => cls.className).join(", ") || "—"}
-      </td>
-    );
-  } else if (col === "teachers") {
-    return (
-      <td key={col} className="px-3 py-2">
-        {row.teachers?.map((t) => t.name).join(", ") || "—"}
-      </td>
-    );
-  }
-
-  return (
-    <td key={col} className="px-3 py-2">
-      {row[col] || "—"}
-    </td>
-  );
-})}
-
-                <td className="text-right px-3 py-2">
-                  <button
-                    onClick={(e) =>
-                      onMenuToggle(
-                        row.id,
-                        title,
-                        e,
-                        title.toLowerCase() === "classes" ? row.classUrl : undefined
-                      )
+          {data.length === 0 ? (
+            <tr>
+              <td colSpan={columns.length + 1} className="text-center py-4">
+                No data available
+              </td>
+            </tr>
+          ) : (
+            data.map((row) => {
+              const fullUrl =
+                row.classUrl && title.toLowerCase() === "classes"
+                  ? `${window.location.origin}/${row.classUrl}`
+                  : null;
+              return (
+                <tr key={row.id}>
+                  {columns.map((col) => {
+                    if (col === "url") {
+                      return (
+                        <td key={col} className="px-3 py-2">
+                          {fullUrl || "—"}
+                        </td>
+                      );
+                    } else if (col === "classes") {
+                      return (
+                        <td key={col} className="px-3 py-2">
+                          {row.classes?.map((cls) => cls.className).join(", ") || "—"}
+                        </td>
+                      );
+                    } else if (col === "teachers") {
+                      return (
+                        <td key={col} className="px-3 py-2">
+                          {row.teachers?.map((t) => t.name).join(", ") || "—"}
+                        </td>
+                      );
                     }
-                    className="text-white"
-                  >
-                    <FiMoreVertical />
-                  </button>
-                </td>
-              </tr>
-            );
-          })}
+                    return (
+                      <td key={col} className="px-3 py-2">
+                        {row[col] || "—"}
+                      </td>
+                    );
+                  })}
+                  <td className="text-right px-3 py-2">
+                    <button
+                      onClick={(e) =>
+                        onMenuToggle(
+                          row.id,
+                          title,
+                          e,
+                          title.toLowerCase() === "classes" ? row.classUrl : undefined
+                        )
+                      }
+                      className="text-white"
+                    >
+                      <FiMoreVertical />
+                    </button>
+                  </td>
+                </tr>
+              );
+            })
+          )}
         </tbody>
       </table>
     </div>
   );
 }
 
-/* ========== Модальное окно для учителя ========== */
+
+
 function AddTeacherModal({ onClose, onSave, isEdit = false, initialData = {}, classes = [], students = [] }) {
 
   
@@ -732,7 +739,7 @@ useEffect(() => {
           setFormNewStudent({ ...formNewStudent, password: e.target.value })
         }
       />
-      {/* Здесь нужно вставить новый блок для выбора учителя */}
+    
       <div className="mb-3">
         <label className="block font-semibold mb-1">Select Teacher:</label>
         <select
@@ -749,7 +756,7 @@ useEffect(() => {
           ))}
         </select>
       </div>
-      {/* Конец нового блока выбора учителя */}
+     
       <div className="flex justify-between">
         <button
           onClick={() => setShowStudentForm(false)}
@@ -805,6 +812,10 @@ export default function PrincipalDashboardScreen() {
   const fetchTeachers = async () => {
     try {
       const res = await authorizedFetch(`${SERVER_URL}/api/admin/${adminId}/teachers`);
+      if (res.status === 401) {
+        toast.error("Your session has expired. Please log in again.");
+        return;
+      }
       const data = await res.json();
       console.log("Fetched teachers:", data);
       setTeachers(data || []);
@@ -813,10 +824,14 @@ export default function PrincipalDashboardScreen() {
       toast.error("Failed to load teachers");
     }
   };
-
+  
   const fetchClasses = async () => {
     try {
       const res = await authorizedFetch(`${SERVER_URL}/api/admin/${adminId}/classes`);
+      if (res.status === 401) {
+        toast.error("Your session has expired. Please log in again.");
+        return;
+      }
       const data = await res.json();
       console.log("Fetched classes:", data);
       setClasses(data || []);
@@ -825,10 +840,14 @@ export default function PrincipalDashboardScreen() {
       toast.error("Failed to load classes");
     }
   };
-
+  
   const fetchStudents = async () => {
     try {
       const res = await authorizedFetch(`${SERVER_URL}/api/admin/${adminId}/students`);
+      if (res.status === 401) {
+        toast.error("Your session has expired. Please log in again.");
+        return;
+      }
       const data = await res.json();
       console.log("Fetched students:", data);
       setStudents(data || []);
@@ -837,6 +856,7 @@ export default function PrincipalDashboardScreen() {
       toast.error("Failed to load students");
     }
   };
+  
 
   const deleteItem = async (id, type) => {
     if (!window.confirm("Are you sure you want to delete this?")) return;

@@ -103,33 +103,45 @@ export default function SuperAdminDashboard() {
   const fetchAdmins = async () => {
     try {
       const res = await authorizedFetch(`${SERVER_URL}/api/super-admin/admins`);
+      if (res.status === 401) {
+        toast.error("Your session has expired. Please log in again.");
+        return;
+      }
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to fetch admins");
-      setAdmins(data);
+      setAdmins(data || []);
     } catch (err) {
       console.error("Error fetching admins:", err);
       toast.error("Failed to fetch admins.");
     }
   };
-
   const fetchTeachers = async () => {
     try {
       const res = await authorizedFetch(`${SERVER_URL}/api/super-admin/teachers`);
+      if (res.status === 401) {
+        toast.error("Your session has expired. Please log in again.");
+        return;
+      }
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to fetch teachers");
-      setTeachers(data);
+      setTeachers(data || []);
     } catch (err) {
       console.error("Error fetching teachers:", err);
       toast.error("Failed to fetch teachers.");
     }
   };
+  
 
   const fetchClasses = async () => {
     try {
       const res = await authorizedFetch(`${SERVER_URL}/api/super-admin/classes`);
+      if (res.status === 401) {
+        toast.error("Your session has expired. Please log in again.");
+        return;
+      }
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to fetch classes");
-      setClasses(data);
+      setClasses(data || []);
     } catch (err) {
       console.error("Error fetching classes:", err);
       toast.error("Failed to fetch classes.");
@@ -139,9 +151,13 @@ export default function SuperAdminDashboard() {
   const fetchStudents = async () => {
     try {
       const res = await authorizedFetch(`${SERVER_URL}/api/super-admin/students`);
+      if (res.status === 401) {
+        toast.error("Your session has expired. Please log in again.");
+        return;
+      }
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to fetch students");
-      setStudents(data);
+      setStudents(data || []);
     } catch (err) {
       console.error("Error fetching students:", err);
       toast.error("Failed to fetch students.");
@@ -580,14 +596,13 @@ export default function SuperAdminDashboard() {
   );
 }
 
-/* --------------------- Компонент DataTable --------------------- */
 function DataTable({ title, data, columns, onMenuToggle }) {
   return (
     <div className="w-full bg-white bg-opacity-10 rounded-xl p-6 shadow-lg border border-gray-700 backdrop-blur-md mb-6">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-semibold text-white">{title}:</h2>
       </div>
-      {data.length > 0 ? (
+      {data && data.length > 0 ? (
         <div className="overflow-x-auto">
           <table className="w-full border-collapse border border-gray-700 rounded-lg">
             <thead>
@@ -634,7 +649,8 @@ function DataTable({ title, data, columns, onMenuToggle }) {
   );
 }
 
-/* --------------------- Компонент ContextMenu --------------------- */
+
+
 function ContextMenu({ data, onDelete, onEdit, onView, setMenuData }) {
   const menuRef = useRef();
   useEffect(() => {

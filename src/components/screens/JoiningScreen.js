@@ -512,22 +512,6 @@ export function JoiningScreen({
         OnIcon={MicOnIcon}
         OffIcon={MicOffIcon}
       />
-      {/* Выпадающий список микрофона */}
-      <div className="absolute top-full left-0 mt-1 w-32 z-50">
-        <select
-          className="px-2 py-1 bg-black text-white rounded-lg text-sm w-full shadow-md 
-                     outline-none focus:ring-2 focus:ring-gray-600 hover:bg-gray-800 
-                     cursor-pointer whitespace-nowrap overflow-hidden text-ellipsis"
-          value={selectedMic?.id || ""}
-          onChange={(e) => changeMic(e.target.value)}
-        >
-          {mics.map((device, index) => (
-            <option key={device.deviceId} value={device.deviceId}>
-              🎤 {device.label || `Mic ${index + 1}`}
-            </option>
-          ))}
-        </select>
-      </div>
     </div>
   ) : (
     <MicPermissionDenied />
@@ -543,22 +527,7 @@ export function JoiningScreen({
         OnIcon={WebcamOnIcon}
         OffIcon={WebcamOffIcon}
       />
-      {/* Выпадающий список камеры */}
-      <div className="absolute top-full left-0 mt-1 w-32 z-50">
-        <select
-          className="px-2 py-1 bg-black text-white rounded-lg text-sm w-full shadow-md 
-                     outline-none focus:ring-2 focus:ring-gray-600 hover:bg-gray-800 
-                     cursor-pointer whitespace-nowrap overflow-hidden text-ellipsis"
-          value={selectedWebcam?.id || ""}
-          onChange={(e) => changeWebcam(e.target.value)}
-        >
-          {webcams.map((device, index) => (
-            <option key={device.deviceId} value={device.deviceId}>
-              📷 {device.label || `Cam ${index + 1}`}
-            </option>
-          ))}
-        </select>
-      </div>
+
     </div>
   ) : (
     <CameraPermissionDenied />
@@ -566,13 +535,6 @@ export function JoiningScreen({
 </div>
 
 </div>
-
-
-
-
-
-
-
                     </div>
 
                     {!isMobile && (
@@ -582,7 +544,7 @@ export function JoiningScreen({
                         </div>
 
                         <div className="flex mt-3">
-                          {!isFirefox && (
+                          
                             <>
                               <DropDown
                                 mics={mics}
@@ -599,7 +561,7 @@ export function JoiningScreen({
                                 webcams={webcams}
                               />
                             </>
-                          )}
+                          
                         </div>
                       </>
                     )}
@@ -615,7 +577,7 @@ export function JoiningScreen({
   setMeetingId={setMeetingId}
   setToken={setToken}
   setVideoTrack={setVideoTrack}
-  setIsAdminView={setIsAdminView} // ✅ Передаем в MeetingDetailsScreen
+  setIsAdminView={setIsAdminView} 
   onClickStartMeeting={onClickStartMeeting}
   onClickJoin={async (token, id) => {
     
@@ -670,12 +632,6 @@ export function JoiningScreen({
         subTitle="You're default microphone is muted, please unmute it or increase audio
             input volume from system settings."
       />
-
-
-
-
-      
-
     </div>
   );
 }

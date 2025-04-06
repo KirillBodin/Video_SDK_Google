@@ -274,13 +274,22 @@ function StudentModal({ onClose, onSave, initialData }) {
     const fetchLessons = async () => {
       try {
         const res = await authorizedFetch(`${SERVER_URL}/api/teachers/${teacherId}/lessons`);
+        if (res.status === 401) {
+          toast.error("Your session has expired. Please log in again.");
+          return;
+        }
         const data = await res.json();
-        setLessons(data || []);
-      } catch (err) {
-        console.error("Error fetching lessons:", err);
-        toast.error("Failed to load lessons");
+        if (!res.ok) {
+          toast.error(data.error || "Failed to load lessons");
+          setLessons([]);
+        } else {
+          setLessons(data);
+        }
+      } catch (error) {
+        toast.error("Server error.");
       }
     };
+    
 
     fetchLessons();
   }, [teacherId]);
@@ -528,14 +537,19 @@ export default function TeacherDashboard() {
   const fetchStudents = async () => {
     try {
       const res = await authorizedFetch(`${SERVER_URL}/api/teacher/${teacherId}/students`);
-      if (!res.ok) throw new Error("Failed to fetch students");
+      if (res.status === 401) {
+        toast.error("Your session has expired. Please log in again.");
+        return;
+      }
       const data = await res.json();
-      setStudents(data); 
+      if (!res.ok) throw new Error("Failed to fetch students");
+      setStudents(data);
     } catch (error) {
-      console.error("❌ Error fetching students:", error);
+      console.error("Error fetching students:", error);
       toast.error("Failed to load students");
     }
   };
+  
   
 
   

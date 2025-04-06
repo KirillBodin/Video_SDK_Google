@@ -12,6 +12,8 @@ import AdminLoginScreen from "./components/screens/AdminLoginScreen";
 import JoinMeetingWrapper from "./components/screens/JoinMeetingWrapper";
 import ProtectedRoute from "./components/ProtectedRoute";
 import StaticMeetingJoinerWrapper from "./components/StaticMeetingJoinerWrapper";
+import UnauthorizedScreen from "./components/screens/UnauthorizedScreen"; 
+
 
 function App() {
   const [token, setToken] = useState("");
@@ -54,8 +56,6 @@ function App() {
                       webcamEnabled: webcamOn,
                       name: participantName || "TestUser",
                       multiStream: true,
-                      customCameraVideoTrack: customVideoStream,
-                      customMicrophoneAudioTrack: customAudioStream,
                     }}
                     token={token}
                     reinitialiseMeetingOnConfigChange={true}
@@ -128,8 +128,6 @@ function App() {
             webcamEnabled: webcamOn,
             name: participantName || "TestUser",
             multiStream: true,
-            ...(customVideoStream && { customCameraVideoTrack: customVideoStream }),
-            ...(customAudioStream && { customMicrophoneAudioTrack: customAudioStream }), 
           }}
           token={token}
           reinitialiseMeetingOnConfigChange={true}
@@ -179,7 +177,7 @@ function App() {
 
 
 
-
+<Route path="/unauthorized" element={<UnauthorizedScreen />} />
 
 
         </Routes>
