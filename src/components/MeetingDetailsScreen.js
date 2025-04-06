@@ -257,51 +257,7 @@ return (
       </button>
     )}
 
-    {isJoinMeetingClicked && (
-      <button
-        className="w-full bg-green-500 text-white px-2 py-3 rounded-xl"
-        onClick={async () => {
-          if (!isMicrophonePermissionAllowed) {
-            toast.error("Please allow microphone access to continue.");
-            return;
-          }
-
-          try {
-            const response = await fetch(`${SERVER_URL}/api/getmeeting/by-classname/${roomName}`);
-            const data = await response.json();
-
-            const meetingId = data.meeting?.meetingId;
-            if (!meetingId) {
-              toast.error("Meeting not found or data incomplete!");
-              return;
-            }
-
-            const tokenResponse = await fetch(`${SERVER_URL}/api/get-token`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ permissions: ["ask_join"] }),
-            });
-
-            const { token } = await tokenResponse.json();
-            if (!token) {
-              toast.error("Failed to get token!");
-              return;
-            }
-
-            sessionStorage.setItem("participantRole", "student");
-            setToken(token);
-            setLocalToken(token);
-            setMeetingIdLocal(meetingId);
-            toast.success("Joining class...");
-            setWaitingRoomVisible(true);
-          } catch (error) {
-            toast.error("Server error while joining!");
-          }
-        }}
-      >
-        Confirm
-      </button>
-    )}
+  
 
         {isJoinMeetingClicked && (
           <button
@@ -316,7 +272,7 @@ return (
                 const response = await fetch(`${SERVER_URL}/api/getmeeting/by-classname/${roomName}`);
                 const data = await response.json();
 
-                const meetingId = data.meeting?.meetingId;
+                const meetingId = data.meeting ? data.meeting.meetingId : null;
                 if (!meetingId) {
                   toast.error("Meeting not found or data incomplete!");
                   return;

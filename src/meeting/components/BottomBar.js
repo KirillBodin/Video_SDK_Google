@@ -226,9 +226,14 @@ const MicBTN = () => {
     <>
       <OutlinedButton
         Icon={localMicOn ? MicOnIcon : MicOffIcon}
-        onClick={() => {
-          mMeeting.toggleMic();
+        onClick={async () => {
+          if (mMeeting.localParticipant?.micOn) {
+            await mMeeting.muteMic();
+          } else {
+            await mMeeting.unmuteMic();
+          }
         }}
+        
         
         bgColor={localMicOn ? "bg-gray-750" : "bg-white"}
         borderColor={localMicOn && "#ffffff33"}
