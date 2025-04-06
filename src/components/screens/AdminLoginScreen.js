@@ -66,7 +66,7 @@ export default function AdminLoginScreen() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-black">
-      {
+      
       <div className="w-full max-w-md p-8 bg-black rounded-lg shadow-lg">
         <h1 className="text-center text-3xl font-bold text-white mb-8">
           Admin Login
@@ -78,7 +78,7 @@ export default function AdminLoginScreen() {
             Email
           </label>
           <div className="relative">
-           
+          
             <span className="absolute inset-y-0 left-0 flex items-center pl-3">
               <svg
                 className="w-5 h-5 text-gray-500"
@@ -100,13 +100,13 @@ export default function AdminLoginScreen() {
           </div>
         </div>
 
-        
+       
         <div className="mb-6">
           <label className="block mb-2 font-semibold text-gray-300">
             Password
           </label>
           <div className="relative">
-            
+           
             <span className="absolute inset-y-0 left-0 flex items-center pl-3">
               <svg
                 className="w-5 h-5 text-gray-500"
@@ -138,7 +138,7 @@ export default function AdminLoginScreen() {
           </div>
         </div>
 
-  
+       
         <button
           onClick={handleLogin}
           className="w-full py-3 bg-blue-600 rounded-md font-semibold text-white 
