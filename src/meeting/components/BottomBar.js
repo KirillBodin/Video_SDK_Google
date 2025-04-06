@@ -20,7 +20,8 @@ import WebcamOnIcon from "../../icons/Bottombar/WebcamOnIcon";
 import WebcamOffIcon from "../../icons/Bottombar/WebcamOffIcon";
 import ScreenShareIcon from "../../icons/Bottombar/ScreenShareIcon";
 import ChatIcon from "../../icons/Bottombar/ChatIcon";
-import ParticipantsIcon from "../../icons/Bottombar/ParticipantsIcon";
+import ParticipantsIcon from "../../icons/Bottombar/ParticipantsIcon"; 
+import ConfirmBox from "./ConfirmBox
 import EndIcon from "../../icons/Bottombar/EndIcon";
 import RaiseHandIcon from "../../icons/Bottombar/RaiseHandIcon";
 import PipIcon from "../../icons/Bottombar/PipIcon";
@@ -670,7 +671,7 @@ export function BottomBar({ bottomBarHeight, setIsMeetingLeft, isHost }) {
       setShowConfirm(false);
       try {
         await leave();
-        navigate("/"); // Перенаправление на главный экран
+        navigate("/"); 
       } catch (error) {
         console.error("❌ Error while leaving:", error);
       }
