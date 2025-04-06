@@ -16,6 +16,17 @@ const SERVER_URL = process.env.REACT_APP_SERVER_URL;
 
 /* ========== Общая функция для модальных окон ========== */
 function renderModal(title, form, setForm, onSubmit, onClose, customFields = {}) {
+  const fieldPlaceholders = {
+    firstName: "First Name",
+    lastName: "Last Name",
+    email: "Email",
+    password: "Password",
+    classIds: "Classes",
+    studentIds: "Students",
+    teacherIds: "Teachers",
+  };
+  
+  
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
   return ReactDOM.createPortal(
     <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
@@ -29,7 +40,7 @@ function renderModal(title, form, setForm, onSubmit, onClose, customFields = {})
             <input
               key={field}
               name={field}
-              placeholder={field}
+              placeholder={fieldPlaceholders[field] || field}
               className="w-full mb-3 px-3 py-2 border rounded"
               value={form[field] || ""}
               onChange={handleChange}

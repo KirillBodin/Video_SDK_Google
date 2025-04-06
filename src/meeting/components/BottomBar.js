@@ -225,31 +225,9 @@ const MicBTN = () => {
     <>
       <OutlinedButton
         Icon={localMicOn ? MicOnIcon : MicOffIcon}
-        onClick={async () => {
-          try {
-            const devices = await navigator.mediaDevices.enumerateDevices();
-            const hasMic = devices.some((d) => d.kind === "audioinput");
-        
-            if (!hasMic) {
-              toast.error("⚠️ Микрофон не найден. Подключите микрофон или разрешите доступ.");
-              return;
-            }
-        
-            const permissions = await navigator.permissions.query({ name: "microphone" });
-            if (permissions.state === "denied") {
-              toast.error("🚫 Доступ к микрофону запрещён в настройках браузера.");
-              return;
-            }
-        
-            await mMeeting.toggleMic(); // безопасно
-          } catch (err) {
-            console.error("❌ Ошибка при попытке включить микрофон:", err);
-            toast.error("❌ Не удалось включить микрофон.");
-          }
+        onClick={() => {
+          mMeeting.toggleMic();
         }}
-        
-        
-        
         
         bgColor={localMicOn ? "bg-gray-750" : "bg-white"}
         borderColor={localMicOn && "#ffffff33"}
@@ -680,26 +658,45 @@ export function BottomBar({ bottomBarHeight, setIsMeetingLeft, isHost }) {
     );
   };
   const LeaveBTN = () => {
-    const { leave, end } = useMeeting();
+    const { leave } = useMeeting();
     const navigate = useNavigate();
+    const [showConfirm, setShowConfirm] = useState(false);
   
-    const handleLeave = async () => {
+    const handleLeaveClick = () => {
+      setShowConfirm(true);
+    };
+  
+    const handleConfirmLeave = async () => {
+      setShowConfirm(false);
       try {
-        await leave(); 
-        setIsMeetingLeft(true); 
-        navigate("/"); 
+        await leave();
+        navigate("/"); // Перенаправление на главный экран
       } catch (error) {
         console.error("❌ Error while leaving:", error);
       }
     };
   
+    const handleCancelLeave = () => {
+      setShowConfirm(false);
+    };
+  
     return (
-      <OutlinedButton
-        Icon={EndIcon}
-        bgColor="bg-red-150"
-        onClick={handleLeave}
-        tooltip={"Leave Meeting"}
-      />
+      <>
+        <OutlinedButton
+          Icon={EndIcon}
+          bgColor="bg-red-150"
+          onClick={handleLeaveClick}
+          tooltip={"Leave Meeting"}
+        />
+        <ConfirmBox
+          open={showConfirm}
+          title="Confirm Exit"
+          subTitle="Are you sure you want to leave the meeting?"
+          successText="Yes"
+          onSuccess={handleConfirmLeave}
+          onCancel={handleCancelLeave}
+        />
+      </>
     );
   };
   

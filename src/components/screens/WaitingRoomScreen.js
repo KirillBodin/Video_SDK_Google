@@ -54,7 +54,7 @@ function WaitingRoom({ meetingId, token, onJoined }) {
   }, [meetingId, token, onJoined]);
 
   return (
-    <div className="h-screen w-screen bg-gray-900 text-white flex items-center justify-center">
+    <div className="h-screen w-screen bg-black text-white flex items-center justify-center">
       <h2 className="text-xl font-bold">
         {checking ? "Waiting for the teacher to start the meeting..." : "Loading..."}
       </h2>

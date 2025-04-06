@@ -76,8 +76,9 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
   const [globalMuteState, setGlobalMuteState] = useState(false);
   const lastUnmutedParticipantIdRef = useRef(null);
   const [highlightedParticipantId, setHighlightedParticipantId] = useState(null);
-  const role = localStorage.getItem("participantRole");
-  
+  const role = sessionStorage.getItem("participantRole");
+  const [pendingJoinRequests, setPendingJoinRequests] = useState([]);
+
   const { publish: highlightPublish, messages: highlightMessages } = usePubSub("HIGHLIGHT");
   const praiseMessages = [
     "Good job!",
@@ -119,6 +120,9 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
     }
   }, [highlightMessages]);
 
+
+
+  
 
   function onParticipantJoined(participant) {
     participant && participant.setQuality("high");
@@ -210,7 +214,30 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
   const mMeeting = useMeeting({
     micEnabled: false,
     onParticipantJoined,
-    onEntryResponded,
+    onEntryResponded: (participantId, decision) => {
+      console.log("📥 Entry response:", participantId, decision);
+      if (participantId === mMeetingRef.current?.localParticipant?.id) {
+        if (decision === "allowed") {
+          setLocalParticipantAllowedJoin(true);
+        } else {
+          setLocalParticipantAllowedJoin(false);
+          setTimeout(() => {
+            _handleMeetingLeft();
+          }, 3000);
+        }
+      }
+    },
+    
+    onEntryRequested: ({ participantId, name, allow, deny }) => {
+      console.log(`${name} requested to join.`);
+    
+      // Просто добавляем запрос в pendingJoinRequests
+      setPendingJoinRequests((prev) => [
+        ...prev,
+        { id: participantId, name, allow, deny },
+      ]);
+    },
+    
     onMeetingJoined: async () => {
       try {
         const devices = await navigator.mediaDevices.enumerateDevices();
@@ -243,13 +270,22 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
   });
 
 
+
+
   const isPresenting = mMeeting.presenterId ? true : false;
 
  
   const { publish: controlPublish } = usePubSub("CONTROL");
   const { publish: chatPublish } = usePubSub("CHAT");
+  const { publish: joinResponsePublish } = usePubSub("CONTROL");
+  const { publish: entryPublish } = usePubSub("ENTRY");
 
 
+  
+  
+ 
+  
+  
 
   
   useEffect(() => {
@@ -579,7 +615,7 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
                   <></>
               )
           ) : (
-              !mMeeting.isMeetingJoined && <WaitingToJoinScreen />
+            !mMeeting.isMeetingJoined && <WaitingToJoinScreen role={role} />
           )}
           <ConfirmBox
               open={meetingErrorVisible}
@@ -590,6 +626,62 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
               title={`Error Code: ${meetingError.code}`}
               subTitle={meetingError.message}
           />
+         {role === "teacher" && pendingJoinRequests.length > 0 && (
+  <div className="absolute top-5 left-5 bg-white shadow-xl rounded-lg p-4 z-50 w-96 max-h-[80vh] overflow-y-auto">
+    <div className="flex justify-between items-center mb-3">
+      <h3 className="font-bold text-gray-800 text-lg">Join Requests ({pendingJoinRequests.length})</h3>
+      <div className="flex gap-2">
+        <button
+          onClick={() => {
+            pendingJoinRequests.forEach((req) => req.allow());
+            setPendingJoinRequests([]);
+          }}
+          className="bg-green-500 text-white text-sm px-2 py-1 rounded hover:bg-green-600"
+        >
+          Allow All
+        </button>
+        <button
+          onClick={() => {
+            pendingJoinRequests.forEach((req) => req.deny());
+            setPendingJoinRequests([]);
+          }}
+          className="bg-red-500 text-white text-sm px-2 py-1 rounded hover:bg-red-600"
+        >
+          Deny All
+        </button>
+      </div>
+    </div>
+    <div className="space-y-2">
+      {pendingJoinRequests.map((req) => (
+        <div key={req.id} className="flex justify-between items-center p-2 bg-gray-100 rounded shadow-sm">
+          <span className="text-gray-800 font-medium">{req.name}</span>
+          <div className="flex gap-1">
+            <button
+              onClick={() => {
+                req.allow();
+                setPendingJoinRequests((prev) => prev.filter((r) => r.id !== req.id));
+              }}
+              className="bg-green-500 text-white px-2 py-0.5 rounded text-sm hover:bg-green-600"
+            >
+              Allow
+            </button>
+            <button
+              onClick={() => {
+                req.deny();
+                setPendingJoinRequests((prev) => prev.filter((r) => r.id !== req.id));
+              }}
+              className="bg-red-500 text-white px-2 py-0.5 rounded text-sm hover:bg-red-600"
+            >
+              Deny
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
+
+
         </div>
       </div>
   );

@@ -4,14 +4,22 @@ import Lottie from "lottie-react";
 import useIsTab from "../../hooks/useIsTab";
 import useIsMobile from "../../hooks/useIsMobile";
 
-const WaitingToJoinScreen = () => {
-  const waitingMessages = [
-    { index: 0, text: "Creating a room for you..." },
-    { index: 1, text: "Almost there..." },
-  ];
-  const [message, setMessage] = useState(waitingMessages[0]);
+const WaitingToJoinScreen = ({ role }) => {
+  // Если роль "student", используем сообщения для ученика, иначе стандартные
+  const waitingMessages = role === "student"
+    ? [
+        { index: 0, text: "Almost there..." },
+        { index: 1, text: "Please wait until the teacher admits you..." },
+      ]
+    : [
+        { index: 0, text: "Creating a room for you..." },
+        { index: 1, text: "Almost there..." },
+      ];
 
+  const [message, setMessage] = useState(waitingMessages[0]);
   const intervalRef = useRef(null);
+  const isTab = useIsTab();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     intervalRef.current = setInterval(() => {
@@ -25,10 +33,7 @@ const WaitingToJoinScreen = () => {
     return () => {
       clearInterval(intervalRef.current);
     };
-  }, []);
-
-  const isTab = useIsTab();
-  const isMobile = useIsMobile();
+  }, [waitingMessages]);
 
   const animationDefaultOptions = {
     loop: true,
@@ -47,7 +52,6 @@ const WaitingToJoinScreen = () => {
         alignItems: "center",
         justifyContent: "center",
         height: "100vh",
-        // backgroundColor: theme.palette.darkTheme.main,
       }}
     >
       <div className="flex flex-col">

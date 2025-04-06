@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { jwtDecode } from "jwt-decode"; 
+import  jwtDecode  from "jwt-decode"; 
 import { useParams } from "react-router-dom";
 import { useMeetingAppContext } from "../MeetingAppContextDef";
 import WaitingRoomScreen from "./screens/WaitingRoomScreen";
@@ -131,207 +131,176 @@ if (waitingRoomVisible) {
   
 }
 
-  return (
-    <div className="flex flex-col justify-center w-full md:p-[6px] sm:p-1 p-1.5 relative">
-  
-
-    
-      <input
-        value={userEmail}
-        onChange={(e) => setUserEmail(e.target.value)}
-        placeholder="Enter your email"
-        className="px-4 py-3 bg-gray-650 rounded-xl text-white w-full text-center mb-4"
-      />
-
-{userEmail && !className && (
-  <input
-    value={roomName}
-    onChange={(e) => setRoomName(e.target.value.trim())}
-    placeholder="Enter class name (e.g., classroom-101)"
-    className="px-4 py-3 bg-gray-650 rounded-xl text-white w-full text-center mb-4"
-  />
-)}
-
-      {!userEmail && (
+return (
+  <div className="flex flex-col justify-center items-center w-full p-6">
+    {/* Показываем выбор: Start or Join */}
+    {!isCreateMeetingClicked && !isJoinMeetingClicked && (
+      <>
         <button
-          className="w-full bg-red-500 text-white px-2 py-3 rounded-xl"
-          onClick={loginWithGoogle}
+          className="w-full bg-purple-500 text-white px-4 py-3 rounded-xl mb-4"
+          onClick={() => setIsCreateMeetingClicked(true)}
         >
-          Login with Google
+          Start a Class
         </button>
-      )}
+        <button
+          className="w-full bg-blue-600 text-white px-4 py-3 rounded-xl"
+          onClick={() => setIsJoinMeetingClicked(true)}
+        >
+          Join a Class
+        </button>
+      </>
+    )}
 
-      <div className="w-full md:mt-4 mt-4 flex flex-col">
-        <div className="flex items-center justify-center flex-col w-full">
-          {!isCreateMeetingClicked && !isJoinMeetingClicked && (
-            <>
+    {/* Общая форма для обеих опций */}
+    {(isCreateMeetingClicked || isJoinMeetingClicked) && (
+      <div className="w-full max-w-md mt-6">
+        <input
+          value={userEmail}
+          onChange={(e) => setUserEmail(e.target.value)}
+          placeholder="Enter your email"
+          className="w-full px-4 py-3 bg-gray-650 rounded-xl text-white text-center mb-4"
+        />
+        <input
+          value={roomName}
+          onChange={(e) => setRoomName(e.target.value.trim())}
+          placeholder="Enter class name (e.g., classroom-101)"
+          className="w-full px-4 py-3 bg-gray-650 rounded-xl text-white text-center mb-4"
+        />
 
-              <button
-                className={`
-                  w-full px-2 py-3 rounded-xl ${
-                    userEmail && roomName ? "bg-purple-350 text-white" : "bg-gray-600 text-gray-400 cursor-not-allowed"
-                  }`}
-                disabled={!userEmail || !roomName}
-                onClick={async () => {
-                  if (!isMicrophonePermissionAllowed) {
-                    toast.error("Please allow microphone access to continue.");
-                    return;
-                  }
-                
-                  const isValid = await checkEmail();
-                  if (!isValid) {
-                    toast.error("❌ Email not found. Access denied.");
-                    return;
-                  }
-                
-                  setIsCreateMeetingClicked(true);
-                }}
-                
-              >
-                Create a class
-              </button>
+        {!userEmail && (
+          <button
+            className="w-full bg-red-500 text-white px-2 py-3 rounded-xl mb-4"
+            onClick={loginWithGoogle}
+          >
+            Login with Google
+          </button>
+        )}
 
-  
-              <button
-                className={`
-                  w-full bg-gray-650 text-white px-2 py-3 rounded-xl mt-5
-                  ${userEmail && roomName ? "" : "cursor-not-allowed opacity-50"}
-                `}
-                disabled={!userEmail || !roomName}
-                onClick={() => {
-                  if (!isMicrophonePermissionAllowed) {
-                    toast.error("Please allow microphone access to continue.");
-                    return;
-                  }
-                
-                  setIsJoinMeetingClicked(true);
-                }}
-                
-              >
-                Join a class
-              </button>
-            </>
-          )}
+        {isCreateMeetingClicked && (
+          <button
+            className="w-full bg-green-500 text-white px-2 py-3 rounded-xl"
+            onClick={async () => {
+              if (!isMicrophonePermissionAllowed) {
+                toast.error("Please allow microphone access to continue.");
+                return;
+              }
 
-          {isCreateMeetingClicked && (
-            <button
-              className="w-full bg-green-500 text-white px-2 py-3 rounded-xl mt-3"
-              onClick={async () => {
-                
+              const isValid = await checkEmail();
+              if (!isValid) {
+                toast.error("❌ Email not found. Access denied.");
+                return;
+              }
 
-                try {
-                  const tokenResponse = await fetch(`${SERVER_URL}/api/get-token`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      permissions: [
-                        "allow_join",
-                        "allow_mod",
-                        "allow_create",
-                        "allow_publish",
-                        "allow_subscribe",
-                      ],
-                    }),
-                  });
-                  const { token } = await tokenResponse.json();
+              try {
+                const tokenResponse = await fetch(`${SERVER_URL}/api/get-token`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    permissions: [
+                      "allow_join",
+                      "allow_mod",
+                      "allow_create",
+                      "allow_publish",
+                      "allow_subscribe",
+                      "allow_join",
+                    ],
+                  }),
+                });
+                const { token } = await tokenResponse.json();
 
-                  if (!token) {
-                    toast.error("Failed to get token!");
-                    return;
-                  }
-
-                  setToken(token);
-
-                  const meetingResponse = await fetch("https://api.videosdk.live/v1/meetings", {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                      Authorization: `${token}`,
-                    },
-                    body: JSON.stringify({ userMeetingId: roomName,
-                      lobby: true  }),
-                  });
-
-                  const meetingData = await meetingResponse.json();
-
-                  if (!meetingData.meetingId) {
-                    toast.error("Error creating meeting!");
-                    return;
-                  }
-
-                  await fetch(`${SERVER_URL}/api/savemeeting/new`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      className: roomName,
-                      meetingId: meetingData.meetingId,
-                      teacherEmail: userEmail,
-                    }),
-                  });
-                  
-
-                  setTimeout(() => {
-                    localStorage.setItem("participantRole", "teacher");
-                    onClickStartMeeting(token, meetingData.meetingId);
-                  }, 2000);
-                } catch (error) {
-                  toast.error("Server error while creating meeting!");
+                if (!token) {
+                  toast.error("Failed to get token!");
+                  return;
                 }
-              }}
-            >
-              Confirm & Create
-            </button>
-          )}
 
-  
-          {isJoinMeetingClicked && (
-            <button
-              className="w-full bg-green-500 text-white px-2 py-3 rounded-xl mt-3"
-              onClick={async () => {
-                try {
-                  const response = await fetch(`${SERVER_URL}/api/getmeeting/by-classname/${roomName}`);
-                  const data = await response.json();
-              
-                  const meetingId = data.meeting?.meetingId;
+                setToken(token);
 
-                  if (!meetingId) {
-                    toast.error("Meeting not found or data incomplete!");
-                    return;
-                  }
-              
-                  const tokenResponse = await fetch(`${SERVER_URL}/api/get-token`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      permissions: ["allow_join"]
-                    }),
-                  });
-              
-                  const { token } = await tokenResponse.json();
-              
-                  if (!token) {
-                    toast.error("Failed to get token!");
-                    return;
-                  }
-              
-                  localStorage.setItem("participantRole", "student");
-                  setToken(token);
-                  setLocalToken(token); 
+                const meetingResponse = await fetch("https://api.videosdk.live/v1/meetings", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `${token}`,
+                  },
+                  body: JSON.stringify({ userMeetingId: roomName, lobby: true }),
+                });
 
-                  setMeetingIdLocal(meetingId);
-                  toast.success("Joining class...");
-              
-                  setWaitingRoomVisible(true); 
-                } catch (error) {
-                  toast.error("Server error while joining!");
+                const meetingData = await meetingResponse.json();
+
+                if (!meetingData.meetingId) {
+                  toast.error("Error creating meeting!");
+                  return;
                 }
-              }}                        
-            >
-              Confirm & Join
-            </button>
-          )}
-        </div>
+
+                await fetch(`${SERVER_URL}/api/savemeeting/new`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    className: roomName,
+                    meetingId: meetingData.meetingId,
+                    teacherEmail: userEmail,
+                  }),
+                });
+
+                setTimeout(() => {
+                  sessionStorage.setItem("participantRole", "teacher");
+                  onClickStartMeeting(token, meetingData.meetingId);
+                }, 2000);
+              } catch (error) {
+                toast.error("Server error while creating meeting!");
+              }
+            }}
+          >
+            Confirm
+          </button>
+        )}
+
+        {isJoinMeetingClicked && (
+          <button
+            className="w-full bg-green-500 text-white px-2 py-3 rounded-xl"
+            onClick={async () => {
+              if (!isMicrophonePermissionAllowed) {
+                toast.error("Please allow microphone access to continue.");
+                return;
+              }
+
+              try {
+                const response = await fetch(`${SERVER_URL}/api/getmeeting/by-classname/${roomName}`);
+                const data = await response.json();
+
+                const meetingId = data.meeting?.meetingId;
+                if (!meetingId) {
+                  toast.error("Meeting not found or data incomplete!");
+                  return;
+                }
+
+                const tokenResponse = await fetch(`${SERVER_URL}/api/get-token`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ permissions: ["ask_join"] }),
+                });
+
+                const { token } = await tokenResponse.json();
+                if (!token) {
+                  toast.error("Failed to get token!");
+                  return;
+                }
+
+                sessionStorage.setItem("participantRole", "student");
+                setToken(token);
+                setLocalToken(token);
+                setMeetingIdLocal(meetingId);
+                toast.success("Joining class...");
+                setWaitingRoomVisible(true);
+              } catch (error) {
+                toast.error("Server error while joining!");
+              }
+            }}
+          >
+            Confirm
+          </button>
+        )}
       </div>
-    </div>
-  );
+    )}
+  </div>
+);
 }

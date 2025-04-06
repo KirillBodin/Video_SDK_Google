@@ -250,7 +250,18 @@ export function JoiningScreen({
     if (mic) {
       if (!hasMic || !selectedMic?.id) {
         console.warn("🚫 Нет доступного микрофона или micId отсутствует");
-        setDlgDevices(true);
+        toast.info(
+          "Please connect a mic and webcam to speak and share your video in the meeting. You can't join without them.",
+          {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeButton: false,
+            pauseOnHover: true,
+            draggable: true,
+            theme: "light",
+          }
+        );
         return;
       }
   
@@ -659,15 +670,12 @@ export function JoiningScreen({
         subTitle="You're default microphone is muted, please unmute it or increase audio
             input volume from system settings."
       />
-      <ConfirmBox
-        open={dlgDevices}
-        successText="DISMISS"
-        onSuccess={() => {
-          setDlgDevices(false);
-        }}
-        
-        subTitle="Please connect a mic and webcam to speak and share your video in the meeting. You can't join without them."
-      />
+
+
+
+
+      
+
     </div>
   );
 }
