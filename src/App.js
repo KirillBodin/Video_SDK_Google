@@ -41,6 +41,23 @@ function App() {
     }
   }, [token, meetingId, isMeetingStarted]);
 
+  useEffect(() => {
+    const handleGlobalError = (event) => {
+      console.warn("🌐 Caught global error:", event.message);
+    };
+    const handleUnhandledRejection = (event) => {
+      console.warn("🚨 Unhandled promise rejection:", event.reason);
+    };
+
+    window.addEventListener("error", handleGlobalError);
+    window.addEventListener("unhandledrejection", handleUnhandledRejection);
+
+    return () => {
+      window.removeEventListener("error", handleGlobalError);
+      window.removeEventListener("unhandledrejection", handleUnhandledRejection);
+    };
+  }, []);
+
   return (
       <MeetingAppProvider>
         <Routes>
