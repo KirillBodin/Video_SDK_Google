@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import  jwtDecode  from "jwt-decode"; 
+import { jwtDecode } from "jwt-decode"; 
 import { useParams } from "react-router-dom";
 import { useMeetingAppContext } from "../MeetingAppContextDef";
 import WaitingRoomScreen from "./screens/WaitingRoomScreen";
