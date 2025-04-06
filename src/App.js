@@ -89,7 +89,7 @@ function App() {
                   <MeetingProvider
                     config={{
                       meetingId,
-                      micEnabled: micOn,
+                      micEnabled: false,
                       webcamEnabled: webcamOn,
                       name: participantName || "TestUser",
                       multiStream: true,
@@ -161,7 +161,7 @@ function App() {
         <MeetingProvider
           config={{
             meetingId,
-            micEnabled: micOn,
+            micEnabled: false,
             webcamEnabled: webcamOn,
             name: participantName || "TestUser",
             multiStream: true,

@@ -25,7 +25,7 @@ export function StaticMeetingJoiner({
     <MeetingProvider
     config={{
       meetingId,
-      micEnabled: role === "host",
+      micEnabled: false,
       webcamEnabled: role === "host",
       name: userName,
       multiStream: true,
