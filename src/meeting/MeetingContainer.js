@@ -461,28 +461,19 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
 
   usePubSub("CHAT", {
     onMessageReceived: (data) => {
-      
-
-      try {
-      
-        const { senderName, message } = data.message || {};
-
-        if (!message) return;
-
-        const localParticipantId = mMeeting?.localParticipant?.id;
-        if (!localParticipantId) {
-          console.warn("❌ Local participant ID not available.");
-          return;
-        }
-
-       
-        toast.success(`${senderName} says: "${message}"`); 
-      } catch (error) {
-        console.error("❌ Failed to parse incoming chat message:", error, data);
+      const { senderName, message, to } = data.message || {};
+      const localParticipantId = mMeeting?.localParticipant?.id;
+  
+      if (to && localParticipantId !== to) {
+        return; // не наш адресат — игнорируем
+      }
+  
+      if (message) {
+        toast.success(`${senderName} says: "${message}"`);
       }
     },
   });
-
+  
 
 
 
