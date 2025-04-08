@@ -521,65 +521,75 @@ useEffect(() => {
   }
 }, [isEdit, initialData]);
 
-  const handleSaveNewTeacher = async () => {
-    const { firstName, lastName, email, password } = formNewTeacher;
-    if (!firstName || !lastName || !email || !password) {
-      toast.error("Fill all teacher fields");
-      return;
-    }
+const handleSaveNewTeacher = async () => {
+  const { firstName, lastName, email, password } = formNewTeacher;
+  if (!firstName || !lastName || !email || !password) {
+    toast.error("Fill all teacher fields");
+    return;
+  }
 
+  const fullName = `${firstName} ${lastName}`;
+  try {
+    const res = await authorizedFetch(`${SERVER_URL}/api/admin/${adminId}/teachers`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: fullName, email, password }),
+    });
 
-    
-    const fullName = `${firstName} ${lastName}`;
-    try {
-      const res = await authorizedFetch(`${SERVER_URL}/api/admin/${adminId}/teachers`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: fullName, email, password }),
-      });
-      if (res.ok) {
-        const newTeacher = await res.json();
-        toast.success("Teacher added!");
+    if (res.ok) {
+      const newTeacher = await res.json();
+      toast.success("Teacher added!");
+      setForm({ ...form, teacherId: newTeacher.id });
+      setShowTeacherForm(false);
+    } else {
+      // Перехватываем возможный 400
+      if (res.status === 400) {
 
-        setForm({ ...form, teacherId: newTeacher.id });
-        setShowTeacherForm(false);
+        toast.error("Email already exists. Please use a different email.");
       } else {
-        throw new Error("Failed to add teacher");
+        toast.error("Error adding teacher");
       }
-    } catch (error) {
-      console.error(error);
-      toast.error("Error adding teacher");
     }
-  };
+  } catch (error) {
+    console.error(error);
+    toast.error("Error adding teacher");
+  }
+};
 
 
-  const handleSaveNewStudent = async () => {
-    const { firstName, lastName, email, password } = formNewStudent;
-    if (!firstName || !lastName || !email || !password) {
-      toast.error("Fill all student fields");
-      return;
-    }
-    const fullName = `${firstName} ${lastName}`;
-    try {
-      const res = await authorizedFetch(`${SERVER_URL}/api/admin/${formNewStudent.teacherId}/students`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: fullName, email, password }),
-      });
-      if (res.ok) {
-        const newStudent = await res.json();
-        toast.success("Student added!");
-     
-        setForm({ ...form, studentIds: [...form.studentIds, newStudent.id] });
-        setShowStudentForm(false);
+
+const handleSaveNewStudent = async () => {
+  const { firstName, lastName, email, password } = formNewStudent;
+  if (!firstName || !lastName || !email || !password) {
+    toast.error("Fill all student fields");
+    return;
+  }
+  const fullName = `${firstName} ${lastName}`;
+  try {
+    const res = await authorizedFetch(`${SERVER_URL}/api/admin/${formNewStudent.teacherId}/students`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: fullName, email, password }),
+    });
+
+    if (res.ok) {
+      const newStudent = await res.json();
+      toast.success("Student added!");
+      setForm({ ...form, studentIds: [...form.studentIds, newStudent.id] });
+      setShowStudentForm(false);
+    } else {
+      if (res.status === 400) {
+        toast.error("Email already exists. Please use a different email.");
       } else {
-        throw new Error("Failed to add student");
+        toast.error("Error adding student");
       }
-    } catch (error) {
-      console.error(error);
-      toast.error("Error adding student");
     }
-  };
+  } catch (error) {
+    console.error(error);
+    toast.error("Error adding student");
+  }
+};
+
 
 
   useEffect(() => {
@@ -988,57 +998,129 @@ export default function PrincipalDashboardScreen() {
     studentIds,
   }) => {
     const fullName = `${firstName} ${lastName}`;
-    await authorizedFetch(`${SERVER_URL}/api/teachers/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, name: fullName, email, password, classIds, studentIds }),
-    });
-    toast.success("Teacher updated!");
-    fetchTeachers();
+  
+    try {
+      const res = await authorizedFetch(`${SERVER_URL}/api/teachers/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id,
+          name: fullName,
+          email,
+          password,
+          classIds,
+          studentIds,
+        }),
+      });
+  
+      if (res.ok) {
+        toast.success("Teacher updated!");
+        fetchTeachers();
+      } else if (res.status === 400) {
+        toast.error("Email already exists. Please use a different email.");
+      } else {
+        toast.error("Failed to update teacher. Server error.");
+      }
+    } catch (error) {
+      console.error("❌ handleUpdateTeacherInternal error:", error);
+      toast.error(error.message || "Something went wrong while updating teacher.");
+    }
   };
+  
 
   const handleSaveTeacher = async (data) => {
     const { firstName, lastName, email, password, classIds, studentIds } = data;
     const fullName = `${firstName} ${lastName}`;
-    const res = await authorizedFetch(`${SERVER_URL}/api/admin/${adminId}/teachers`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: fullName, email, password, classIds, studentIds }),
-    });
-    if (res.ok) {
-      toast.success("Teacher added!");
-      fetchTeachers();
-      fetchAll(); 
+  
+    try {
+      const res = await authorizedFetch(`${SERVER_URL}/api/admin/${adminId}/teachers`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: fullName, email, password, classIds, studentIds }),
+      });
+  
+      if (res.ok) {
+        toast.success("Teacher added!");
+        fetchTeachers();
+        fetchAll(); 
+      } else if (res.status === 400) {
+        toast.error("Email already exists. Please use a different email.");
+      } else {
+        toast.error("Failed to add teacher. Server error.");
+      }
+    } catch (error) {
+      console.error("❌ handleSaveTeacher error:", error);
+      toast.error(error.message || "Something went wrong while adding teacher.");
     }
   };
-
- 
+  
   const handleUpdateStudent = async (data) => {
     const { id, teacherIds, firstName, lastName, email, password, classIds } = data;
     const fullName = `${firstName} ${lastName}`;
-    await authorizedFetch(`${SERVER_URL}/api/admin/${adminId}/students/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: fullName, email, password, classIds, teacherIds }),
-    });    
-    toast.success("Student updated!");
-    fetchStudents();
+  
+    try {
+      const res = await authorizedFetch(
+        `${SERVER_URL}/api/admin/${adminId}/students/${id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: fullName,
+            email,
+            password,
+            classIds,
+            teacherIds,
+          }),
+        }
+      );
+  
+      if (res.ok) {
+        toast.success("Student updated!");
+        fetchStudents();
+      } else if (res.status === 400) {
+        toast.error("Email already exists. Please use a different email.");
+      } else {
+        toast.error("Failed to update student. Server error.");
+      }
+    } catch (error) {
+      console.error("❌ handleUpdateStudent error:", error);
+      toast.error(error.message || "Something went wrong while updating student.");
+    }
   };
+  
 
   const handleSaveStudent = async (data) => {
     const { id, teacherIds, firstName, lastName, email, password, classIds } = data;
     const fullName = `${firstName} ${lastName}`;
-    const res = await authorizedFetch(`${SERVER_URL}/api/admin/${adminId}/students`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: fullName, email, password, classIds, teacherIds }),
-    });
-    if (res.ok) {
-      toast.success("Student added!");
-      fetchStudents();
-      fetchAll();
+  
+    try {
+      const res = await authorizedFetch(`${SERVER_URL}/api/admin/${adminId}/students`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: fullName, email, password, classIds, teacherIds }),
+      });
+  
+
+      if (res.ok) {
+        toast.success("Student added!");
+        fetchStudents();
+        fetchAll();
+        return;
+      }
+  
+  
+      if (res.status === 400) {
+   
+        toast.error("Email already exists. Please use a different email.");
+      } else {
+        toast.error("Failed to add student. Server returned an error.");
+      }
+    } catch (error) {
+      console.error("❌ handleSaveStudent error:", error);
+      toast.error(error.message || "Something went wrong.");
     }
   };
+  
 
  
   const handleUpdateClass = async (data) => {

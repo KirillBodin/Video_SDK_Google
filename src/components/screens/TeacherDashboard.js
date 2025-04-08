@@ -493,12 +493,21 @@ const currentLessons = lessons.slice(indexOfFirstClass, indexOfLastClass);
         const res = await authorizedFetch(`${SERVER_URL}/api/teacher/${teacherId}/students/${id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, email, classIds }), 
+          body: JSON.stringify({ name, email, classIds }),
         });
-        if (!res.ok) throw new Error("Failed to update student");
+  
+        if (!res.ok) {
+          if (res.status === 400) {
+            toast.error("Email already exists. Please use a different email.");
+            return; 
+          }
+          throw new Error("Failed to update student");
+        }
+  
         toast.success(`Student "${name}" updated!`);
+  
       } else {
-       
+     
         const res = await authorizedFetch(`${SERVER_URL}/api/teacher/${teacherId}/students`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -506,22 +515,34 @@ const currentLessons = lessons.slice(indexOfFirstClass, indexOfLastClass);
             name,
             email,
             teacherIds: [teacherId],
-            classIds, 
+            classIds,
           }),
         });
-        if (!res.ok) throw new Error("Failed to add student");
+  
+        if (!res.ok) {
+          if (res.status === 400) {
+            toast.error("Email already exists. Please use a different email.");
+            return;
+          }
+          throw new Error("Failed to add student");
+        }
+  
         const newStudent = await res.json();
         toast.success(`Student "${newStudent.name}" added!`);
         setStudents((prev) => [...prev, newStudent]);
       }
   
+      
       fetchStudents();
       setShowStudentModal(false);
       setStudentToEdit(null);
+  
     } catch (error) {
+     
       toast.error(error.message || "Failed to save student");
     }
   };
+  
   
   
 
@@ -660,8 +681,7 @@ const currentLessons = lessons.slice(indexOfFirstClass, indexOfLastClass);
     try {
       const schoolRes = await authorizedFetch(`${SERVER_URL}/api/teacher/${teacherId}/students`);
       if (!schoolRes.ok) throw new Error("Failed to fetch school");
-      
-
+  
       const name = `${firstName.trim()} ${lastName.trim()}`;
       const res = await authorizedFetch(`${SERVER_URL}/api/teacher/${teacherId}/students`, {
         method: "POST",
@@ -669,14 +689,22 @@ const currentLessons = lessons.slice(indexOfFirstClass, indexOfLastClass);
         body: JSON.stringify({
           name,
           email,
-          teacherIds: [teacherId], 
+          teacherIds: [teacherId],
         }),
       });
-      
-
-      if (!res.ok) throw new Error("Failed to add student");
+  
+    
+      if (!res.ok) {
+        if (res.status === 400) {
+ 
+          toast.error("Email already exists. Please use a different email.");
+        } else {
+          throw new Error("Failed to add student");
+        }
+        return;
+      }
+  
       const newStudent = await res.json();
-
       toast.success(`Student "${newStudent.name}" added!`);
       setStudents((prev) => [...prev, newStudent]);
     } catch (error) {
@@ -684,7 +712,7 @@ const currentLessons = lessons.slice(indexOfFirstClass, indexOfLastClass);
       toast.error(error.message || "Failed to save student");
     }
   };
-
+  
 
   const handleEditLessonClick = async (lessonId) => {
     const lesson = lessons.find((l) => l.id === lessonId);
