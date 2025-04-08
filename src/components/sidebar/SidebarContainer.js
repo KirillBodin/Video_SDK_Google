@@ -17,6 +17,7 @@ const SideBarTabView = ({
   panelHeaderPadding,
   panelPadding,
   handleClose,
+  role,
 }) => {
   const { participants } = useMeeting();
   const { sideBarMode } = useMeetingAppContext();
@@ -82,7 +83,7 @@ const SideBarTabView = ({
   );
 };
 
-export function SidebarConatiner({ height, sideBarContainerWidth }) {
+export function SidebarConatiner({ height, sideBarContainerWidth, role }) {
   const { raisedHandsParticipants, sideBarMode, setSideBarMode } =
     useMeetingAppContext();
   const isMobile = useIsMobile();
@@ -160,6 +161,7 @@ export function SidebarConatiner({ height, sideBarContainerWidth }) {
                     panelHeaderPadding={panelHeaderPadding}
                     panelPadding={panelPadding}
                     handleClose={handleClose}
+                    role={role}
                   />
                 </Dialog.Panel>
               </div>

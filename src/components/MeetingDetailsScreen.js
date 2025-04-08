@@ -53,12 +53,14 @@ export function MeetingDetailsScreen({
     const urlParams = new URLSearchParams(window.location.search);
     const tokenFromUrl = urlParams.get("token");
   
+   
     if (tokenFromUrl) {
-      localStorage.setItem("sessionToken", tokenFromUrl); 
-      window.history.replaceState({}, document.title, "/"); 
+      sessionStorage.setItem("sessionToken", tokenFromUrl);
+      
+      window.history.replaceState({}, document.title, "/");
     }
   
-    const token = localStorage.getItem("sessionToken");
+    const token = sessionStorage.getItem("sessionToken");
     if (token) {
       try {
         const decoded = jwtDecode(token);
@@ -73,54 +75,45 @@ export function MeetingDetailsScreen({
       }
     }
   
-    const email = localStorage.getItem("teacherEmail");
-    const storedTeacherName = localStorage.getItem("teacherName"); // 👈 добавлено
+
+    const googleLoginAction = sessionStorage.getItem("googleLoginAction");
+    if (googleLoginAction === "create") {
+      setIsCreateMeetingClicked(true);
+    } else if (googleLoginAction === "join") {
+      setIsJoinMeetingClicked(true);
+    }
+    sessionStorage.removeItem("googleLoginAction");
+  
+    const email = sessionStorage.getItem("teacherEmail");
+    const storedTeacherName = sessionStorage.getItem("teacherName");
   
     if (email) {
       setUserEmail(email);
     }
-    if (storedTeacherName) { // 👈 заменено
+    if (storedTeacherName) {
       setUserName(storedTeacherName);
     }
   
     if (className) {
-      setRoomName(className); 
+      setRoomName(className);
     }
   }, [className]);
   
 
-useEffect(() => {
-  const urlParams = new URLSearchParams(window.location.search);
-  const tokenFromUrl = urlParams.get("token");
 
-  if (tokenFromUrl) {
-    localStorage.setItem("sessionToken", tokenFromUrl); 
-    window.history.replaceState({}, document.title, "/"); 
-  }
 
-  const token = localStorage.getItem("sessionToken");
-  if (token) {
-    try {
-      const decoded = jwtDecode(token);
-      if (decoded.email) {
-        setUserEmail(decoded.email);
-      }
-      if (decoded.name) {
-        setUserName(decoded.name);
-      }
-    } catch (error) {
-      console.error("Invalid token:", error);
-    }
-  }
-}, []);
-
-const loginWithGoogle = async () => {
+const loginWithGoogle = async (actionType) => {
   try {
+    
+    if (actionType) {
+      sessionStorage.setItem("googleLoginAction", actionType);
+    }
+
     const response = await fetch(`${SERVER_URL}/api/auth/google/url`);
     const data = await response.json();
 
     if (data.authUrl) {
-      window.location.href = data.authUrl; 
+      window.location.href = data.authUrl;
     } else {
       throw new Error("Failed to get authorization URL");
     }
@@ -129,6 +122,7 @@ const loginWithGoogle = async () => {
     toast.error("Google authorization error.");
   }
 };
+
  
 if (waitingRoomVisible) {
   const role = "student";
@@ -193,14 +187,15 @@ return (
       />
     )}
 
-    {!userEmail && (
-      <button
-        className="w-full bg-red-500 text-white px-2 py-3 rounded-xl mb-4"
-        onClick={loginWithGoogle}
-      >
-        Login with Google
-      </button>
-    )}
+{!userEmail && (
+  <button
+    className="w-full bg-red-500 text-white px-2 py-3 rounded-xl"
+    onClick={() => loginWithGoogle(isCreateMeetingClicked ? "create" : "join")}
+  >
+    Login with Google
+  </button>
+)}
+
 
 {isCreateMeetingClicked && (
   <button

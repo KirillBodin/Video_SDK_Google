@@ -825,8 +825,8 @@ const currentLessons = lessons.slice(indexOfFirstClass, indexOfLastClass);
     e.preventDefault();
     const url = new URL(lesson.classUrl, window.location.origin);
     url.searchParams.set("role", "teacher");
-    localStorage.setItem("teacherEmail", teacherEmail);
-    localStorage.setItem("teacherName", name);
+    sessionStorage.setItem("teacherEmail", teacherEmail);
+    sessionStorage.setItem("teacherName", name);
     window.open(url.toString(), "_blank");
   }}
   className="underline text-blue-400"

@@ -75,29 +75,34 @@ function ParticipantGrid({ participantIds, isPresenting, highlightedParticipantI
                                     .map((participantId) => {
                                         return (
                                             <div
-                                                key={`participant_${participantId}`}
-                                                className={`flex flex-1 relative ${
-                                                    isPresenting
-                                                        ? sortedParticipantIds.length === 1
-                                                        ? "md:h-48 md:w-44 xl:w-52 xl:h-48 "
-                                                        : sortedParticipantIds.length === 2
-                                                            ? "md:w-44 xl:w-56"
-                                                            : "md:w-44 xl:w-48"
-                                                        : "w-full"
-                                                } items-center justify-center h-full ${
-                                                    sortedParticipantIds.length === 1
-                                                        ? "md:max-w-7xl 2xl:max-w-[1480px] "
-                                                        : "md:max-w-lg 2xl:max-w-2xl"
-                                                } overflow-clip overflow-hidden p-1 ${
-                                                    highlightedParticipantId && highlightedParticipantId !== "none"
-                                                        ? participantId === highlightedParticipantId
-                                                        ? "border-4 border-green-500 rounded-lg"
-                                                        : ""
-                                                        : "" 
-                                                }`}
-                                            >
-                                                <MemoizedParticipant participantId={participantId} />
-                                            </div>
+                                            key={`participant_${participantId}`}
+                                            className={`flex flex-1 relative ${
+                                              isPresenting
+                                                ? sortedParticipantIds.length === 1
+                                                  ? "md:h-48 md:w-44 xl:w-52 xl:h-48 "
+                                                  : sortedParticipantIds.length === 2
+                                                    ? "md:w-44 xl:w-56"
+                                                    : "md:w-44 xl:w-48"
+                                                : "w-full"
+                                            } items-center justify-center h-full ${
+                                              sortedParticipantIds.length === 1
+                                                ? "md:max-w-7xl 2xl:max-w-[1480px] "
+                                                : "md:max-w-lg 2xl:max-w-2xl"
+                                            } overflow-clip overflow-hidden p-1 ${
+                                              highlightedParticipantId && highlightedParticipantId !== "none"
+                                                ? (
+                                                   
+                                                    (highlightedParticipantId === "all" && participantId !== localParticipant.id) ||
+                                                    
+                                                    participantId === highlightedParticipantId
+                                                  )
+                                                  ? "border-4 border-green-500 rounded-lg"
+                                                  : ""
+                                                : ""
+                                            }`}
+                                          >
+                                            <MemoizedParticipant participantId={participantId} />
+                                          </div>
 
                                         );
                                     })}

@@ -12,7 +12,7 @@ import useIsTab from "../hooks/useIsTab";
 import { useMediaQuery } from "react-responsive";
 import { toast } from "react-toastify";
 import { useMeetingAppContext } from "../MeetingAppContextDef";
-
+import { useNavigate } from "react-router-dom";
 
 const ParticipantMicStream = memo(({ participantId }) => {
   const { micStream } = useParticipant(participantId);
@@ -59,6 +59,7 @@ const ParticipantMicStream = memo(({ participantId }) => {
 export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
   const { setSelectedMic, setSelectedWebcam, setSelectedSpeaker, useRaisedHandParticipants } = useMeetingAppContext();
   const { participantRaisedHand } = useRaisedHandParticipants();
+  const navigate = useNavigate();
   const [participantsData, setParticipantsData] = useState([]);
   const [selectedParticipant, setSelectedParticipant] = useState(null); 
   const bottomBarHeight = 60;
@@ -71,6 +72,7 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
   const containerRef = createRef();
   const containerHeightRef = useRef();
   const containerWidthRef = useRef();
+  
   const [participantsArray, setParticipantsArray] = useState([]);
   //const [lastUnmutedParticipantId, setLastUnmutedParticipantId] = useState(null);
   const [globalMuteState, setGlobalMuteState] = useState(false);
@@ -111,14 +113,15 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
     if (highlightMessages.length > 0) {
       const lastMessage = highlightMessages[highlightMessages.length - 1];
       if (lastMessage?.message?.participantId === "none") {
-        setHighlightedParticipantId(null); 
-        
+        setHighlightedParticipantId(null);
+      } else if (lastMessage?.message?.participantId === "all") {
+        setHighlightedParticipantId("all");
       } else if (lastMessage?.message?.participantId) {
         setHighlightedParticipantId(lastMessage.message.participantId);
-      
       }
     }
   }, [highlightMessages]);
+  
 
 
 
@@ -172,16 +175,7 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
     });
   };
 
-  async function checkMicrophonePermission() {
-    try {
-      if (!navigator.permissions) return false;
-      const status = await navigator.permissions.query({ name: "microphone" });
-      return status.state === "granted";
-    } catch (e) {
-      console.warn("❌ Failed to check mic permission:", e);
-      return false;
-    }
-  }
+
   
 
   const _handleOnRecordingStateChanged = ({ status }) => {
@@ -287,112 +281,103 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
 
   
   useEffect(() => {
-    console.log("Current role:", role);
     const handleGlobalKeyDown = (event) => {
       const key = event.key;
       if (role !== "teacher") return;
-
       if (!mMeeting) {
         console.warn("❌ Meeting instance is not available!");
         return;
       }
-
+  
+      // Получаем массив участников, исключая локального участника (учитель)
       const participantArray = Array.from(mMeeting.participants.values()).filter(
-          (p) => p.id !== mMeeting.localParticipant.id
+        (p) => p.id !== mMeeting.localParticipant.id
       );
-
       setParticipantsArray(participantArray);
+  
 
       if (key === "5") {
-        
-        participantArray.forEach((participant) => {
+        const studentParticipants = participantArray.filter((p) => p.role !== "teacher");
+      
+        studentParticipants.forEach((participant) => {
           controlPublish({
             type: "control",
             command: globalMuteState ? "mute" : "requestUnmute",
             to: participant.id,
           });
+          setSelectedParticipant(participant.id);
         });
+      
 
-        if (globalMuteState) {
-          mMeeting.muteMic();
-        } else {
-          mMeeting.unmuteMic();
-        }
-
+       if (globalMuteState) {
+         highlightPublish({ participantId: "none" });
+       } else {
+         highlightPublish({ participantId: "all" });
+       }
+      
         setGlobalMuteState(!globalMuteState);
       }
-
+      
+  
+      
       if (key === "0") {
         const availableParticipants = participantArray.filter((p, index) => index !== 4);
         if (availableParticipants.length > 0) {
           const randomIndex = Math.floor(Math.random() * availableParticipants.length);
           const participant = availableParticipants[randomIndex];
+          if (selectedParticipant === participant.id) {
+            // Если выбран тот же участник, выключаем его микрофон и снимаем выделение
+            controlPublish({ type: "control", command: "mute", to: participant.id });
+            highlightPublish({ participantId: "none" });
+            setSelectedParticipant(null);
+            lastUnmutedParticipantIdRef.current = null;
+          } else {
+            
+            if (selectedParticipant) {
+              controlPublish({ type: "control", command: "mute", to: selectedParticipant });
+            }
+            const newParticipantId = participant.id;
 
-          
-          setSelectedParticipant(participant.id);
-          lastUnmutedParticipantIdRef.current = participant.id;
-
-          controlPublish({
-            type: "control",
-            command: "requestUnmute",
-            to: participant.id,
-          });
+            highlightPublish({ participantId: newParticipantId });
+            controlPublish({ type: "control", command: "requestUnmute", to: newParticipantId });
+            setSelectedParticipant(newParticipantId);
+            lastUnmutedParticipantIdRef.current = newParticipantId;
+            
+          }
         }
       }
-
+  
+     
       if (key >= "1" && key <= "9") {
         const index = parseInt(key, 10) - 1;
         if (index < participantArray.length) {
           const participant = participantArray[index];
-
-          
-          highlightPublish({ participantId: participant.id });
-
-          lastUnmutedParticipantIdRef.current = participant.id;
-          controlPublish({
-            type: "control",
-            command: "requestUnmute",
-            to: participant.id,
-          });
-        }
-      }
-
-      if (key === "+") {
-        if (lastUnmutedParticipantIdRef.current) {
-          const targetParticipantId = lastUnmutedParticipantIdRef.current;
-          const message = praiseMessages[Math.floor(Math.random() * praiseMessages.length)];
-
-       
-
-          chatPublish({
-            senderId: mMeeting.localParticipant.id,
-            senderName: mMeeting.localParticipant.displayName,
-            message: message,
-            to: targetParticipantId,
-          });
-
-          highlightPublish({ participantId: "none" });
-          setHighlightedParticipantId(null);
-          lastUnmutedParticipantIdRef.current = null;
-
-          setTimeout(() => {
-            controlPublish({
-              type: "control",
-              command: "mute",
-              to: targetParticipantId,
-            });
-            
-          }, 1000);
+          if (selectedParticipant === participant.id) {
+            // Если тот же участник уже выбран – выключаем его микрофон и снимаем выделение
+            controlPublish({ type: "control", command: "mute", to: participant.id });
+            highlightPublish({ participantId: "none" });
+            setSelectedParticipant(null);
+            lastUnmutedParticipantIdRef.current = null;
+          } else {
+           
+            if (selectedParticipant) {
+              controlPublish({ type: "control", command: "mute", to: selectedParticipant });
+            }
+            highlightPublish({ participantId: participant.id });
+            setSelectedParticipant(participant.id);
+            lastUnmutedParticipantIdRef.current = participant.id;
+            controlPublish({ type: "control", command: "requestUnmute", to: participant.id });
+          }
         }
       }
     };
-
+  
     window.addEventListener("keydown", handleGlobalKeyDown);
-
     return () => {
       window.removeEventListener("keydown", handleGlobalKeyDown);
     };
-  }, [mMeeting, controlPublish, chatPublish, praiseMessages]);
+  }, [mMeeting, controlPublish, role, globalMuteState, selectedParticipant]);
+  
 
 
 
@@ -405,7 +390,6 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
  
   usePubSub("CONTROL", {
     onMessageReceived: async (data) => {
-     
 
       if (!data?.message) return;
 
@@ -416,25 +400,15 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
         console.warn("❌ Local participant ID not available.");
         return;
       }
-
     
       if (to && localParticipantId !== to) return;
-
-     
-
-      if (command === "requestUnmute") {
-        
-
+      if (command === "endMeeting") {
+        await mMeeting.leave();
+        navigate("/");
+        return;
+      }
       
-        toast.info("Your microphone has been enabled by the teacher.", {
-          position: "top-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeButton: false,
-          pauseOnHover: true,
-          draggable: true,
-          theme: "light",
-        });
+      if (command === "requestUnmute") {
 
         try {
           await mMeeting.unmuteMic();
@@ -465,7 +439,7 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
       const localParticipantId = mMeeting?.localParticipant?.id;
   
       if (to && localParticipantId !== to) {
-        return; // не наш адресат — игнорируем
+        return; 
       }
   
       if (message) {
@@ -596,6 +570,7 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
                       <SidebarConatiner
                           height={containerHeight - bottomBarHeight}
                           sideBarContainerWidth={sideBarContainerWidth}
+                          participants={mMeeting.participants}
                       />
                     </div>
                     <BottomBar bottomBarHeight={bottomBarHeight} setIsMeetingLeft={setIsMeetingLeft} />

@@ -525,7 +525,7 @@ const WebCamBTN = () => {
 export function BottomBar({ bottomBarHeight, setIsMeetingLeft, isHost }) {
   const navigate = useNavigate();
   const { sideBarMode, setSideBarMode } = useMeetingAppContext();
-  
+  const { publish: controlPublish } = usePubSub("CONTROL");
   const RaiseHandBTN = ({ isMobile, isTab }) => {
     const { publish } = usePubSub("RAISE_HAND");
     const RaiseHand = () => {
@@ -674,13 +674,19 @@ export function BottomBar({ bottomBarHeight, setIsMeetingLeft, isHost }) {
   
     const handleConfirmLeave = async () => {
       setShowConfirm(false);
+      const currentRole = sessionStorage.getItem("participantRole");
+      if (currentRole === "teacher") {
+    
+        controlPublish({ type: "control", command: "endMeeting" });
+      }
       try {
         await leave();
-        navigate("/"); 
+        navigate("/");
       } catch (error) {
         console.error("❌ Error while leaving:", error);
       }
     };
+    
   
     const handleCancelLeave = () => {
       setShowConfirm(false);
