@@ -321,32 +321,71 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
   
       
       if (key === "0") {
-        const availableParticipants = participantArray.filter((p, index) => index !== 4);
-        if (availableParticipants.length > 0) {
-          const randomIndex = Math.floor(Math.random() * availableParticipants.length);
-          const participant = availableParticipants[randomIndex];
-          if (selectedParticipant === participant.id) {
-            // Если выбран тот же участник, выключаем его микрофон и снимаем выделение
-            controlPublish({ type: "control", command: "mute", to: participant.id });
+        
+        const availableParticipants = participantArray; 
+        // Если нет участников – выходим
+        if (availableParticipants.length === 0) {
+          console.warn("⚠️ Нет участников для выбора!");
+          return;
+        }
+      
+        
+        if (availableParticipants.length === 1) {
+          const singleParticipant = availableParticipants[0];
+          console.log("👉 [KEY=0] Единственный участник:", singleParticipant.id);
+      
+         
+          if (selectedParticipant === singleParticipant.id) {
+            console.log("🔇 [KEY=0] Тот же участник => mute/unhighlight:", singleParticipant.id);
+            controlPublish({ type: "control", command: "mute", to: singleParticipant.id });
             highlightPublish({ participantId: "none" });
             setSelectedParticipant(null);
             lastUnmutedParticipantIdRef.current = null;
           } else {
-            
             if (selectedParticipant) {
+              console.log("🔇 [KEY=0] Muting old participant:", selectedParticipant);
               controlPublish({ type: "control", command: "mute", to: selectedParticipant });
             }
-            const newParticipantId = participant.id;
-
-            highlightPublish({ participantId: newParticipantId });
-            controlPublish({ type: "control", command: "requestUnmute", to: newParticipantId });
-            setSelectedParticipant(newParticipantId);
-            lastUnmutedParticipantIdRef.current = newParticipantId;
-            
+            console.log("🔊 [KEY=0] Requesting unmute:", singleParticipant.id);
+            highlightPublish({ participantId: singleParticipant.id });
+            controlPublish({ type: "control", command: "requestUnmute", to: singleParticipant.id });
+            setSelectedParticipant(singleParticipant.id);
+            lastUnmutedParticipantIdRef.current = singleParticipant.id;
           }
+      
+          return; 
         }
+      
+        
+        let randomIndex = Math.floor(Math.random() * availableParticipants.length);
+        let newParticipant = availableParticipants[randomIndex];
+      
+      
+        let tries = 0;
+        while (newParticipant.id === selectedParticipant && tries < 20) {
+          randomIndex = Math.floor(Math.random() * availableParticipants.length);
+          newParticipant = availableParticipants[randomIndex];
+          tries++;
+        }
+      
+        console.log("👉 [KEY=0] Выбран новый участник:", newParticipant.id, " | Старый:", selectedParticipant);
+      
+       
+        if (selectedParticipant) {
+          console.log("🔇 [KEY=0] Muting old participant:", selectedParticipant);
+          controlPublish({ type: "control", command: "mute", to: selectedParticipant });
+        }
+      
+      
+        console.log("🔊 [KEY=0] Requesting unmute:", newParticipant.id);
+        highlightPublish({ participantId: newParticipant.id });
+        controlPublish({ type: "control", command: "requestUnmute", to: newParticipant.id });
+      
+        
+        setSelectedParticipant(newParticipant.id);
+        lastUnmutedParticipantIdRef.current = newParticipant.id;
       }
-  
+      
      
       if (key >= "1" && key <= "9") {
         const index = parseInt(key, 10) - 1;
