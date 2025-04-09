@@ -239,9 +239,9 @@ export default function SuperAdminDashboard() {
     }
   };
 
-  const handleAddDirector = async () => {
-    const { name, email, password } = newDirectorData;
-    if (!name || !email || !password) {
+  const handleAddDirector = async (form) => {
+    const { name, email, password } = form;
+    if (!name?.trim() || !email?.trim() || !password?.trim()) {
       toast.info("Please fill in all director fields!");
       return;
     }
@@ -255,13 +255,14 @@ export default function SuperAdminDashboard() {
       if (!res.ok) throw new Error(data.error || "Failed to create director");
       toast.success("Director added successfully!");
       fetchAdmins();
-      setNewDirectorData({ name: "", email: "", password: "" });
       setShowDirectorModal(false);
     } catch (err) {
       console.error("Error creating director:", err);
       toast.error(err.message);
     }
   };
+  
+  
 
   
   const handleUpdateTeacher = async (data) => {
@@ -536,15 +537,16 @@ export default function SuperAdminDashboard() {
           classes={classes}
         />
       )}
-      {editData?.type === "directors" && (
-        <DirectorModal
-          visible={true}
-          isEdit={true}
-          onClose={() => setEditData(null)}
-          onSave={(data) => handleUpdateDirector({ ...data, id: editData.id })}
-          initialData={admins.find((d) => d.id === editData.id) || {}}
-        />
-      )}
+{editData?.type === "directors" && (
+  <DirectorModal
+    visible={true}
+    isEdit={true}
+    onClose={() => setEditData(null)}
+    onSave={(form) => handleUpdateDirector({ ...form, id: editData.id })}
+    initialData={admins.find((d) => d.id === editData.id) || {}}
+  />
+)}
+
 
      
       {showTeacherModal && (
@@ -574,14 +576,15 @@ export default function SuperAdminDashboard() {
           classes={classes}
         />
       )}
-      {showDirectorModal && (
-        <DirectorModal
-          visible={true}
-          onClose={() => setShowDirectorModal(false)}
-          onSave={handleAddDirector}
-          initialData={{}}
-        />
-      )}
+{showDirectorModal && (
+  <DirectorModal
+    visible={true}
+    onClose={() => setShowDirectorModal(false)}
+    onSave={(form) => handleAddDirector(form)}
+    initialData={{}}
+  />
+)}
+
 
       {menuData && (
         <ContextMenu
