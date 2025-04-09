@@ -53,13 +53,22 @@ export function MeetingDetailsScreen({
     const urlParams = new URLSearchParams(window.location.search);
     const tokenFromUrl = urlParams.get("token");
   
-   
     if (tokenFromUrl) {
       sessionStorage.setItem("sessionToken", tokenFromUrl);
       
-      window.history.replaceState({}, document.title, "/");
+     
+      const redirectAfterLogin = sessionStorage.getItem("redirectAfterLogin");
+      if (redirectAfterLogin) {
+        navigate(redirectAfterLogin);
+        sessionStorage.removeItem("redirectAfterLogin");
+      } else {
+        
+        const currentPath = window.location.pathname;
+        window.history.replaceState({}, document.title, currentPath);
+      }
     }
-  
+    
+    
     const token = sessionStorage.getItem("sessionToken");
     if (token) {
       try {
@@ -74,8 +83,8 @@ export function MeetingDetailsScreen({
         console.error("Invalid token:", error);
       }
     }
-  
-
+    
+    
     const googleLoginAction = sessionStorage.getItem("googleLoginAction");
     if (googleLoginAction === "create") {
       setIsCreateMeetingClicked(true);
@@ -86,42 +95,46 @@ export function MeetingDetailsScreen({
   
     const email = sessionStorage.getItem("teacherEmail");
     const storedTeacherName = sessionStorage.getItem("teacherName");
-  
+    
     if (email) {
       setUserEmail(email);
     }
     if (storedTeacherName) {
       setUserName(storedTeacherName);
     }
-  
+    
     if (className) {
       setRoomName(className);
     }
-  }, [className]);
+  }, [className, navigate]);
+  
   
 
 
 
-const loginWithGoogle = async (actionType) => {
-  try {
-    
-    if (actionType) {
-      sessionStorage.setItem("googleLoginAction", actionType);
+  const loginWithGoogle = async (actionType) => {
+    try {
+      const currentPath = window.location.pathname;
+      sessionStorage.setItem("redirectAfterLogin", currentPath);
+  
+      if (actionType) {
+        sessionStorage.setItem("googleLoginAction", actionType);
+      }
+  
+      const response = await fetch(`${SERVER_URL}/api/auth/google/url`);
+      const data = await response.json();
+  
+      if (data.authUrl) {
+        window.location.href = data.authUrl;
+      } else {
+        throw new Error("Failed to get authorization URL");
+      }
+    } catch (error) {
+      console.error("❌ Error getting Google URL:", error);
+      toast.error("Google authorization error.");
     }
-
-    const response = await fetch(`${SERVER_URL}/api/auth/google/url`);
-    const data = await response.json();
-
-    if (data.authUrl) {
-      window.location.href = data.authUrl;
-    } else {
-      throw new Error("Failed to get authorization URL");
-    }
-  } catch (error) {
-    console.error("❌ Error getting Google URL:", error);
-    toast.error("Google authorization error.");
-  }
-};
+  };
+  
 
  
 if (waitingRoomVisible) {
@@ -252,7 +265,7 @@ return (
           return;
         }
 
-        // Передаём имя учителя на сервер
+     
         await fetch(`${SERVER_URL}/api/savemeeting/new`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
