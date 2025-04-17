@@ -44,7 +44,7 @@ function App() {
       const isAndroid = /android/i.test(userAgent);
       const isIOS = /iPad|iPhone|iPod/.test(userAgent);
   
-      // Попробуем открыть в другом браузере
+
       if (isAndroid) {
         window.location.href = `intent://${redirectUrl.replace(/^https?:\/\//, "")}#Intent;scheme=https;package=com.android.chrome;end;`;
       } else if (isIOS) {

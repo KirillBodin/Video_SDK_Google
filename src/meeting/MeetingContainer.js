@@ -106,6 +106,10 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
   ];
 
   useEffect(() => {
+    document.title = "Tamamat Meeting"; 
+  }, []);  
+
+  useEffect(() => {
     containerHeightRef.current = containerHeight;
     containerWidthRef.current = containerWidth;
   }, [containerHeight, containerWidth]);
@@ -442,10 +446,12 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
     
       if (to && localParticipantId !== to) return;
       if (command === "endMeeting") {
+        sessionStorage.setItem("meetingWasEnded", "true");
         await mMeeting.leave();
-        navigate("/");
+        navigate(window.location.pathname);
         return;
       }
+      
       
       if (command === "requestUnmute") {
 

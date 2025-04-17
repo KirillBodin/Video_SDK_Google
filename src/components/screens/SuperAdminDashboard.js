@@ -12,12 +12,85 @@ import { authorizedFetch } from "../../utils/api";
 import { useParams, useNavigate } from "react-router-dom";
 
 const SERVER_URL = process.env.REACT_APP_SERVER_URL;
+function renderModal(title, form, setForm, onSubmit, onClose, customFields = {}) {
+  console.log("🧩 renderModal", { title, form, customFields });
 
+  const fieldPlaceholders = {
+    firstName: "First Name",
+    lastName: "Last Name",
+    teacherEmail: "Email",
+    studentEmail: "Email",
+    email: "Email",
+    password: "Password",
+    className: "Class Name",
+  };
+
+  const requiredFields = [
+    "firstName",
+    "lastName",
+    "teacherEmail",
+    "studentEmail",
+    "email",
+    "password",
+    "className"
+  ];
+
+const mergedFields = [...Object.keys(customFields), ...Object.keys(form).filter(f => !customFields[f])];
+
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
+  return ReactDOM.createPortal(
+    <div className={`fixed inset-0 ${customFields.zIndex || 'z-[60]'} bg-black bg-opacity-40 flex items-center justify-center`}>
+      <div className="bg-white text-black p-6 rounded w-96 max-h-[90vh] overflow-y-auto shadow-xl">
+        <h2 className="text-xl font-bold mb-4">{title}</h2>
+        
+        {mergedFields.map((field) => {
+          if (customFields[field]) {
+            return <React.Fragment key={field}>{customFields[field]}</React.Fragment>;
+          }
+          return (
+            <div key={field} className="mb-3">
+              <label className="block font-semibold mb-1">
+                {fieldPlaceholders[field] || field}
+                {requiredFields.includes(field) && (
+                  <span className="text-red-500 ml-1">*</span>
+                )}
+              </label>
+              <input
+                name={field}
+                placeholder={fieldPlaceholders[field] || field}
+                className="w-full px-3 py-2 border rounded"
+                value={form[field] || ""}
+                onChange={handleChange}
+              />
+            </div>
+          );
+        })}
+        <div className="flex justify-end gap-2">
+          <button onClick={onClose} className="border px-4 py-2 rounded text-gray-600">
+            Cancel
+          </button>
+          <button onClick={onSubmit} className="bg-blue-600 text-white px-4 py-2 rounded">
+            Save
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
 export default function SuperAdminDashboard() {
   const { name } = useParams();
   const superadminName = name;
   const navigate = useNavigate();
+  const ITEMS_PER_PAGE = 8;
 
+  const [currentPage, setCurrentPage] = useState({
+    teachers: 1,
+    students: 1,
+    classes: 1,
+    schoolAdmins: 1,
+  });
   useEffect(() => {
     if (window.localStream) {
       window.localStream.getVideoTracks().forEach((track) => track.stop());
@@ -42,30 +115,51 @@ export default function SuperAdminDashboard() {
   const [showClassModal, setShowClassModal] = useState(false);
   const [showStudentModal, setShowStudentModal] = useState(false);
   const [showDirectorModal, setShowDirectorModal] = useState(false);
+  const [overlayModal, setOverlayModal] = useState(null); 
 
-  
+
   const [newTeacherData, setNewTeacherData] = useState({
     firstName: "",
     lastName: "",
     teacherEmail: "",
     teacherPassword: "",
     adminId: "",
+    classIds: [],
+    studentIds: [],
   });
+  
   const [newClassData, setNewClassData] = useState({
     className: "",
     teacherId: "",
+    studentIds: [],
   });
+  
+  
+  
   const [newStudentData, setNewStudentData] = useState({
     firstName: "",
     lastName: "",
     studentEmail: "",
-    classId: "",
+    password: "",
+    classIds: [],
+    teacherIds: []
   });
+  
+  
+  
   const [newDirectorData, setNewDirectorData] = useState({
-    name: "",
+    firstName: "",
+    lastName: "",
+    schoolName: "",
     email: "",
-    password: ""
+    password: "",
+    teacherIds: []
   });
+
+  const paginate = (array, page) => {
+    const start = (page - 1) * ITEMS_PER_PAGE;
+    return array.slice(start, start + ITEMS_PER_PAGE);
+  };
 
   
   const [editData, setEditData] = useState(null);
@@ -179,7 +273,11 @@ export default function SuperAdminDashboard() {
         body: JSON.stringify({ teacherName: fullName, teacherEmail, teacherPassword, adminId }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to create teacher");
+      if (!res.ok) {
+        const errorMsg = data?.error || data?.message || "Failed to create teacher";
+        throw new Error(errorMsg);
+      }
+      
       toast.success("Teacher added successfully!");
       fetchTeachers();
       setNewTeacherData({ firstName: "", lastName: "", teacherEmail: "", teacherPassword: "", adminId: "" });
@@ -191,56 +289,69 @@ export default function SuperAdminDashboard() {
   };
 
   const handleAddClass = async () => {
-    const { className, teacherId } = newClassData;
+    const { className, teacherId, studentIds } = newClassData;
     if (!className || !teacherId) {
-      toast.info("Please fill in the class name and select a teacher!");
+      toast.info("Please fill in class name and teacher.");
       return;
     }
+  
     try {
       const res = await authorizedFetch(`${SERVER_URL}/api/super-admin/classes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newClassData),
+        body: JSON.stringify({ className, teacherId, studentIds }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to create class");
+      if (!res.ok) {
+        const errorMsg = data?.error || data?.message || "Failed to create class";
+        throw new Error(errorMsg);
+      }
+      
+  
       toast.success("Class added successfully!");
       fetchClasses();
-      setNewClassData({ className: "", teacherId: "" });
       setShowClassModal(false);
+      setNewClassData({ className: "", teacherId: "", studentIds: [] });
     } catch (err) {
-      console.error("Error creating class:", err);
       toast.error(err.message);
     }
   };
+  
 
   const handleAddStudent = async () => {
-    const { firstName, lastName, studentEmail, classId } = newStudentData;
-    if (!firstName || !lastName || !studentEmail || !classId) {
-      toast.info("Please fill in student fields and select a class!");
+    const { firstName, lastName, studentEmail, classIds } = newStudentData;
+    if (!firstName || !lastName || !studentEmail || !classIds.length) {
+      toast.info("Please fill in student fields and select at least one class!");
       return;
     }
+  
     try {
       const fullName = `${firstName} ${lastName}`;
       const res = await authorizedFetch(`${SERVER_URL}/api/super-admin/students`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ studentName: fullName, studentEmail, classId }),
+        body: JSON.stringify({ studentName: fullName, studentEmail, classIds, teacherIds: newStudentData.teacherIds }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to create student");
+      if (!res.ok) {
+        const errorMsg = data?.error || data?.message || "Failed to create student";
+        throw new Error(errorMsg);
+      }
+      
       toast.success("Student added successfully!");
       fetchStudents();
-      setNewStudentData({ firstName: "", lastName: "", studentEmail: "", classId: "" });
+      setNewStudentData({ firstName: "", lastName: "", studentEmail: "", classIds: [], teacherIds: [] });
       setShowStudentModal(false);
     } catch (err) {
       console.error("Error creating student:", err);
       toast.error(err.message);
     }
   };
+  
 
   const handleAddDirector = async (form) => {
-    const { name, email, password } = form;
+    const { firstName, lastName, schoolName, email, password, teacherIds } = form;
+const name = `${firstName} ${lastName}`;
     if (!name?.trim() || !email?.trim() || !password?.trim()) {
       toast.info("Please fill in all director fields!");
       return;
@@ -249,10 +360,13 @@ export default function SuperAdminDashboard() {
       const res = await authorizedFetch(`${SERVER_URL}/api/super-admin/admins`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email, password, schoolName })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to create director");
+      if (!res.ok) {
+        const errorMsg = data?.error || data?.message || "Failed to create director";
+        throw new Error(errorMsg);
+      }
       toast.success("Director added successfully!");
       fetchAdmins();
       setShowDirectorModal(false);
@@ -274,7 +388,12 @@ export default function SuperAdminDashboard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ teacherName: fullName, teacherEmail, teacherPassword, adminId }),
       });
-      if (!res.ok) throw new Error("Failed to update teacher");
+      const data = await res.json();
+if (!res.ok) {
+  const errorMsg = data?.error || data?.message || "Failed to update teacher";
+  throw new Error(errorMsg);
+}
+
       toast.success("Teacher updated!");
       fetchTeachers();
       setEditData(null);
@@ -285,14 +404,19 @@ export default function SuperAdminDashboard() {
   };
 
   const handleUpdateClass = async (data) => {
-    const { id, className, teacherId } = data;
+    const { id, className, teacherId, studentIds } = data;
     try {
       const res = await authorizedFetch(`${SERVER_URL}/api/super-admin/classes/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ className, teacherId }),
+        body: JSON.stringify({ className, teacherId, studentIds }),
       });
-      if (!res.ok) throw new Error("Failed to update class");
+      const data = await res.json();
+if (!res.ok) {
+  const errorMsg = data?.error || data?.message || "Failed to update class";
+  throw new Error(errorMsg);
+}
+
       toast.success("Class updated!");
       fetchClasses();
       setEditData(null);
@@ -311,7 +435,12 @@ export default function SuperAdminDashboard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ studentName: fullName, studentEmail, classId }),
       });
-      if (!res.ok) throw new Error("Failed to update student");
+      const data = await res.json();
+if (!res.ok) {
+  const errorMsg = data?.error || data?.message || "Failed to update student";
+  throw new Error(errorMsg);
+}
+
       toast.success("Student updated!");
       fetchStudents();
       setEditData(null);
@@ -322,14 +451,21 @@ export default function SuperAdminDashboard() {
   };
 
   const handleUpdateDirector = async (data) => {
-    const { id, name, email, password } = data;
+    const { id, firstName, lastName, schoolName, email, password, teacherIds } = data;
+const name = `${firstName} ${lastName}`;
+
     try {
       const res = await authorizedFetch(`${SERVER_URL}/api/super-admin/admins/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email, password, schoolName }),
       });
-      if (!res.ok) throw new Error("Failed to update director");
+      const data = await res.json();
+if (!res.ok) {
+  const errorMsg = data?.error || data?.message || "Failed to update director";
+  throw new Error(errorMsg);
+}
+
       toast.success("Director updated!");
       fetchAdmins();
       setEditData(null);
@@ -339,10 +475,109 @@ export default function SuperAdminDashboard() {
     }
   };
 
-  const handleEditItem = (id, type) => {
-    setEditData({ id, type });
+  const handleEditItem = async (id, type) => {
     setMenuData(null);
+  
+    if (type === "teachers") {
+      try {
+        const res = await authorizedFetch(`${SERVER_URL}/api/super-admin/teachers/${id}/details`);
+        if (!res.ok) throw new Error("Failed to load teacher details");
+        const data = await res.json();
+  
+        const { firstName, lastName, email, adminId, classIds, studentIds } = data;
+
+        setEditData({
+          id,
+          type,
+          teacherInfo: {
+            firstName,
+            lastName,
+            email,
+            adminId,
+            classIds,
+            studentIds,
+          }
+        });
+        
+      } catch (err) {
+        toast.error("Failed to load teacher data.");
+      }
+    } else if (type === "classes") {
+      try {
+        const res = await authorizedFetch(`${SERVER_URL}/api/super-admin/classes/${id}/details`);
+        if (!res.ok) throw new Error("Failed to load class details");
+        const data = await res.json();
+    
+        setEditData({
+          id,
+          type,
+          classInfo: {
+            className: data.className,
+            teacherId: data.teacherId,
+            adminId: admins.find(a => a.name === data.adminName)?.id || "",
+            studentIds: data.studentIds || [],
+          }
+        });
+      } catch (err) {
+        toast.error("Failed to load class data.");
+      }
+    }
+    else if (type === "students") {
+      try {
+        const res = await authorizedFetch(`${SERVER_URL}/api/super-admin/students/${id}/details`);
+        if (!res.ok) throw new Error("Failed to load student details");
+        const data = await res.json();
+    
+        setEditData({
+          id,
+          type,
+          studentInfo: {
+            firstName: data.firstName,
+            lastName: data.lastName,
+            studentEmail: data.email,
+            classIds: data.classIds || [],
+            teacherIds: data.teacherIds || [],
+            adminId: admins.find(a => a.name === data.adminName)?.id || ""
+          }
+        });
+      } catch (err) {
+        toast.error("Failed to load student data.");
+      }
+    }
+    else if (type === "schoolAdmins") {
+      try {
+        const res = await authorizedFetch(`${SERVER_URL}/api/super-admin/admins/${id}/details`);
+        if (!res.ok) throw new Error("Failed to load admin details");
+        const data = await res.json();
+    
+        const [firstName, ...rest] = (data.name || "").split(" ");
+        const lastName = rest.join(" ");
+    
+        setEditData({
+          id,
+          type,
+          directorInfo: {
+            firstName,
+            lastName,
+            schoolName: data.schoolName || "",
+            email: data.email || "",
+            password: "",
+            teacherIds: data.teacherIds || []
+          }
+        });
+    
+      } catch (err) {
+        console.error("Error loading school admin details:", err);
+        toast.error("Failed to load admin data.");
+      }
+    }
+    
+    
+    
+    
+    
   };
+  
 
   const deleteItem = async (id, type) => {
     if (!window.confirm(`Are you sure you want to delete this ${type}?`)) return;
@@ -354,7 +589,7 @@ export default function SuperAdminDashboard() {
         url = `${SERVER_URL}/api/super-admin/classes/${id}`;
       } else if (type === "students") {
         url = `${SERVER_URL}/api/super-admin/students/${id}`;
-      } else if (type === "directors") {
+      } else if (type === "schooladmins") {
         url = `${SERVER_URL}/api/super-admin/admins/${id}`;
       }
       const res = await authorizedFetch(url, { method: "DELETE" });
@@ -368,54 +603,67 @@ export default function SuperAdminDashboard() {
       toast.error(err.message);
     }
   };
-
-  const toggleMenu = (id, type, event, classUrl) => {
-    event.stopPropagation();
-    const rect = event.currentTarget.getBoundingClientRect();
+  const toggleMenu = ({ id, type, x, y, classUrl }) => {
+    const normalizedType = type === "school admins" ? "schoolAdmins" : type;
     setMenuData({
       id,
-      type: type.toLowerCase(),
-      x: rect.x + rect.width,
-      y: rect.y + window.scrollY,
+      type: normalizedType,
+      x,
+      y,
       classUrl,
     });
   };
+  
+  
+  
+  
+  
+  
+  
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-[#111111] to-black text-white p-6">
     
-      <div className="grid grid-cols-3 items-center mb-10">
-        <div></div>
-        <h1 className="text-4xl font-bold text-center">SuperAdmin Page</h1>
-        <div className="flex justify-end items-center gap-4">
-          <span>{superadminName}</span>
-          <button
-            onClick={handleLogout}
-            className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded"
-          >
-            Logout
-          </button>
-        </div>
-      </div>
+    <div className="w-full flex justify-end items-center mb-6">
+  <div className="flex items-center gap-4">
+    <span className="text-lg font-semibold text-white">
+      {superadminName?.split("_").slice(1).join(" ")}
+    </span>
+    <button
+      onClick={handleLogout}
+      className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md"
+    >
+      Log Out
+    </button>
+  </div>
+</div>
+<h1 className="text-4xl font-bold text-center mb-10">Super Admin Dashboard</h1>
+
 
       {/* Tabs */}
-      <div className="flex mb-4 border-b border-gray-700">
-        {["teachers", "classes", "students", "directors"].map((tab) => (
-          <button
-            key={tab}
-            className={`px-4 py-2 ${activeTab === tab ? "border-b-2 border-blue-500" : ""}`}
-            onClick={() => setActiveTab(tab)}
-          >
-            {tab.charAt(0).toUpperCase() + tab.slice(1)}
-          </button>
-        ))}
-      </div>
+      <div className="flex gap-4 mb-6 justify-center">
+  {["teachers", "classes", "students", "schoolAdmins"].map((tab) => {
+    const isActive = activeTab === tab;
+    return (
+      <button
+        key={tab}
+        onClick={() => setActiveTab(tab)}
+        className={`px-4 py-2 rounded-md text-white transition-all duration-150
+          ${isActive ? "bg-gray-800 border-b-2 border-blue-500" : "hover:bg-gray-700"}
+        `}
+      >
+        {tab === "schoolAdmins" ? "School Admins" : tab.charAt(0).toUpperCase() + tab.slice(1)}
+      </button>
+    );
+  })}
+</div>
+
 
       {/* Teachers Tab */}
       {activeTab === "teachers" && (
-        <div className="w-full max-w-5xl">
+        <div className="w-full max-w-5xl mx-auto">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-semibold">Teachers</h3>
+            <h3 className="text-xl font-semibold"></h3>
             <button
               className="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded"
               onClick={() => setShowTeacherModal(true)}
@@ -424,43 +672,67 @@ export default function SuperAdminDashboard() {
             </button>
           </div>
           <DataTable
-            title="Teachers"
-            data={teachers}
-            columns={[
-              { label: "Name", key: "name" },
-              { label: "Email", key: "email" },
-              { label: "# of Classes", key: "numberOfClasses" },
-              { label: "# of Students", key: "numberOfStudents" },
-            ]}
-            onMenuToggle={toggleMenu}
-          />
+  title="Teachers"
+  data={paginate(teachers, currentPage.teachers)}
+  columns={[
+    { label: "Name", key: "name" },
+    { label: "Email", key: "email" },
+    { label: "# of Classes", key: "numberOfClasses" },
+    { label: "# of Students", key: "numberOfStudents" },
+  ]}
+  onMenuToggle={toggleMenu}
+  totalItems={teachers.length}
+  currentPage={currentPage.teachers}
+  onPageChange={(page) =>
+    setCurrentPage((prev) => ({ ...prev, teachers: page }))
+  }
+/>
+
         </div>
       )}
 
       {/* Classes Tab */}
       {activeTab === "classes" && (
-        <div className="w-full max-w-5xl">
+        <div className="w-full max-w-5xl mx-auto">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-semibold">Classes</h3>
+  <h3 className="text-xl font-semibold"></h3>
+  <button
+    className="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded text-white"
+    onClick={() => setShowClassModal(true)}
+  >
+    Add Class
+  </button>
+</div>
+
+          <div className="flex justify-between items-center mb-4">
+            
           </div>
           <DataTable
-            title="Classes"
-            data={classes}
-            columns={[
-              { label: "Class Name", key: "className" },
-              { label: "# of Students", key: "numberOfStudents" },
-              { label: "Class URL", key: "classUrl" },
-            ]}
-            onMenuToggle={toggleMenu}
-          />
+  title="Classes"
+  data={paginate(classes, currentPage.classes)}
+  columns={[
+    { label: "Class Name", key: "className" },
+    { label: "# of Students", key: "numberOfStudents" },
+    { label: "Class URL", key: "classUrl" },
+  ]}
+  onMenuToggle={toggleMenu}
+  totalItems={classes.length}
+  currentPage={currentPage.classes}
+  onPageChange={(page) =>
+    setCurrentPage((prev) => ({ ...prev, classes: page }))
+  }
+  ITEMS_PER_PAGE={ITEMS_PER_PAGE}
+/>
+
+
         </div>
       )}
 
       {/* Students Tab */}
       {activeTab === "students" && (
-        <div className="w-full max-w-5xl">
+        <div className="w-full max-w-5xl mx-auto">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-semibold">Students</h3>
+            <h3 className="text-xl font-semibold"></h3>
             <button
               className="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded"
               onClick={() => setShowStudentModal(true)}
@@ -469,121 +741,888 @@ export default function SuperAdminDashboard() {
             </button>
           </div>
           <DataTable
-            title="Students"
-            data={students}
-            columns={[
-              { label: "Name", key: "name" },
-              { label: "Email", key: "email" },
-              { label: "Teacher", key: "teacherName" },
-              { label: "Class", key: "className" },
-            ]}
-            onMenuToggle={toggleMenu}
-          />
+  title="Students"
+  data={paginate(students, currentPage.students)}
+  columns={[
+    { label: "Name", key: "name" },
+    { label: "Email", key: "email" },
+    { label: "Teacher", key: "teacherName" },
+    { label: "Class", key: "className" },
+  ]}
+  onMenuToggle={toggleMenu}
+  totalItems={students.length}
+  currentPage={currentPage.students}
+  onPageChange={(page) =>
+    setCurrentPage((prev) => ({ ...prev, students: page }))
+  }
+/>
+
+
         </div>
       )}
 
       {/* Directors Tab */}
-      {activeTab === "directors" && (
-        <div className="w-full max-w-5xl">
+      {activeTab === "schoolAdmins" && (
+        <div className="w-full max-w-5xl mx-auto">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-semibold">Directors</h3>
+            <h3 className="text-xl font-semibold"></h3>
             <button
               className="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded"
               onClick={() => setShowDirectorModal(true)}
             >
-              Add Director
+              Add School Admin
             </button>
           </div>
           <DataTable
-            title="Directors"
-            data={admins}
-            columns={[
-              { label: "Name", key: "name" },
-              { label: "Email", key: "email" },
-            ]}
-            onMenuToggle={toggleMenu}
-          />
+  title="School Admins"
+  data={paginate(admins, currentPage.schoolAdmins)}
+  columns={[
+    { label: "Name", key: "name" },
+    { label: "Email", key: "email" },
+    { label: "School Name", key: "schoolName" }
+  ]}
+  onMenuToggle={toggleMenu}
+  totalItems={admins.length}
+  currentPage={currentPage.schoolAdmins}
+  onPageChange={(page) =>
+    setCurrentPage((prev) => ({ ...prev, schoolAdmins: page }))
+  }
+/>
+
         </div>
       )}
 
      
-      {editData?.type === "teachers" && (
-        <TeacherModal
-          visible={true}
-          isEdit={true}
-          onClose={() => setEditData(null)}
-          onSave={(data) => handleUpdateTeacher({ ...data, id: editData.id })}
-          initialData={teachers.find((t) => t.id === editData.id) || {}}
-          admins={admins}
-        />
-      )}
-      {editData?.type === "classes" && (
-        <ClassModal
-          visible={true}
-          isEdit={true}
-          onClose={() => setEditData(null)}
-          onSave={(data) => handleUpdateClass({ ...data, id: editData.id })}
-          initialData={classes.find((c) => c.id === editData.id) || {}}
-          teachers={teachers}
-        />
-      )}
-      {editData?.type === "students" && (
-        <StudentModal
-          visible={true}
-          isEdit={true}
-          onClose={() => setEditData(null)}
-          onSave={(data) => handleUpdateStudent({ ...data, id: editData.id })}
-          initialData={students.find((s) => s.id === editData.id) || {}}
-          classes={classes}
-        />
-      )}
-{editData?.type === "directors" && (
-  <DirectorModal
+{editData?.type === "teachers" && editData.teacherInfo && (
+  <TeacherModal
     visible={true}
     isEdit={true}
     onClose={() => setEditData(null)}
-    onSave={(form) => handleUpdateDirector({ ...form, id: editData.id })}
-    initialData={admins.find((d) => d.id === editData.id) || {}}
+    onSave={(data) => handleUpdateTeacher({ ...data, id: editData.id })}
+    initialData={editData.teacherInfo}
+    admins={admins}
+    classes={classes}
+    students={students}
   />
 )}
+
+{editData?.type === "classes" && editData.classInfo && (
+  <ClassModal
+    visible={true}
+    isEdit={true}
+    onClose={() => setEditData(null)}
+    onSave={(data) => handleUpdateClass({ ...data, id: editData.id })}
+    initialData={editData.classInfo}
+    teachers={teachers}
+    students={students}
+    admins={admins}
+  />
+)}
+
+
+{editData?.type === "students" && editData.studentInfo && renderModal(
+  "Edit Student",
+  editData.studentInfo,
+  (form) => setEditData((prev) => ({ ...prev, studentInfo: form })),
+  () => handleUpdateStudent({ ...editData.studentInfo, id: editData.id }),
+  () => setEditData(null),
+  {
+    firstName: (
+      <div className="mb-3">
+        <label className="block font-semibold mb-1">First Name<span className="text-red-500 ml-1">*</span></label>
+        <input
+          name="firstName"
+          className="w-full px-3 py-2 border rounded"
+          placeholder="First Name"
+          value={editData.studentInfo.firstName}
+          onChange={(e) =>
+            setEditData((prev) => ({
+              ...prev,
+              studentInfo: { ...prev.studentInfo, firstName: e.target.value },
+            }))
+          }
+        />
+      </div>
+    ),
+    lastName: (
+      <div className="mb-3">
+        <label className="block font-semibold mb-1">Last Name<span className="text-red-500 ml-1">*</span></label>
+        <input
+          name="lastName"
+          className="w-full px-3 py-2 border rounded"
+          placeholder="Last Name"
+          value={editData.studentInfo.lastName}
+          onChange={(e) =>
+            setEditData((prev) => ({
+              ...prev,
+              studentInfo: { ...prev.studentInfo, lastName: e.target.value },
+            }))
+          }
+        />
+      </div>
+    ),
+    studentEmail: (
+      <div className="mb-3">
+        <label className="block font-semibold mb-1">Email<span className="text-red-500 ml-1">*</span></label>
+        <input
+          type="email"
+          name="studentEmail"
+          className="w-full px-3 py-2 border rounded"
+          placeholder="Email"
+          value={editData.studentInfo.studentEmail}
+          onChange={(e) =>
+            setEditData((prev) => ({
+              ...prev,
+              studentInfo: { ...prev.studentInfo, studentEmail: e.target.value },
+            }))
+          }
+        />
+      </div>
+    ),
+    classIds: (
+      <div className="mb-3">
+        <label className="block font-semibold mb-1">
+          Select Classes<span className="text-red-500 ml-1">*</span>
+        </label>
+        <div className="border rounded p-2 max-h-40 overflow-y-auto">
+          {classes.map((cls) => (
+            <label key={cls.id} className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                value={cls.id}
+                checked={editData.studentInfo.classIds?.includes(cls.id)}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  setEditData((prev) => ({
+                    ...prev,
+                    studentInfo: {
+                      ...prev.studentInfo,
+                      classIds: e.target.checked
+                        ? [...(prev.studentInfo.classIds || []), val]
+                        : prev.studentInfo.classIds.filter((id) => id !== val),
+                    },
+                  }));
+                }}
+              />
+              {cls.className}
+            </label>
+          ))}
+        </div>
+      </div>
+    ),
+    
+    teacherIds: (
+      <div className="mb-3">
+        <label className="block font-semibold mb-1">Select Teachers</label>
+        <div className="border rounded p-2 max-h-40 overflow-y-auto">
+          {teachers.map((t) => (
+            <label key={t.id} className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                value={t.id}
+                checked={editData.studentInfo.teacherIds?.includes(t.id)}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  setEditData((prev) => ({
+                    ...prev,
+                    studentInfo: {
+                      ...prev.studentInfo,
+                      teacherIds: e.target.checked
+                        ? [...(prev.studentInfo.teacherIds || []), val]
+                        : prev.studentInfo.teacherIds.filter((id) => id !== val),
+                    },
+                  }));
+                }}
+              />
+              <span>{t.name}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+    ),
+    
+    
+  }
+)}
+{console.log("🎯 Rendering edit modal for:", editData)}
+
+{editData?.type === "schoolAdmins" && (
+  renderModal(
+    "Edit School Admin",
+    editData.directorInfo,
+    (form) => setEditData((prev) => ({ ...prev, directorInfo: form })),
+    () => handleUpdateDirector({ ...editData.directorInfo, id: editData.id }),
+    () => setEditData(null),
+    {
+      firstName: (
+        <div className="mb-3">
+          <label className="block font-semibold mb-1">First Name<span className="text-red-500 ml-1">*</span></label>
+          <input
+            name="firstName"
+            className="w-full px-3 py-2 border rounded"
+            placeholder="First Name"
+            value={editData.directorInfo.firstName}
+            onChange={(e) =>
+              setEditData((prev) => ({
+                ...prev,
+                directorInfo: { ...prev.directorInfo, firstName: e.target.value },
+              }))
+            }
+          />
+        </div>
+      ),
+      lastName: (
+        <div className="mb-3">
+          <label className="block font-semibold mb-1">Last Name<span className="text-red-500 ml-1">*</span></label>
+          <input
+            name="lastName"
+            className="w-full px-3 py-2 border rounded"
+            placeholder="Last Name"
+            value={editData.directorInfo.lastName}
+            onChange={(e) =>
+              setEditData((prev) => ({
+                ...prev,
+                directorInfo: { ...prev.directorInfo, lastName: e.target.value },
+              }))
+            }
+          />
+        </div>
+      ),
+      schoolName: (
+        <div className="mb-3">
+          <label className="block font-semibold mb-1">School Name<span className="text-red-500 ml-1">*</span></label>
+          <input
+            name="schoolName"
+            className="w-full px-3 py-2 border rounded"
+            placeholder="School Name"
+            value={editData.directorInfo.schoolName}
+            onChange={(e) =>
+              setEditData((prev) => ({
+                ...prev,
+                directorInfo: { ...prev.directorInfo, schoolName: e.target.value },
+              }))
+            }
+          />
+        </div>
+      ),
+      email: (
+        <div className="mb-3">
+          <label className="block font-semibold mb-1">Email<span className="text-red-500 ml-1">*</span></label>
+          <input
+            type="email"
+            name="email"
+            className="w-full px-3 py-2 border rounded"
+            placeholder="Email"
+            value={editData.directorInfo.email}
+            onChange={(e) =>
+              setEditData((prev) => ({
+                ...prev,
+                directorInfo: { ...prev.directorInfo, email: e.target.value },
+              }))
+            }
+          />
+        </div>
+      ),
+      password: (
+        <div className="mb-3">
+          <label className="block font-semibold mb-1">Password</label>
+          <input
+  type="password"
+  name="password"
+  className="w-full px-3 py-2 border rounded"
+  placeholder="Password"
+  value={editData.directorInfo.password || ""}
+  onChange={(e) =>
+    setEditData((prev) => ({
+      ...prev,
+      directorInfo: { ...prev.directorInfo, password: e.target.value },
+    }))
+  }
+/>
+{editData?.type === "schoolAdmins" && (
+  <p className="text-sm text-gray-500 mt-1">
+    Leave blank to keep current password
+  </p>
+)}
+
+
+
+        </div>
+      ),teacherIds: (
+        <div className="mb-3">
+          <label className="block font-semibold mb-1">Assign Teachers</label>
+          <div className="border rounded p-2 max-h-40 overflow-y-auto">
+            {teachers.map((t) => (
+              <label key={t.id} className="flex items-center gap-2 mb-1">
+                <input
+                  type="checkbox"
+                  value={t.id}
+                  checked={editData.directorInfo.teacherIds?.includes(t.id)}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value);
+                    setEditData((prev) => ({
+                      ...prev,
+                      directorInfo: {
+                        ...prev.directorInfo,
+                        teacherIds: e.target.checked
+                          ? [...(prev.directorInfo.teacherIds || []), val]
+                          : prev.directorInfo.teacherIds.filter((id) => id !== val),
+                      },
+                    }));
+                  }}
+                />
+                {t.name}
+              </label>
+            ))}
+          </div>
+        </div>
+      )
+      
+    }
+  )
+)}
+
+
+
 
 
      
-      {showTeacherModal && (
-        <TeacherModal
-          visible={true}
-          onClose={() => setShowTeacherModal(false)}
-          onSave={handleAddTeacher}
-          initialData={{}}
-          admins={admins}
+{showTeacherModal && renderModal(
+  "Add Teacher",
+  newTeacherData,
+  setNewTeacherData,
+  handleAddTeacher,
+  () => setShowTeacherModal(false),
+  {
+    firstName: (
+      <div className="mb-3">
+        <label className="block font-semibold mb-1">
+          First Name<span className="text-red-500 ml-1">*</span>
+        </label>
+        <input
+          name="firstName"
+          className="w-full px-3 py-2 border rounded"
+          placeholder="First Name"
+          value={newTeacherData.firstName}
+          onChange={(e) => setNewTeacherData({ ...newTeacherData, firstName: e.target.value })}
         />
-      )}
-      {showClassModal && (
-        <ClassModal
-          visible={true}
-          onClose={() => setShowClassModal(false)}
-          onSave={handleAddClass}
-          initialData={{}}
-          teachers={teachers}
+      </div>
+    ),
+    lastName: (
+      <div className="mb-3">
+        <label className="block font-semibold mb-1">
+          Last Name<span className="text-red-500 ml-1">*</span>
+        </label>
+        <input
+          name="lastName"
+          className="w-full px-3 py-2 border rounded"
+          placeholder="Last Name"
+          value={newTeacherData.lastName}
+          onChange={(e) => setNewTeacherData({ ...newTeacherData, lastName: e.target.value })}
         />
-      )}
-      {showStudentModal && (
-        <StudentModal
-          visible={true}
-          onClose={() => setShowStudentModal(false)}
-          onSave={handleAddStudent}
-          initialData={{}}
-          classes={classes}
+      </div>
+    ),
+    teacherEmail: (
+      <div className="mb-3">
+        <label className="block font-semibold mb-1">
+          Email<span className="text-red-500 ml-1">*</span>
+        </label>
+        <input
+          type="email"
+          name="teacherEmail"
+          className="w-full px-3 py-2 border rounded"
+          placeholder="Email"
+          value={newTeacherData.teacherEmail}
+          onChange={(e) => setNewTeacherData({ ...newTeacherData, teacherEmail: e.target.value })}
         />
-      )}
-{showDirectorModal && (
-  <DirectorModal
-    visible={true}
-    onClose={() => setShowDirectorModal(false)}
-    onSave={(form) => handleAddDirector(form)}
-    initialData={{}}
-  />
+      </div>
+    ),
+    teacherPassword: (
+      <div className="mb-3">
+        <label className="block font-semibold mb-1">
+          Password<span className="text-red-500 ml-1">*</span>
+        </label>
+        <input
+          type="password"
+          name="teacherPassword"
+          className="w-full px-3 py-2 border rounded"
+          placeholder="Password"
+          value={newTeacherData.teacherPassword}
+          onChange={(e) => setNewTeacherData({ ...newTeacherData, teacherPassword: e.target.value })}
+        />
+        <p className="text-sm text-gray-500 mt-1">
+          Leave blank to keep current password
+        </p>
+      </div>
+    ),
+    adminId: (
+      <div className="mb-3">
+        <label className="block font-semibold mb-1">
+          Select Admin<span className="text-red-500 ml-1">*</span>
+        </label>
+        <select
+          name="adminId"
+          className="w-full px-3 py-2 border rounded"
+          value={newTeacherData.adminId}
+          onChange={(e) => setNewTeacherData({ ...newTeacherData, adminId: e.target.value })}
+        >
+          <option value="">Select Admin</option>
+          {admins.map((admin) => (
+            <option key={admin.id} value={admin.id}>{admin.name}</option>
+          ))}
+        </select>
+        <button
+          className="mt-2 text-blue-500 hover:underline text-sm"
+          onClick={() => {
+            setShowDirectorModal(true);
+          }}
+          
+        >
+          + Add New Admin
+        </button>
+      </div>
+    ),
+    classIds: (
+      <div className="mb-3">
+        <label className="block font-semibold mb-1">Assign Classes</label>
+        <div className="border rounded p-2 max-h-40 overflow-y-auto mb-2">
+          {classes.map((cls) => (
+            <label key={cls.id} className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                value={cls.id}
+                checked={newTeacherData.classIds.includes(cls.id)}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  setNewTeacherData((prev) => ({
+                    ...prev,
+                    classIds: e.target.checked
+                      ? [...prev.classIds, val]
+                      : prev.classIds.filter((id) => id !== val),
+                  }));
+                }}
+              />
+              {cls.className}
+            </label>
+          ))}
+        </div>
+        <button
+          className="text-blue-500 hover:underline text-sm"
+          onClick={() => {
+            setShowDirectorModal(true);
+          }}
+          
+        >
+          + Add New Class
+        </button>
+      </div>
+    ),
+    studentIds: (
+      <div className="mb-3">
+        <label className="block font-semibold mb-1">Assign Students</label>
+        <div className="border rounded p-2 max-h-40 overflow-y-auto mb-2">
+          {students.map((s) => (
+            <label key={s.id} className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                value={s.id}
+                checked={newTeacherData.studentIds.includes(s.id)}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  setNewTeacherData((prev) => ({
+                    ...prev,
+                    studentIds: e.target.checked
+                      ? [...prev.studentIds, val]
+                      : prev.studentIds.filter((id) => id !== val),
+                  }));
+                }}
+              />
+              {s.name}
+            </label>
+          ))}
+        </div>
+        <button
+          className="text-blue-500 hover:underline text-sm"
+          onClick={() => {
+            setShowDirectorModal(true);
+          }}
+          
+        >
+          + Add New Student
+        </button>
+      </div>
+    )
+  }
 )}
+
+
+
+{showClassModal &&
+  renderModal(
+    "Add Class",
+    newClassData,
+    setNewClassData,
+    handleAddClass,
+    () => setShowClassModal(false),
+    {
+     
+      teacherId: (
+        <div className="mb-3">
+          <label className="block font-semibold mb-1">
+            Select Teacher<span className="text-red-500 ml-1">*</span>
+          </label>
+          <select
+            name="teacherId"
+            className="w-full px-3 py-2 border rounded"
+            value={newClassData.teacherId}
+            onChange={(e) =>
+              setNewClassData({ ...newClassData, teacherId: e.target.value })
+            }
+          >
+            <option value="">Select Teacher</option>
+            {teachers.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+          <button
+            className="mt-2 text-blue-500 hover:underline text-sm"
+            onClick={() => {
+         
+              setShowTeacherModal(true); 
+            }}
+          >
+            + Add New Teacher
+          </button>
+        </div>
+      ),
+
+      studentIds: (
+        <div className="mb-3">
+          <label className="block font-semibold mb-1">Select Students</label>
+          <div className="border rounded p-2 h-32 overflow-y-auto mb-2">
+            {students.map((s) => (
+              <label key={s.id} className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  value={s.id}
+                  checked={newClassData.studentIds.includes(s.id)}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value);
+                    setNewClassData((prev) => ({
+                      ...prev,
+                      studentIds: e.target.checked
+                        ? [...prev.studentIds, val]
+                        : prev.studentIds.filter((id) => id !== val),
+                    }));
+                  }}
+                />
+                <span>{s.name}</span>
+              </label>
+            ))}
+          </div>
+          <button
+            className="text-blue-500 hover:underline text-sm"
+            onClick={() => {
+              setShowStudentModal(true); // поверх класса
+            }}
+          >
+            + Add New Student
+          </button>
+        </div>
+      ),
+    }
+  )
+}
+
+
+
+{showStudentModal && renderModal(
+  "Add Student",
+  newStudentData,
+  setNewStudentData,
+  handleAddStudent,
+  () => setShowStudentModal(false),
+  {
+    firstName: (
+      <div className="mb-3">
+        <label className="block font-semibold mb-1">
+          First Name<span className="text-red-500 ml-1">*</span>
+        </label>
+        <input
+          name="firstName"
+          className="w-full px-3 py-2 border rounded"
+          placeholder="First Name"
+          value={newStudentData.firstName}
+          onChange={(e) =>
+            setNewStudentData({ ...newStudentData, firstName: e.target.value })
+          }
+        />
+      </div>
+    ),
+    lastName: (
+      <div className="mb-3">
+        <label className="block font-semibold mb-1">
+          Last Name<span className="text-red-500 ml-1">*</span>
+        </label>
+        <input
+          name="lastName"
+          className="w-full px-3 py-2 border rounded"
+          placeholder="Last Name"
+          value={newStudentData.lastName}
+          onChange={(e) =>
+            setNewStudentData({ ...newStudentData, lastName: e.target.value })
+          }
+        />
+      </div>
+    ),
+    studentEmail: (
+      <div className="mb-3">
+        <label className="block font-semibold mb-1">
+          Email<span className="text-red-500 ml-1">*</span>
+        </label>
+        <input
+          name="studentEmail"
+          className="w-full px-3 py-2 border rounded"
+          placeholder="Email"
+          value={newStudentData.studentEmail}
+          onChange={(e) =>
+            setNewStudentData({ ...newStudentData, studentEmail: e.target.value })
+          }
+        />
+      </div>
+    ),
+    password: (
+      <div className="mb-3">
+        <label className="block font-semibold mb-1">
+          Password<span className="text-red-500 ml-1">*</span>
+        </label>
+        <input
+          type="password"
+          name="password"
+          className="w-full px-3 py-2 border rounded"
+          placeholder="Password"
+          value={newStudentData.password || ""}
+          onChange={(e) =>
+            setNewStudentData({ ...newStudentData, password: e.target.value })
+          }
+        />
+        <p className="text-sm text-gray-500 mt-1">
+          Leave blank to keep current password
+        </p>
+      </div>
+    ),
+    classIds: (
+      <div className="mb-3">
+        <label className="block font-semibold mb-1">
+          Select Classes
+        </label>
+        <div className="border rounded p-2 max-h-40 overflow-y-auto mb-2">
+          {classes.map((cls) => (
+            <label key={cls.id} className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                value={cls.id}
+                checked={newStudentData.classIds.includes(cls.id)}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  setNewStudentData((prev) => ({
+                    ...prev,
+                    classIds: e.target.checked
+                      ? [...prev.classIds, val]
+                      : prev.classIds.filter((id) => id !== val),
+                  }));
+                }}
+              />
+              {cls.className}
+            </label>
+          ))}
+        </div>
+        <button
+          className="text-blue-500 hover:underline text-sm"
+          onClick={() => {
+           
+            setShowClassModal(true);
+          }}
+        >
+          + Add New Class
+        </button>
+      </div>
+    ),
+    teacherIds: (
+      <div className="mb-3">
+        <label className="block font-semibold mb-1">
+          Select Teachers<span className="text-red-500 ml-1">*</span>
+        </label>
+        <div className="border rounded p-2 max-h-40 overflow-y-auto mb-2">
+          {teachers.map((t) => (
+            <label key={t.id} className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                value={t.id}
+                checked={newStudentData.teacherIds?.includes(t.id)}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  setNewStudentData((prev) => ({
+                    ...prev,
+                    teacherIds: e.target.checked
+                      ? [...(prev.teacherIds || []), val]
+                      : prev.teacherIds.filter((id) => id !== val),
+                  }));
+                }}
+              />
+              <span>{t.name}</span>
+            </label>
+          ))}
+        </div>
+        <button
+          className="text-blue-500 hover:underline text-sm"
+          onClick={() => {
+           
+            setShowTeacherModal(true);
+          }}
+        >
+          + Add New Teacher
+        </button>
+      </div>
+    ),
+  }
+)}
+
+
+{showDirectorModal &&
+  renderModal(
+    "Add School Admin",
+    newDirectorData,
+    setNewDirectorData,
+    () => handleAddDirector(newDirectorData),
+    () => setShowDirectorModal(false),
+    {
+    
+      firstName: (
+        <div className="mb-3">
+          <label className="block font-semibold mb-1">
+            First Name<span className="text-red-500 ml-1">*</span>
+          </label>
+          <input
+            name="firstName"
+            className="w-full px-3 py-2 border rounded"
+            placeholder="First Name"
+            value={newDirectorData.firstName}
+            onChange={(e) =>
+              setNewDirectorData({ ...newDirectorData, firstName: e.target.value })
+            }
+          />
+        </div>
+      ),
+      lastName: (
+        <div className="mb-3">
+          <label className="block font-semibold mb-1">
+            Last Name<span className="text-red-500 ml-1">*</span>
+          </label>
+          <input
+            name="lastName"
+            className="w-full px-3 py-2 border rounded"
+            placeholder="Last Name"
+            value={newDirectorData.lastName}
+            onChange={(e) =>
+              setNewDirectorData({ ...newDirectorData, lastName: e.target.value })
+            }
+          />
+        </div>
+      ),
+      schoolName: (
+        <div className="mb-3">
+          <label className="block font-semibold mb-1">
+            School Name<span className="text-red-500 ml-1">*</span>
+          </label>
+          <input
+            name="schoolName"
+            className="w-full px-3 py-2 border rounded"
+            placeholder="School Name"
+            value={newDirectorData.schoolName}
+            onChange={(e) =>
+              setNewDirectorData({ ...newDirectorData, schoolName: e.target.value })
+            }
+          />
+        </div>
+      ),
+      email: (
+        <div className="mb-3">
+          <label className="block font-semibold mb-1">
+            Email<span className="text-red-500 ml-1">*</span>
+          </label>
+          <input
+            name="email"
+            className="w-full px-3 py-2 border rounded"
+            placeholder="Email"
+            value={newDirectorData.email}
+            onChange={(e) =>
+              setNewDirectorData({ ...newDirectorData, email: e.target.value })
+            }
+          />
+        </div>
+      ),
+      password: (
+        <div className="mb-3">
+          <label className="block font-semibold mb-1">
+            Password<span className="text-red-500 ml-1">*</span>
+          </label>
+          <input
+            type="password"
+            name="password"
+            className="w-full px-3 py-2 border rounded"
+            placeholder="Password"
+            value={newDirectorData.password}
+            onChange={(e) =>
+              setNewDirectorData({ ...newDirectorData, password: e.target.value })
+            }
+          />
+          <p className="text-sm text-gray-500 mt-1">
+            Leave blank to keep current password
+          </p>
+        </div>
+      ),
+      teacherIds: (
+        <div className="mb-3">
+          <label className="block font-semibold mb-1">Assign Teachers</label>
+          <div className="border rounded p-2 max-h-40 overflow-y-auto mb-2">
+            {teachers.map((t) => (
+              <label key={t.id} className="flex items-center gap-2 mb-1">
+                <input
+                  type="checkbox"
+                  value={t.id}
+                  checked={newDirectorData.teacherIds.includes(t.id)}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value);
+                    setNewDirectorData((prev) => ({
+                      ...prev,
+                      teacherIds: e.target.checked
+                        ? [...prev.teacherIds, val]
+                        : prev.teacherIds.filter((id) => id !== val),
+                    }));
+                  }}
+                />
+                {t.name}
+              </label>
+            ))}
+          </div>
+          <button
+            className="text-blue-500 hover:underline text-sm"
+            onClick={() => setShowTeacherModal(true)} // ⬅️ открываем Teacher поверх
+          >
+            + Add New Teacher
+          </button>
+        </div>
+      ),
+    }
+  )}
+
+
+
+
+
 
 
       {menuData && (
@@ -599,12 +1638,13 @@ export default function SuperAdminDashboard() {
   );
 }
 
-function DataTable({ title, data, columns, onMenuToggle }) {
+function DataTable({ title, data, columns, onMenuToggle, currentPage = 1, totalItems = 0, onPageChange, ITEMS_PER_PAGE = 10 }) {
   return (
-    <div className="w-full bg-white bg-opacity-10 rounded-xl p-6 shadow-lg border border-gray-700 backdrop-blur-md mb-6">
+    <div className="w-full max-w-5xl mx-auto bg-white bg-opacity-10 rounded-xl p-6 shadow-lg border border-gray-700 backdrop-blur-md mb-6">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-semibold text-white">{title}:</h2>
+        <h2 className="text-xl font-semibold">{title}</h2>
       </div>
+
       {data && data.length > 0 ? (
         <div className="overflow-x-auto">
           <table className="w-full border-collapse border border-gray-700 rounded-lg">
@@ -634,7 +1674,20 @@ function DataTable({ title, data, columns, onMenuToggle }) {
                   })}
                   <td className="px-4 py-3 text-right">
                     <button
-                      onClick={(e) => onMenuToggle(item.id, title.toLowerCase(), e)}
+                      onClick={(e) => {
+                        const button = e.currentTarget;
+                        const rect = button.getBoundingClientRect();
+                        const scrollable = button.closest(".overflow-x-auto") || document.documentElement;
+                        const scrollX = scrollable.scrollLeft || 0;
+                        const scrollY = scrollable.scrollTop || 0;
+                        onMenuToggle({
+                          id: item.id,
+                          type: title.toLowerCase(),
+                          x: rect.left + scrollX,
+                          y: rect.top + scrollY + 35,
+                          classUrl: item.classUrl,
+                        });
+                      }}
                       className="p-2 rounded-full bg-gray-700 hover:bg-gray-600 focus:outline-none"
                     >
                       <FiMoreVertical className="text-white text-lg" />
@@ -647,6 +1700,22 @@ function DataTable({ title, data, columns, onMenuToggle }) {
         </div>
       ) : (
         <p className="text-white text-center">No {title.toLowerCase()} found</p>
+      )}
+
+      {onPageChange && (
+        <div className="mt-4 flex justify-center gap-2">
+          {Array.from({ length: Math.ceil(totalItems / ITEMS_PER_PAGE) }, (_, i) => (
+            <button
+              key={i}
+              onClick={() => onPageChange(i + 1)}
+              className={`px-3 py-1 rounded ${
+                currentPage === i + 1 ? "bg-blue-600 text-white" : "bg-gray-700 text-gray-300"
+              }`}
+            >
+              {i + 1}
+            </button>
+          ))}
+        </div>
       )}
     </div>
   );
@@ -674,9 +1743,9 @@ function ContextMenu({ data, onDelete, onEdit, onView, setMenuData }) {
   };
   return ReactDOM.createPortal(
     <div
-      ref={menuRef}
-      className="portal-menu fixed bg-gray-900 text-white shadow-lg rounded-md z-50 w-44"
-      style={{ top: data.y + 10, left: data.x - 10 }}
+    ref={menuRef}
+    className="portal-menu fixed bg-gray-900 text-white shadow-lg rounded-md z-50 w-44"
+    style={{ top: `${data.y}px`, left: `${data.x}px` }}
     >
       {data.type === "classes" && data.classUrl && (
         <button
@@ -720,73 +1789,143 @@ function ContextMenu({ data, onDelete, onEdit, onView, setMenuData }) {
 }
 
 
-function TeacherModal({ visible, onClose, onSave, initialData, admins, isEdit = false }) {
+function TeacherModal({ visible, onClose, onSave, initialData, admins, isEdit = false, classes, students  }) {
   const [form, setForm] = useState({
-    firstName: initialData.name ? initialData.name.split(" ")[0] : "",
-    lastName: initialData.name ? initialData.name.split(" ").slice(1).join(" ") : "",
-    teacherEmail: initialData.email || "",
-    teacherPassword: "",
+    
+    firstName: initialData.firstName || "",
+    lastName: initialData.lastName || "",
+    
+    email: initialData.email || "",
+    password: isEdit ? "" : "",
     adminId: initialData.adminId || "",
+    classIds: initialData.classIds || [],
+    studentIds: initialData.studentIds || [],
   });
+  const [showClassForm, setShowClassForm] = useState(false);
+  const [showStudentForm, setShowStudentForm] = useState(false);
+  const [showAdminForm, setShowAdminForm] = useState(false);
 
-  
   useEffect(() => {
     setForm({
-      firstName: initialData.name ? initialData.name.split(" ")[0] : "",
-      lastName: initialData.name ? initialData.name.split(" ").slice(1).join(" ") : "",
-      teacherEmail: initialData.email || "",
-      teacherPassword: "",
+      firstName: initialData.firstName || "",
+      lastName: initialData.lastName || "",
+      
+      email: initialData.email || "",
+      password: "",
       adminId: initialData.adminId || "",
+      classIds: initialData.classIds || [],
+      studentIds: initialData.studentIds || [],
     });
-    if (isEdit && initialData.id) {
-      authorizedFetch(`${SERVER_URL}/api/teacher/${initialData.id}/admin`)
-        .then((res) => res.json())
-        .then((directorData) => {
-          if (directorData && directorData.id) {
-            setForm((prev) => ({ ...prev, adminId: directorData.id }));
-          }
-        })
-        .catch((err) => console.error("Error fetching teacher director:", err));
+  }, [initialData]);
+  
+  const addNewButtons = (
+    <div className="flex flex-col gap-2 mb-3">
+      <button
+        className="w-full bg-blue-500 text-white px-3 py-2 rounded"
+        onClick={() => setShowClassForm(true)}
+      >
+        + Add New Class
+      </button>
+      <button
+        className="w-full bg-blue-500 text-white px-3 py-2 rounded"
+        onClick={() => setShowStudentForm(true)}
+      >
+        + Add New Student
+      </button>
+      <button
+        className="w-full bg-blue-500 text-white px-3 py-2 rounded"
+        onClick={() => setShowAdminForm(true)}
+      >
+        + Add New Admin
+      </button>
+    </div>
+  );
+  
+  const handleSubmit = () => {
+    if (!form.firstName || !form.lastName || !form.email || (!isEdit && !form.password) || !form.adminId) {
+      toast.error("All fields are required.");
+      return;
     }
-  }, [initialData, isEdit]);
+    onSave(form);
+    onClose();
+  };
 
-  if (!visible) return null;
-  return ReactDOM.createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black bg-opacity-50" onClick={onClose} />
-      <div className="relative bg-gray-800 text-white rounded-lg p-6 w-full max-w-sm">
-        <h2 className="text-xl font-semibold mb-4">{isEdit ? "Edit Teacher" : "Add Teacher"}</h2>
-        <div className="flex flex-col gap-3">
+  return renderModal(
+    isEdit ? "Edit Teacher" : "Add Teacher",
+    form,
+    setForm,
+    handleSubmit,
+    onClose,
+    {
+      firstName: (
+        <div className="mb-3">
+          <label className="block font-semibold mb-1">
+            First Name<span className="text-red-500 ml-1">*</span>
+          </label>
           <input
-            type="text"
+            name="firstName"
+            className="w-full px-3 py-2 border rounded"
             placeholder="First Name"
-            className="px-4 py-2 rounded bg-gray-700"
             value={form.firstName}
             onChange={(e) => setForm({ ...form, firstName: e.target.value })}
           />
+        </div>
+      ),
+      lastName: (
+        <div className="mb-3">
+          <label className="block font-semibold mb-1">
+            Last Name<span className="text-red-500 ml-1">*</span>
+          </label>
           <input
-            type="text"
+            name="lastName"
+            className="w-full px-3 py-2 border rounded"
             placeholder="Last Name"
-            className="px-4 py-2 rounded bg-gray-700"
             value={form.lastName}
             onChange={(e) => setForm({ ...form, lastName: e.target.value })}
           />
+        </div>
+      ),
+      email: (
+        <div className="mb-3">
+          <label className="block font-semibold mb-1">
+            Email<span className="text-red-500 ml-1">*</span>
+          </label>
           <input
             type="email"
+            name="email"
+            className="w-full px-3 py-2 border rounded"
             placeholder="Email"
-            className="px-4 py-2 rounded bg-gray-700"
-            value={form.teacherEmail}
-            onChange={(e) => setForm({ ...form, teacherEmail: e.target.value })}
+            value={form.email}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
           />
+        </div>
+      ),
+      password: (
+        <div className="mb-3">
+          <label className="block font-semibold mb-1">
+            Password{!isEdit && <span className="text-red-500 ml-1">*</span>}
+          </label>
           <input
             type="password"
-            placeholder={isEdit ? "Leave blank to keep current" : "Password"}
-            className="px-4 py-2 rounded bg-gray-700"
-            value={form.teacherPassword}
-            onChange={(e) => setForm({ ...form, teacherPassword: e.target.value })}
+            name="password"
+            className="w-full px-3 py-2 border rounded"
+            placeholder="Password"
+            value={form.password}
+            onChange={(e) => setForm({ ...form, password: e.target.value })}
           />
+          <p className="text-sm text-gray-500 mt-1">
+          Leave blank to keep current password
+        </p>
+        </div>
+      ),
+      adminId: (
+        <div className="mb-3">
+          <label className="block font-semibold mb-1">
+            Select Admin<span className="text-red-500 ml-1">*</span>
+          </label>
           <select
-            className="px-4 py-2 rounded bg-gray-700"
+            name="adminId"
+            className="w-full px-3 py-2 border rounded"
             value={form.adminId}
             onChange={(e) => setForm({ ...form, adminId: e.target.value })}
           >
@@ -798,50 +1937,154 @@ function TeacherModal({ visible, onClose, onSave, initialData, admins, isEdit = 
             ))}
           </select>
         </div>
-        <div className="flex justify-end mt-4 gap-2">
-          <button onClick={onClose} className="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded">
-            Cancel
-          </button>
-          <button onClick={() => onSave(form)} className="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded">
-            Save
-          </button>
+      ),
+      classIds: (
+        <div className="mb-3">
+          <label className="block font-semibold mb-1">Assign Classes</label>
+          <div className="border rounded p-2 max-h-40 overflow-y-auto bg-white/20">
+            {classes.map((cls) => (
+              <label key={cls.id} className="flex items-center gap-2 mb-1">
+                <input
+                  type="checkbox"
+                  checked={form.classIds?.includes(cls.id)}
+                  onChange={() =>
+                    setForm((prev) => ({
+                      ...prev,
+                      classIds: prev.classIds?.includes(cls.id)
+                        ? prev.classIds.filter((id) => id !== cls.id)
+                        : [...(prev.classIds || []), cls.id],
+                    }))
+                  }
+                />
+                {cls.className}
+              </label>
+            ))}
+          </div>
         </div>
-      </div>
-    </div>,
-    document.body
+      ),
+      studentIds: (
+        <div className="mb-3">
+          <label className="block font-semibold mb-1">Assign Students</label>
+          <div className="border rounded p-2 max-h-40 overflow-y-auto bg-white/20">
+            {students.map((s) => (
+              <label key={s.id} className="flex items-center gap-2 mb-1">
+                <input
+                  type="checkbox"
+                  checked={form.studentIds?.includes(s.id)}
+                  onChange={() =>
+                    setForm((prev) => ({
+                      ...prev,
+                      studentIds: prev.studentIds?.includes(s.id)
+                        ? prev.studentIds.filter((id) => id !== s.id)
+                        : [...(prev.studentIds || []), s.id],
+                    }))
+                  }
+                />
+                {s.name}
+              </label>
+            ))}
+          </div>
+        </div>
+      ),
+      addNewButtons: addNewButtons
+      
+    }
+    
   );
+  {showClassForm && (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+      <div className="bg-white text-black p-6 rounded w-[450px] max-h-[90vh] overflow-y-auto">
+        <h2 className="text-lg font-bold mb-4">Add Class</h2>
+        {/* Здесь можешь вставить поля класса */}
+        <button onClick={() => setShowClassForm(false)} className="mt-4 bg-gray-500 px-4 py-2 rounded text-white">
+          Close
+        </button>
+      </div>
+    </div>
+  )}
+  
+  {showStudentForm && (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+      <div className="bg-white text-black p-6 rounded w-[450px] max-h-[90vh] overflow-y-auto">
+        <h2 className="text-lg font-bold mb-4">Add Student</h2>
+        {/* Здесь можешь вставить поля студента */}
+        <button onClick={() => setShowStudentForm(false)} className="mt-4 bg-gray-500 px-4 py-2 rounded text-white">
+          Close
+        </button>
+      </div>
+    </div>
+  )}
+  
+  {showAdminForm && (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+      <div className="bg-white text-black p-6 rounded w-[450px] max-h-[90vh] overflow-y-auto">
+        <h2 className="text-lg font-bold mb-4">Add Admin</h2>
+        {/* Здесь можешь вставить поля School Admin */}
+        <button onClick={() => setShowAdminForm(false)} className="mt-4 bg-gray-500 px-4 py-2 rounded text-white">
+          Close
+        </button>
+      </div>
+    </div>
+  )}
 }
 
 
-function ClassModal({ visible, onClose, onSave, initialData, teachers, isEdit = false }) {
+
+function ClassModal({ visible, onClose, onSave, initialData, teachers, students = [], admins = [], isEdit = false }) {
   const [form, setForm] = useState({
     className: initialData.className || "",
     teacherId: initialData.teacherId || "",
+    studentIds: initialData.studentIds || [],
   });
 
   useEffect(() => {
     setForm({
       className: initialData.className || "",
       teacherId: initialData.teacherId || "",
+      studentIds: initialData.studentIds || [],
     });
   }, [initialData]);
 
+  const handleSubmit = () => {
+    if (!form.className || !form.teacherId) {
+      toast.error("Please fill in class name and select teacher.");
+      return;
+    }
+    onSave(form);
+    onClose();
+  };
+
   if (!visible) return null;
-  return ReactDOM.createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black bg-opacity-50" onClick={onClose} />
-      <div className="relative bg-gray-800 text-white rounded-lg p-6 w-full max-w-sm">
-        <h2 className="text-xl font-semibold mb-4">{isEdit ? "Edit Class" : "Add Class"}</h2>
-        <div className="flex flex-col gap-3">
+
+  return renderModal(
+    isEdit ? "Edit Class" : "Add Class",
+    form,
+    setForm,
+    handleSubmit,
+    onClose,
+    {
+      className: (
+        <div className="mb-3">
+          <label className="block font-semibold mb-1">
+            Class Name<span className="text-red-500 ml-1">*</span>
+          </label>
           <input
-            type="text"
+            name="className"
+            className="w-full px-3 py-2 border rounded"
             placeholder="Class Name"
-            className="px-4 py-2 rounded bg-gray-700"
             value={form.className}
             onChange={(e) => setForm({ ...form, className: e.target.value })}
           />
+        </div>
+      ),
+      teacherId: (
+        <div className="mb-3">
+          <label className="block font-semibold mb-1">
+            Select Teacher<span className="text-red-500 ml-1">*</span>
+          </label>
           <select
-            className="px-4 py-2 rounded bg-gray-700"
+            name="teacherId"
+            className="w-full px-3 py-2 border rounded"
             value={form.teacherId}
             onChange={(e) => setForm({ ...form, teacherId: e.target.value })}
           >
@@ -853,19 +2096,57 @@ function ClassModal({ visible, onClose, onSave, initialData, teachers, isEdit = 
             ))}
           </select>
         </div>
-        <div className="flex justify-end mt-4 gap-2">
-          <button onClick={onClose} className="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded">
-            Cancel
-          </button>
-          <button onClick={() => onSave(form)} className="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded">
-            Save
-          </button>
+      ),
+      adminId: (
+        <div className="mb-3">
+          <label className="block font-semibold mb-1">
+            Select Admin<span className="text-red-500 ml-1">*</span>
+          </label>
+          <select
+            name="adminId"
+            className="w-full px-3 py-2 border rounded"
+            value={form.adminId}
+            onChange={(e) => setForm({ ...form, adminId: e.target.value })}
+          >
+            <option value="">Select Admin</option>
+            {admins.map((admin) => (
+              <option key={admin.id} value={admin.id}>
+                {admin.name}
+              </option>
+            ))}
+          </select>
         </div>
-      </div>
-    </div>,
-    document.body
+      ),
+      studentIds: (
+        <div className="mb-3">
+          <label className="block font-semibold mb-1">Select Students</label>
+          <div className="border rounded p-2 max-h-40 overflow-y-auto">
+            {students.map((s) => (
+              <label key={s.id} className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  value={s.id}
+                  checked={form.studentIds.includes(s.id)}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value);
+                    setForm((prev) => ({
+                      ...prev,
+                      studentIds: e.target.checked
+                        ? [...prev.studentIds, val]
+                        : prev.studentIds.filter((id) => id !== val),
+                    }));
+                  }}
+                />
+                {s.name}
+              </label>
+            ))}
+          </div>
+        </div>
+      )
+    }
   );
 }
+
 
 
 function StudentModal({ visible, onClose, onSave, initialData, classes, isEdit = false }) {
@@ -873,7 +2154,8 @@ function StudentModal({ visible, onClose, onSave, initialData, classes, isEdit =
     firstName: initialData.name ? initialData.name.split(" ")[0] : "",
     lastName: initialData.name ? initialData.name.split(" ").slice(1).join(" ") : "",
     studentEmail: initialData.email || "",
-    classId: initialData.classId || "",
+    classIds: initialData.classIds || [],
+    adminId: initialData.adminId || "",
   });
 
   useEffect(() => {
@@ -881,7 +2163,8 @@ function StudentModal({ visible, onClose, onSave, initialData, classes, isEdit =
       firstName: initialData.name ? initialData.name.split(" ")[0] : "",
       lastName: initialData.name ? initialData.name.split(" ").slice(1).join(" ") : "",
       studentEmail: initialData.email || "",
-      classId: initialData.classId || "",
+      classIds: initialData.classIds || [],
+  adminId: initialData.adminId || "",
     });
   }, [initialData]);
 
@@ -943,43 +2226,63 @@ function StudentModal({ visible, onClose, onSave, initialData, classes, isEdit =
 
 function DirectorModal({ visible, onClose, onSave, initialData, isEdit = false }) {
   const [form, setForm] = useState({
-    name: initialData.name || "",
+    firstName: initialData.firstName || "",
+    lastName: initialData.lastName || "",
+    schoolName: initialData.schoolName || "",
     email: initialData.email || "",
     password: "",
   });
-
+  
   useEffect(() => {
     setForm({
-      name: initialData.name || "",
+      firstName: initialData.firstName || "",
+      lastName: initialData.lastName || "",
+      schoolName: initialData.schoolName || "",
       email: initialData.email || "",
       password: "",
     });
   }, [initialData]);
+  
 
   if (!visible) return null;
   return ReactDOM.createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black bg-opacity-50" onClick={onClose} />
       <div className="relative bg-gray-800 text-white rounded-lg p-6 w-full max-w-sm">
-        <h2 className="text-xl font-semibold mb-4">{isEdit ? "Edit Director" : "Add Director"}</h2>
+        <h2 className="text-xl font-semibold mb-4">{isEdit ? "Edit School Admin" : "Add School Admin"}</h2>
         <div className="flex flex-col gap-3">
           <input
-            type="text"
-            placeholder="Director Name"
-            className="px-4 py-2 rounded bg-gray-700"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-          />
+  type="text"
+  placeholder="First Name"
+  className="..."
+  value={form.firstName}
+  onChange={(e) => setForm({ ...form, firstName: e.target.value })}
+/>
+<input
+  type="text"
+  placeholder="Last Name"
+  className="..."
+  value={form.lastName}
+  onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+/>
+<input
+  type="text"
+  placeholder="School Name"
+  className="..."
+  value={form.schoolName}
+  onChange={(e) => setForm({ ...form, schoolName: e.target.value })}
+/>
+
           <input
             type="email"
-            placeholder="Director Email"
+            placeholder="School Admin Email"
             className="px-4 py-2 rounded bg-gray-700"
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
           />
           <input
             type="password"
-            placeholder={isEdit ? "Leave blank to keep current" : "Password"}
+            placeholder="Password"
             className="px-4 py-2 rounded bg-gray-700"
             value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}

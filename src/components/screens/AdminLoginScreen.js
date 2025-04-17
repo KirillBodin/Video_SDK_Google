@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
@@ -16,6 +16,10 @@ export default function AdminLoginScreen() {
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
+  useEffect(() => {
+    document.title = "TAMAMAT Login Admin Page";
+  }, []);
+  
   const handleLogin = async () => {
     try {
       const res = await fetch(`${SERVER_URL}/api/auth/login`, {

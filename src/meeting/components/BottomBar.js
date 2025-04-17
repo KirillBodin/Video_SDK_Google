@@ -675,17 +675,21 @@ export function BottomBar({ bottomBarHeight, setIsMeetingLeft, isHost }) {
     const handleConfirmLeave = async () => {
       setShowConfirm(false);
       const currentRole = sessionStorage.getItem("participantRole");
-      if (currentRole === "teacher") {
     
+      if (currentRole === "teacher") {
         controlPublish({ type: "control", command: "endMeeting" });
+      } else {
+        sessionStorage.setItem("meetingWasEnded", "true");
       }
+    
       try {
         await leave();
-        navigate("/");
+        navigate(window.location.pathname);
       } catch (error) {
         console.error("❌ Error while leaving:", error);
       }
     };
+    
     
   
     const handleCancelLeave = () => {

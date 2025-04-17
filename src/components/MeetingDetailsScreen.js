@@ -50,63 +50,87 @@ export function MeetingDetailsScreen({
 
 
   useEffect(() => {
+    console.log("🟡 [useEffect] INIT MeetingDetailsScreen");
+  
+    const wasEnded = sessionStorage.getItem("meetingWasEnded");
+    console.log("🟨 meetingWasEnded =", wasEnded);
+  
+    if (wasEnded) {
+      sessionStorage.removeItem("meetingWasEnded");
+      const prevToken = sessionStorage.getItem("waitingToken");
+      const prevRoomName = sessionStorage.getItem("waitingRoomName");
+  
+      console.log("🟨 waitingToken =", prevToken);
+      console.log("🟨 waitingRoomName =", prevRoomName);
+  
+      if (prevToken && prevRoomName) {
+        setLocalToken(prevToken);
+        setRoomName(prevRoomName);
+        setWaitingRoomVisible(true);
+        console.log("✅ Switching to WaitingRoomScreen...");
+      } else {
+        toast.error("Missing meeting data. Please rejoin manually.");
+      }
+    }
+  
     const urlParams = new URLSearchParams(window.location.search);
     const tokenFromUrl = urlParams.get("token");
+    console.log("🟡 tokenFromUrl =", tokenFromUrl);
   
     if (tokenFromUrl) {
       sessionStorage.setItem("sessionToken", tokenFromUrl);
-      
-     
       const redirectAfterLogin = sessionStorage.getItem("redirectAfterLogin");
+      console.log("🟡 redirectAfterLogin =", redirectAfterLogin);
       if (redirectAfterLogin) {
         navigate(redirectAfterLogin);
         sessionStorage.removeItem("redirectAfterLogin");
       } else {
-        
         const currentPath = window.location.pathname;
         window.history.replaceState({}, document.title, currentPath);
       }
     }
-    
-    
+  
     const token = sessionStorage.getItem("sessionToken");
+    console.log("🟡 sessionToken =", token);
+  
     if (token) {
       try {
         const decoded = jwtDecode(token);
-        if (decoded.email) {
-          setUserEmail(decoded.email);
-        }
-        if (decoded.name) {
-          setUserName(decoded.name);
-        }
+        console.log("🟢 Decoded token:", decoded);
+  
+        if (decoded.email) setUserEmail(decoded.email);
+        if (decoded.name) setUserName(decoded.name);
       } catch (error) {
-        console.error("Invalid token:", error);
+        console.error("❌ Invalid token:", error);
       }
     }
-    
-    
+  
     const googleLoginAction = sessionStorage.getItem("googleLoginAction");
+    console.log("🟡 googleLoginAction =", googleLoginAction);
+  
     if (googleLoginAction === "create") {
       setIsCreateMeetingClicked(true);
     } else if (googleLoginAction === "join") {
       setIsJoinMeetingClicked(true);
     }
+  
     sessionStorage.removeItem("googleLoginAction");
   
     const email = sessionStorage.getItem("teacherEmail");
     const storedTeacherName = sessionStorage.getItem("teacherName");
-    
-    if (email) {
-      setUserEmail(email);
-    }
-    if (storedTeacherName) {
-      setUserName(storedTeacherName);
-    }
-    
+  
+    console.log("📥 Stored email =", email);
+    console.log("📥 Stored name =", storedTeacherName);
+  
+    if (email) setUserEmail(email);
+    if (storedTeacherName) setUserName(storedTeacherName);
+  
     if (className) {
+      console.log("📥 className from URL =", className);
       setRoomName(className);
     }
   }, [className, navigate]);
+  
   
   
 
@@ -137,23 +161,30 @@ export function MeetingDetailsScreen({
   
 
  
-if (waitingRoomVisible) {
-  const role = "student";
-  return (
-    <div className="fixed inset-0 z-50">
-      <WaitingRoomScreen
-        meetingId={meetingId}
-        token={localToken}
-        userName={userName}
-        role="student"
-        onJoined={() => {
-          onClickStartMeeting(localToken, meetingId);
-        }}
-      />
-    </div>
-  );
+  if (waitingRoomVisible) {
+    console.log("🚪 Rendering WaitingRoomScreen with:", {
+      roomName,
+      token: localToken,
+      userName
+    });
   
-}
+    const role = "student";
+    return (
+      <div className="fixed inset-0 z-50">
+<WaitingRoomScreen
+  roomName={roomName}
+  token={localToken}
+  userName={userName}
+  role="student"
+  onJoined={(newMeetingId) => {
+    onClickStartMeeting(localToken, newMeetingId, userName); 
+  }}
+/>
+
+      </div>
+    );
+  }
+  
 
 return (
   <div className="flex flex-col justify-center items-center w-full p-6">
@@ -331,6 +362,8 @@ return (
                 setToken(token);
                 setLocalToken(token);
                 setMeetingIdLocal(meetingId);
+                sessionStorage.setItem("waitingToken", token);
+                sessionStorage.setItem("waitingRoomName", roomName);
                 toast.success("Joining class...");
                 setParticipantName(userName);
                 setWaitingRoomVisible(true);

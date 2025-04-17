@@ -13,11 +13,14 @@ function AddClassModal({
   onSaveStudent,
   fetchStudents,
   students,
+  setReturnToStudentModal,
+  setShowAddClassModal,
 }) {
   const [showAddStudentForm, setShowAddStudentForm] = useState(false);
   const [className, setClassName] = useState("");
   const [selectedStudentId, setSelectedStudentId] = useState("");
   const [selectedStudentIds, setSelectedStudentIds] = useState([]);
+  const [showStudentModal, setShowStudentModal] = useState(false);
 
 
   const [firstName, setFirstName] = useState("");
@@ -60,120 +63,88 @@ useEffect(() => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="relative bg-white text-black w-[700px] min-h-[400px] rounded-md p-6 flex">
-       
-        <div className="w-1/2 pr-4 flex flex-col">
-          <h2 className="text-xl font-bold mb-4">Enter Class Name</h2>
-          <input
-            type="text"
-            value={className}
-            onChange={(e) => setClassName(e.target.value)}
-            placeholder="Enter Class Name"
-            className="mb-4 px-3 py-2 border rounded"
-          />
-
-<label className="font-semibold mb-2">Select or Add Student</label>
-<div className="overflow-y-auto border rounded px-3 py-2 mb-4 h-32 space-y-1">
-  {students.map((stud) => (
-    <label key={stud.id} className="flex items-center space-x-2">
+    <div className="bg-white text-black rounded-md p-6 w-[500px] max-h-[90vh] overflow-y-auto">
+      <h2 className="text-xl font-bold mb-4">Add Class</h2>
+  
+      <label className="block font-semibold mb-1">Class Name</label>
       <input
-        type="checkbox"
-        value={stud.id}
-        checked={selectedStudentIds.includes(String(stud.id))}
-        onChange={(e) => {
-          const value = e.target.value;
-          setSelectedStudentIds((prev) =>
-            e.target.checked
-              ? [...prev, value]
-              : prev.filter((id) => id !== value)
-          );
-        }}
+        className="w-full mb-4 px-3 py-2 border rounded"
+        placeholder="Enter Class Name"
+        value={className}
+        onChange={(e) => setClassName(e.target.value)}
       />
-      <span>{stud.name}</span>
-    </label>
-  ))}
-</div>
-
-
-
-          <button
-            onClick={() => setShowAddStudentForm(true)}
-            className="text-blue-600 hover:text-blue-800 mb-4 underline"
-          >
-            Add New Student
-          </button>
-
-         
-          <div className="mt-auto flex gap-2">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 rounded border border-gray-400 text-gray-600 hover:bg-gray-100"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSaveClass}
-              className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700"
-            >
-              Save
-            </button>
-          </div>
-        </div>
-
-        
-        {showAddStudentForm && (
-          <div className="w-1/2 border-l pl-4 flex flex-col">
-            <h2 className="text-xl font-bold mb-4">Add New Student</h2>
-            <label className="mb-1 font-semibold">First Name</label>
+  
+      <label className="block font-semibold mb-1">Assign Students</label>
+      <div className="border rounded p-2 max-h-40 overflow-y-auto bg-white/20 mb-4">
+        {students.map((s) => (
+          <label key={s.id} className="flex items-center gap-2 mb-1">
             <input
-              type="text"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              className="mb-4 px-3 py-2 border rounded"
-              placeholder="First Name"
+              type="checkbox"
+              value={s.id}
+              checked={selectedStudentIds.includes(String(s.id))}
+              onChange={(e) => {
+                const value = e.target.value;
+                setSelectedStudentIds((prev) =>
+                  e.target.checked
+                    ? [...prev, value]
+                    : prev.filter((id) => id !== value)
+                );
+              }}
             />
-
-            <label className="mb-1 font-semibold">Last Name</label>
-            <input
-              type="text"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-              className="mb-4 px-3 py-2 border rounded"
-              placeholder="Last Name"
-            />
-
-            <label className="mb-1 font-semibold">Email Address</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mb-4 px-3 py-2 border rounded"
-              placeholder="Email Address"
-            />
-
-            <div className="mt-auto flex gap-2">
-              <button
-                onClick={closeAddStudentForm}
-                className="px-4 py-2 rounded border border-gray-400 text-gray-600 hover:bg-gray-100"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveNewStudent}
-                className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700"
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        )}
+            {s.name}
+          </label>
+        ))}
       </div>
+  
+      <button
+        onClick={() => setShowStudentModal(true)}
+        className="text-blue-600 hover:underline mb-4 text-sm"
+      >
+        + Add New Student
+      </button>
+  
+      <div className="flex justify-end gap-2">
+        <button
+          onClick={onClose}
+          className="px-4 py-2 rounded border border-gray-400 text-gray-600 hover:bg-gray-100"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleSaveClass}
+          className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+        >
+          Save
+        </button>
+      </div>
+  
+      {showStudentModal && (
+        <StudentModal
+          onClose={() => setShowStudentModal(false)}
+          onSave={onSaveStudent}
+          setReturnToStudentModal={setReturnToStudentModal}
+    setShowAddClassModal={setShowAddClassModal}
+        />
+      )}
     </div>
+  </div>
+  
   );
 }
 
 
-function EditClassModal({ onClose, lessonToEdit, onUpdateClass }) {
+function EditClassModal({
+  onClose,
+  lessonToEdit,
+  onUpdateClass,
+  students,
+  onSaveStudent,
+  setReturnToStudentModal,
+  setShowAddClassModal,
+}) {
+
+  const [showStudentModal, setShowStudentModal] = useState(false);
+
   const [className, setClassName] = useState(lessonToEdit.className);
   const [meetingId, setMeetingId] = useState(lessonToEdit.meetingId);
   const [selectedStudentIds, setSelectedStudentIds] = useState(
@@ -211,34 +182,48 @@ function EditClassModal({ onClose, lessonToEdit, onUpdateClass }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="relative bg-white text-black w-[600px] min-h-[400px] rounded-md p-6 flex flex-col">
-        <h2 className="text-xl font-bold mb-4">Edit Class</h2>
-
-        <label className="mb-1 font-semibold">Class Name</label>
+      <div className="bg-white text-black rounded-md p-6 w-[500px] max-h-[90vh] overflow-y-auto">
+  
+        <h2 className="text-xl font-bold mb-4">Add Class</h2>
+  
+        <label className="block font-semibold mb-1">Class Name</label>
         <input
-          type="text"
+          className="w-full mb-4 px-3 py-2 border rounded"
+          placeholder="Enter Class Name"
           value={className}
           onChange={(e) => setClassName(e.target.value)}
-          className="mb-3 px-3 py-2 border rounded"
-          placeholder="Class Name"
         />
-
-        <label className="mb-1 font-semibold">Students</label>
-        <div className="overflow-y-auto border rounded px-3 py-2 mb-4 h-32 space-y-1">
-          {allStudents.map((stud) => (
-            <label key={stud.id} className="flex items-center space-x-2">
+  
+        <label className="block font-semibold mb-1">Assign Students</label>
+        <div className="border rounded p-2 max-h-40 overflow-y-auto bg-white/20 mb-4">
+          {students.map((s) => (
+            <label key={s.id} className="flex items-center gap-2 mb-1">
               <input
                 type="checkbox"
-                value={stud.id}
-                checked={selectedStudentIds.includes(String(stud.id))}
-                onChange={() => handleCheckboxChange(String(stud.id))}
+                value={s.id}
+                checked={selectedStudentIds.includes(String(s.id))}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setSelectedStudentIds((prev) =>
+                    e.target.checked
+                      ? [...prev, value]
+                      : prev.filter((id) => id !== value)
+                  );
+                }}
               />
-              <span>{stud.name}</span>
+              {s.name}
             </label>
           ))}
         </div>
-
-        <div className="mt-auto flex gap-2 justify-end">
+  
+        <button
+          onClick={() => setShowStudentModal(true)}
+          className="text-blue-600 hover:underline mb-4 text-sm"
+        >
+          + Add New Student
+        </button>
+  
+        <div className="flex justify-end gap-2">
           <button
             onClick={onClose}
             className="px-4 py-2 rounded border border-gray-400 text-gray-600 hover:bg-gray-100"
@@ -246,21 +231,32 @@ function EditClassModal({ onClose, lessonToEdit, onUpdateClass }) {
             Cancel
           </button>
           <button
-            onClick={handleSubmit}
-            className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700"
-          >
-            Save
-          </button>
+  onClick={handleSubmit}
+  className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+>
+  Save
+</button>
+
         </div>
+  
+        {showStudentModal && (
+          <StudentModal
+            onClose={() => setShowStudentModal(false)}
+            onSave={onSaveStudent}
+            setReturnToStudentModal={setReturnToStudentModal}
+    setShowAddClassModal={setShowAddClassModal}
+          />
+        )}
       </div>
     </div>
   );
+  
 }
 
 
 
 
-function StudentModal({ onClose, onSave, initialData }) {
+function StudentModal({ onClose, onSave, initialData, setReturnToStudentModal, setShowAddClassModal }) {
   const isEdit = !!initialData;
   const [firstName, setFirstName] = useState(initialData?.firstName || "");
   const [lastName, setLastName] = useState(initialData?.lastName || "");
@@ -332,9 +328,9 @@ function StudentModal({ onClose, onSave, initialData }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white text-black rounded-md p-6 w-[400px] max-h-[90vh] overflow-y-auto">
+      <div className="bg-white text-black rounded-md p-6 w-[500px] max-h-[90vh] overflow-y-auto shadow-lg">
         <h2 className="text-xl font-bold mb-4">{isEdit ? "Edit" : "Add"} Student</h2>
-
+  
         <label className="font-semibold">First Name</label>
         <input
           type="text"
@@ -342,7 +338,7 @@ function StudentModal({ onClose, onSave, initialData }) {
           value={firstName}
           onChange={(e) => setFirstName(e.target.value)}
         />
-
+  
         <label className="font-semibold">Last Name</label>
         <input
           type="text"
@@ -350,7 +346,7 @@ function StudentModal({ onClose, onSave, initialData }) {
           value={lastName}
           onChange={(e) => setLastName(e.target.value)}
         />
-
+  
         <label className="font-semibold">Email</label>
         <input
           type="email"
@@ -358,9 +354,9 @@ function StudentModal({ onClose, onSave, initialData }) {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
-
+  
         <label className="font-semibold mb-1">Assign to Classes</label>
-        <div className="border rounded p-2 mb-4 max-h-40 overflow-y-auto bg-white/10">
+        <div className="border rounded p-2 mb-2 max-h-40 overflow-y-auto bg-white/10">
           {lessons.map((cls) => (
             <label key={cls.id} className="flex items-center gap-2 mb-1">
               <input
@@ -373,7 +369,20 @@ function StudentModal({ onClose, onSave, initialData }) {
             </label>
           ))}
         </div>
+  
+        {/* 👇 New button to open Add Class Modal (you can add logic to show modal above) */}
+        <button
+  onClick={() => {
+    onClose(); 
+    setReturnToStudentModal(true); 
+    setShowAddClassModal(true); 
+  }}
+  className="text-blue-600 hover:underline text-sm mb-4"
+>
+  + Add New Class
+</button>
 
+  
         <div className="flex justify-end gap-2">
           <button
             onClick={onClose}
@@ -383,7 +392,7 @@ function StudentModal({ onClose, onSave, initialData }) {
           </button>
           <button
             onClick={handleSubmit}
-            className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700"
+            className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
           >
             Save
           </button>
@@ -391,6 +400,7 @@ function StudentModal({ onClose, onSave, initialData }) {
       </div>
     </div>
   );
+  
 }
 
 
@@ -417,6 +427,7 @@ const classesPerPage = 10;
 const indexOfLastClass = classPage * classesPerPage;
 const indexOfFirstClass = indexOfLastClass - classesPerPage;
 const currentLessons = lessons.slice(indexOfFirstClass, indexOfLastClass);
+const [returnToStudentModal, setReturnToStudentModal] = useState(false);
 
   
   const [menuData, setMenuData] = useState(null);
@@ -429,6 +440,27 @@ const currentLessons = lessons.slice(indexOfFirstClass, indexOfLastClass);
   const [showAddClassModal, setShowAddClassModal] = useState(false);
   const [showEditClassModal, setShowEditClassModal] = useState(false);
   const [lessonToEdit, setLessonToEdit] = useState(null);
+
+  useEffect(() => {
+    if (!showAddClassModal && returnToStudentModal) {
+      setShowStudentModal(true);
+      setReturnToStudentModal(false);
+    }
+  }, [showAddClassModal, returnToStudentModal]);
+  
+
+  useEffect((
+  ) => {
+    const handleOpenAddClass = () => {
+      setShowAddClassModal(true);
+    };
+    window.addEventListener("open-add-class-modal", handleOpenAddClass);
+  
+    return () => {
+      window.removeEventListener("open-add-class-modal", handleOpenAddClass);
+    };
+  }, []);
+  
 
   useEffect(() => {
     document.title = "TAMAMAT Teacher";
@@ -622,22 +654,23 @@ const currentLessons = lessons.slice(indexOfFirstClass, indexOfLastClass);
     setMenuData(null);
   };
 
-
-  const toggleMenu = (lessonId, e, classURL) => {
-    e.stopPropagation();
-    const rect = e.currentTarget.getBoundingClientRect();
-
-    if (menuData?.lessonId === lessonId) {
-      setMenuData(null);
-    } else {
-      setMenuData({
-        lessonId,
-        x: rect.x + rect.width,
-        y: rect.y + window.scrollY,
-        classURL,
-      });
-    }
+  const toggleMenu = (id, type, event, classUrl) => {
+    event.stopPropagation();
+  
+    const rect = event.currentTarget.getBoundingClientRect();
+    const scrollContainer = document.querySelector(".overflow-x-auto") || window;
+    const scrollTop = scrollContainer.scrollTop || window.scrollY;
+    const scrollLeft = scrollContainer.scrollLeft || window.scrollX;
+  
+    setMenuData({
+      id,
+      type: type.toLowerCase(),
+      x: rect.left + rect.width + scrollLeft,
+      y: rect.top + scrollTop,
+      classUrl,
+    });
   };
+  
 
 
   const handleSaveClass = async ({ className, studentIds }) => {
@@ -1004,6 +1037,8 @@ const currentLessons = lessons.slice(indexOfFirstClass, indexOfLastClass);
     onClose={() => setShowStudentModal(false)}
     onSave={handleSaveOrUpdateStudent}
     initialData={studentToEdit}
+    setReturnToStudentModal={setReturnToStudentModal}
+    setShowAddClassModal={setShowAddClassModal}
   />
 )}
 
@@ -1041,24 +1076,33 @@ const currentLessons = lessons.slice(indexOfFirstClass, indexOfLastClass);
       )}
 
      
-      {showAddClassModal && (
-        <AddClassModal
-          onClose={() => setShowAddClassModal(false)}
-          onSaveClass={handleSaveClass}
-          onSaveStudent={handleSaveStudent}
-          fetchStudents={fetchStudents}
-          students={students}
-        />
-      )}
+{showAddClassModal && (
+  <AddClassModal
+    onClose={() => setShowAddClassModal(false)}
+    onSaveClass={handleSaveClass}
+    onSaveStudent={handleSaveStudent}
+    fetchStudents={fetchStudents}
+    students={students}
+    setReturnToStudentModal={setReturnToStudentModal}
+    setShowAddClassModal={setShowAddClassModal}
+  />
+)}
+
 
      
-      {showEditClassModal && lessonToEdit && (
-        <EditClassModal
-          onClose={() => setShowEditClassModal(false)}
-          lessonToEdit={lessonToEdit}
-          onUpdateClass={handleUpdateClass}
-        />
-      )}
+{showEditClassModal && lessonToEdit && (
+  <EditClassModal
+  onClose={() => setShowEditClassModal(false)}
+  lessonToEdit={lessonToEdit}
+  onUpdateClass={handleUpdateClass}
+  students={students}
+  onSaveStudent={handleSaveStudent}
+  setReturnToStudentModal={setReturnToStudentModal}
+  setShowAddClassModal={setShowAddClassModal}
+/>
+
+)}
+
     </div>
   );
 }

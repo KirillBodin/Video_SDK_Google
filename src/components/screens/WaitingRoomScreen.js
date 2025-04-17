@@ -1,15 +1,16 @@
 import React, { useEffect, useState } from "react";
-import { MeetingProvider } from "@videosdk.live/react-sdk";
 
 function WaitingRoom({ meetingId, token, onJoined }) {
   const [checking, setChecking] = useState(false);
 
   useEffect(() => {
+    console.log("🔁 WaitingRoom mounted");
     let interval;
 
     const checkParticipants = async () => {
       try {
-        
+        console.log("🌐 Checking session for meetingId:", meetingId);
+
         const sessionRes = await fetch(
           `https://api.videosdk.live/v2/sessions/?roomId=${meetingId}`,
           {
@@ -21,25 +22,21 @@ function WaitingRoom({ meetingId, token, onJoined }) {
         );
 
         const sessionData = await sessionRes.json();
-        
+        console.log("📥 Session data:", sessionData);
 
         const activeSession = sessionData.data?.find(
           (s) => s.status === "ongoing"
         );
 
-        if (!activeSession) {
-        
-          return;
-        }
+        if (!activeSession) return;
 
         const participants = activeSession.participants || [];
-        
+        console.log("👥 Participants:", participants.length);
 
         if (participants.length > 0) {
           clearInterval(interval);
+          console.log("✅ Teacher started session, joining...");
           onJoined();
-        } else {
-         
         }
       } catch (err) {
         console.error("❌ Error checking session:", err);
@@ -48,9 +45,12 @@ function WaitingRoom({ meetingId, token, onJoined }) {
 
     setChecking(true);
     interval = setInterval(checkParticipants, 5000);
-    checkParticipants(); // initial
+    checkParticipants();
 
-    return () => clearInterval(interval);
+    return () => {
+      console.log("🧹 Clearing interval");
+      clearInterval(interval);
+    };
   }, [meetingId, token, onJoined]);
 
   return (
@@ -62,20 +62,48 @@ function WaitingRoom({ meetingId, token, onJoined }) {
   );
 }
 
-export default function WaitingLobbyScreen({ meetingId, token, userName, role, onJoined }) {
-  return (
-    <MeetingProvider
-      config={{
-        meetingId,
-        micEnabled: false,
-        webcamEnabled: false,
-        name: userName,
-        multiStream: true,
-        role,
-      }}
+export default function WaitingLobbyScreen({
+  roomName,
+  token,
+  userName,
+  role,
+  onJoined,
+}) {
+  const [resolvedMeetingId, setResolvedMeetingId] = useState("");
+
+  useEffect(() => {
+    console.log("🧭 WaitingLobbyScreen", { roomName, token, userName, role });
+
+    const fetchMeetingId = async () => {
+      try {
+        const res = await fetch(
+          `${process.env.REACT_APP_SERVER_URL}/api/getmeeting/by-classname/${roomName}`
+        );
+        const data = await res.json();
+        const foundId = data.meeting?.meetingId;
+        if (foundId) {
+          console.log("🔍 Found meetingId =", foundId);
+          setResolvedMeetingId(foundId);
+        } else {
+          console.warn("❌ Meeting not yet created");
+        }
+      } catch (e) {
+        console.error("❌ Failed to fetch meetingId:", e);
+      }
+    };
+
+    fetchMeetingId();
+  }, [roomName]);
+
+  return resolvedMeetingId ? (
+    <WaitingRoom
+      meetingId={resolvedMeetingId}
       token={token}
-    >
-      <WaitingRoom meetingId={meetingId} token={token} onJoined={onJoined} />
-    </MeetingProvider>
+      onJoined={() => onJoined(resolvedMeetingId)}
+    />
+  ) : (
+    <div className="h-screen w-screen bg-black text-white flex items-center justify-center">
+      <h2 className="text-xl font-bold">Waiting for the teacher to create the meeting...</h2>
+    </div>
   );
 }

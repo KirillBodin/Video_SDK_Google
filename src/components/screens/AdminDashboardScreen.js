@@ -25,26 +25,35 @@ function renderModal(title, form, setForm, onSubmit, onClose, customFields = {})
     studentIds: "Students",
     teacherIds: "Teachers",
   };
-  
-  
+
+  const requiredFields = ["firstName", "lastName", "email", "password"];
+
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
   return ReactDOM.createPortal(
     <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
-      <div className="bg-white text-black p-6 rounded w-96">
+      <div className="bg-white text-black p-6 rounded w-96 max-h-[90vh] overflow-y-auto">
         <h2 className="text-xl font-bold mb-4">{title}</h2>
         {Object.keys(form).map((field) => {
           if (customFields[field]) {
             return <React.Fragment key={field}>{customFields[field]}</React.Fragment>;
           }
           return (
-            <input
-              key={field}
-              name={field}
-              placeholder={fieldPlaceholders[field] || field}
-              className="w-full mb-3 px-3 py-2 border rounded"
-              value={form[field] || ""}
-              onChange={handleChange}
-            />
+            <div key={field} className="mb-3">
+              <label className="block font-semibold mb-1">
+                {fieldPlaceholders[field] || field}
+                {requiredFields.includes(field) && (
+                  <span className="text-red-500 ml-1">*</span>
+                )}
+              </label>
+              <input
+                name={field}
+                placeholder={fieldPlaceholders[field] || field}
+                className="w-full px-3 py-2 border rounded"
+                value={form[field] || ""}
+                onChange={handleChange}
+              />
+            </div>
           );
         })}
         <div className="flex justify-end gap-2">
@@ -60,6 +69,7 @@ function renderModal(title, form, setForm, onSubmit, onClose, customFields = {})
     document.body
   );
 }
+
 
 function ContextMenu({ data, onDelete, setMenuData, onEdit }) {
   const menuRef = useRef();
@@ -132,18 +142,19 @@ function DataTable({
     title.toLowerCase() === "classes" ? "Add Class" : `Add ${title.slice(0, -1)}`;
 
   return (
-    <div className="bg-white bg-opacity-10 p-4 rounded-lg border border-gray-700 w-full max-w-5xl mx-auto mb-10">
+    <div className="w-full max-w-6xl mx-auto bg-white bg-opacity-10 p-4 rounded-xl border border-gray-700 backdrop-blur-md shadow-lg">
+
       <div className="flex justify-between mb-4">
         <h2 className="text-xl font-bold">{title}</h2>
-        <button onClick={onAdd} className="bg-blue-600 px-4 py-2 rounded text-white">
+        <button onClick={onAdd} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md">
           {addButtonLabel}
         </button>
       </div>
-      <table className="w-full text-left">
+      <table className="w-full border-collapse border border-gray-700 rounded-lg text-white">
         <thead>
-          <tr>
+        <tr className="bg-gray-900 text-white">
             {columns.map((col) => (
-              <th key={col} className="capitalize px-3 py-2">
+              <th key={col} className="capitalize px-4 py-3">
                 {col}
               </th>
             ))}
@@ -164,48 +175,50 @@ function DataTable({
                   ? `${window.location.origin}/${row.classUrl}`
                   : null;
               return (
-                <tr key={row.id}>
+                <tr key={row.id} className="bg-gray-800 border-b border-gray-700">
                   {columns.map((col) => {
                     if (col === "url") {
                       return (
-                        <td key={col} className="px-3 py-2">
+                        <td key={col} className="px-4 py-3">
                           {fullUrl || "—"}
                         </td>
                       );
                     } else if (col === "classes") {
                       return (
-                        <td key={col} className="px-3 py-2">
+                        <td key={col} className="px-4 py-3">
                           {row.classes?.map((cls) => cls.className).join(", ") || "—"}
                         </td>
                       );
                     } else if (col === "teachers") {
                       return (
-                        <td key={col} className="px-3 py-2">
+                        <td key={col} className="px-4 py-3">
                           {row.teachers?.map((t) => t.name).join(", ") || "—"}
                         </td>
                       );
                     }
                     return (
-                      <td key={col} className="px-3 py-2">
+                      <td key={col} className="px-4 py-3">
                         {row[col] || "—"}
                       </td>
                     );
                   })}
-                  <td className="text-right px-3 py-2">
-                    <button
-                      onClick={(e) =>
-                        onMenuToggle(
-                          row.id,
-                          title,
-                          e,
-                          title.toLowerCase() === "classes" ? row.classUrl : undefined
-                        )
-                      }
-                      className="text-white"
-                    >
-                      <FiMoreVertical />
-                    </button>
-                  </td>
+<td className="text-right px-3 py-2">
+  <button
+    onClick={(e) =>
+      onMenuToggle(
+        row.id,
+        title,
+        e,
+        title.toLowerCase() === "classes" ? row.classUrl : undefined
+      )
+    }
+    className="p-2 rounded-full bg-gray-700 hover:bg-gray-600 focus:outline-none"
+    title="More actions"
+  >
+    <FiMoreVertical />
+  </button>
+</td>
+
                 </tr>
               );
             })
@@ -222,7 +235,7 @@ function DataTable({
             }))
           }
           disabled={currentPage[title.toLowerCase()] === 1}
-          className="px-3 py-1 mx-1 bg-gray-700 hover:bg-gray-600 rounded disabled:opacity-50"
+          className="px-3 py-1 mx-1 bg-gray-700 hover:bg-gray-600 text-white rounded-md disabled:opacity-50"
         >
           Prev
         </button>
@@ -244,7 +257,7 @@ function DataTable({
             currentPage[title.toLowerCase()] >=
             Math.ceil(allData.length / itemsPerPage)
           }
-          className="px-3 py-1 mx-1 bg-gray-700 hover:bg-gray-600 rounded disabled:opacity-50"
+          className="px-3 py-1 mx-1 bg-gray-700 hover:bg-gray-600 text-white rounded-md disabled:opacity-50"
         >
           Next
         </button>
@@ -256,7 +269,9 @@ function DataTable({
 
 
 
-function AddTeacherModal({ onClose, onSave, isEdit = false, initialData = {}, classes = [], students = [] }) {
+function AddTeacherModal({ onClose, onSave, isEdit = false, initialData = {}, classes = [], students = [],
+  setShowAddClassModal,
+  setShowAddStudentModal, }) {
 
   
   const [form, setForm] = useState({
@@ -340,6 +355,15 @@ function AddTeacherModal({ onClose, onSave, isEdit = false, initialData = {}, cl
               </label>
             ))}
           </div>
+          <button
+      className="mt-2 text-blue-500 hover:underline text-sm"
+      onClick={() => {
+        setShowAddClassModal(true);
+        onClose(); 
+      }}
+    >
+      + Add New Class
+    </button>
         </div>
       ),
       studentIds: (
@@ -358,6 +382,15 @@ function AddTeacherModal({ onClose, onSave, isEdit = false, initialData = {}, cl
               </label>
             ))}
           </div>
+          <button
+      className="mt-2 text-blue-500 hover:underline text-sm"
+      onClick={() => {
+        setShowAddStudentModal(true);
+        onClose(); 
+      }}
+    >
+      + Add New Student
+    </button>
         </div>
       ),
     }
@@ -365,7 +398,17 @@ function AddTeacherModal({ onClose, onSave, isEdit = false, initialData = {}, cl
 }
 
 
-function AddStudentModal({ onClose, onSave, teachers, classes, isEdit = false, initialData = {} }) {
+function AddStudentModal({
+  onClose,
+  onSave,
+  teachers,
+  classes,
+  isEdit = false,
+  initialData = {},
+  setShowAddTeacherModal,
+  setShowAddClassModal,
+}) {
+
   const initialForm = {
     firstName: initialData.name ? initialData.name.split(" ")[0] : "",
     lastName: initialData.name ? initialData.name.split(" ").slice(1).join(" ") : "",
@@ -435,7 +478,10 @@ function AddStudentModal({ onClose, onSave, teachers, classes, isEdit = false, i
     {
       teacherIds: (
         <div className="mb-3">
-          <label className="block font-semibold mb-1">Assign Teachers:</label>
+          <label className="block font-semibold mb-1">
+  Assign Teachers<span className="text-red-500 ml-1">*</span>
+</label>
+
           <div className="border rounded p-2 max-h-40 overflow-y-auto bg-white/20">
             {teachers.map((t) => (
               <label key={t.id} className="flex items-center gap-2 mb-1">
@@ -449,6 +495,15 @@ function AddStudentModal({ onClose, onSave, teachers, classes, isEdit = false, i
               </label>
             ))}
           </div>
+          <button
+      className="mt-2 text-blue-500 hover:underline text-sm"
+      onClick={() => {
+        setShowAddTeacherModal(true);
+        
+      }}
+    >
+      + Add New Teacher
+    </button>
         </div>
       ),
       classIds: (
@@ -467,6 +522,16 @@ function AddStudentModal({ onClose, onSave, teachers, classes, isEdit = false, i
               </label>
             ))}
           </div>
+          <button
+      className="mt-2 text-blue-500 hover:underline text-sm"
+      onClick={() => {
+        setShowAddClassModal(true);
+        onClose();
+      }}
+    >
+      + Add New Class
+    </button>
+
         </div>
       ),
     }
@@ -475,7 +540,20 @@ function AddStudentModal({ onClose, onSave, teachers, classes, isEdit = false, i
 
 
 
-function AddClassModal({ onClose, onSave, teachers, students, isEdit = false, initialData = {} }) {
+function AddClassModal({
+  onClose,
+  onSave,
+  teachers,
+  students,
+  classes,
+  setShowAddClassModal,
+  setShowAddStudentModal,
+  fetchTeachers,
+  fetchStudents,
+  isEdit = false,
+  initialData = {},
+}) {
+
 
   const { adminId } = useParams();
 
@@ -486,11 +564,15 @@ function AddClassModal({ onClose, onSave, teachers, students, isEdit = false, in
     studentIds: initialData.studentIds || [],
   });
 
-  
+
   const [showTeacherForm, setShowTeacherForm] = useState(false);
   const [showStudentForm, setShowStudentForm] = useState(false);
   const [formNewTeacher, setFormNewTeacher] = useState({});
   const [formNewStudent, setFormNewStudent] = useState({});  
+  const [showAddTeacherModal, setShowAddTeacherModal] = useState(false);
+const [showAddStudentModalLocal, setShowAddStudentModalLocal] = useState(false);
+
+
 useEffect(() => {
   if (isEdit && initialData?.id) {
     const fetchLessonData = async () => {
@@ -542,7 +624,6 @@ const handleSaveNewTeacher = async () => {
       setForm({ ...form, teacherId: newTeacher.id });
       setShowTeacherForm(false);
     } else {
-      // Перехватываем возможный 400
       if (res.status === 400) {
 
         toast.error("Email already exists. Please use a different email.");
@@ -642,14 +723,20 @@ const handleSaveNewStudent = async () => {
       <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
         <div className="bg-white text-black p-6 rounded w-[450px] max-h-[90vh] overflow-y-auto">
           <h2 className="text-xl font-bold mb-4">{isEdit ? "Edit Class" : "Add Class"}</h2>
-          <input
-            className="w-full mb-3 px-3 py-2 border rounded"
-            placeholder="Class Name"
+          <label className="block font-semibold mb-1">
+  Class Name<span className="text-red-500 ml-1">*</span>
+</label>
+<input
+  className="w-full mb-3 px-3 py-2 border rounded"
+  placeholder="Class Name"
             value={form.className}
             onChange={(e) => setForm({ ...form, className: e.target.value })}
           />
           <div className="mb-3">
-  <label className="block font-semibold mb-1">Select Teacher:</label>
+          <label className="block font-semibold mb-1">
+  Select Teacher<span className="text-red-500 ml-1">*</span>
+</label>
+
   <div className="border rounded p-2 max-h-40 overflow-y-auto bg-white/20">
     {teachers.map((t) => (
       <label key={t.id} className="flex items-center gap-2 mb-1">
@@ -673,12 +760,13 @@ const handleSaveNewStudent = async () => {
 </div>
 
        
-          <button
-            className="w-full bg-blue-500 text-white px-3 py-2 rounded mb-3"
-            onClick={() => setShowTeacherForm(true)}
-          >
-            + Add New Teacher
-          </button>
+<button
+  className="mt-2 text-blue-500 hover:underline text-sm"
+  onClick={() => setShowAddTeacherModal(true)}
+>
+  + Add New Teacher
+</button>
+
           <div className="mb-3">
             <label className="block font-semibold mb-1">Select Students:</label>
             <div className="border rounded p-2 max-h-40 overflow-y-auto bg-white/20">
@@ -697,16 +785,17 @@ const handleSaveNewStudent = async () => {
           </div>
         
           <button
-            className="w-full bg-blue-500 text-white px-3 py-2 rounded mb-3"
-            onClick={() => setShowStudentForm(true)}
-          >
-            + Add New Student
-          </button>
+  className="mt-2 text-blue-500 hover:underline text-sm"
+  onClick={() => setShowAddStudentModalLocal(true)}
+>
+  + Add New Student
+</button>
+
           <div className="flex justify-end gap-2">
             <button onClick={onClose} className="border px-4 py-2 rounded text-gray-600">
               Cancel
             </button>
-            <button onClick={handleSubmit} className="bg-green-600 text-white px-4 py-2 rounded">
+            <button onClick={handleSubmit} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
               Save
             </button>
           </div>
@@ -715,9 +804,11 @@ const handleSaveNewStudent = async () => {
 
      
       {showTeacherForm && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-    <div className="bg-white text-black p-6 rounded w-[450px] max-h-[90vh] overflow-y-auto">
+  <div className="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center">
+    <div className="bg-white text-black p-6 rounded w-[450px] max-h-[90vh] overflow-y-auto shadow-xl">
       <h2 className="text-lg font-bold mb-4">Add Teacher</h2>
+
+      {/* First Name */}
       <input
         className="w-full mb-2 px-3 py-2 border rounded"
         placeholder="First Name"
@@ -725,6 +816,8 @@ const handleSaveNewStudent = async () => {
           setFormNewTeacher({ ...formNewTeacher, firstName: e.target.value })
         }
       />
+
+      {/* Last Name */}
       <input
         className="w-full mb-2 px-3 py-2 border rounded"
         placeholder="Last Name"
@@ -732,6 +825,8 @@ const handleSaveNewStudent = async () => {
           setFormNewTeacher({ ...formNewTeacher, lastName: e.target.value })
         }
       />
+
+      {/* Email */}
       <input
         className="w-full mb-2 px-3 py-2 border rounded"
         placeholder="Email"
@@ -739,6 +834,8 @@ const handleSaveNewStudent = async () => {
           setFormNewTeacher({ ...formNewTeacher, email: e.target.value })
         }
       />
+
+      {/* Password */}
       <input
         type="password"
         className="w-full mb-4 px-3 py-2 border rounded"
@@ -747,6 +844,82 @@ const handleSaveNewStudent = async () => {
           setFormNewTeacher({ ...formNewTeacher, password: e.target.value })
         }
       />
+
+      {/* Select Classes */}
+      <div className="mb-3">
+        <label className="block font-semibold mb-1">Assign Classes:</label>
+        <div className="border rounded p-2 max-h-40 overflow-y-auto">
+          {classes.map((cls) => (
+            <label key={cls.id} className="flex items-center gap-2 mb-1">
+              <input
+                type="checkbox"
+                value={cls.id}
+                checked={formNewTeacher.classIds?.includes(cls.id)}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  setFormNewTeacher((prev) => ({
+                    ...prev,
+                    classIds: e.target.checked
+                      ? [...(prev.classIds || []), val]
+                      : prev.classIds.filter((id) => id !== val),
+                  }));
+                }}
+              />
+              {cls.className}
+            </label>
+          ))}
+        </div>
+
+        {/* Button to open Add Class modal */}
+        <button
+          className="mt-2 text-blue-500 hover:underline text-sm"
+          onClick={() => {
+            setShowTeacherForm(false);
+            setShowAddClassModal(true);
+          }}
+        >
+          + Add New Class
+        </button>
+      </div>
+
+      {/* Select Students */}
+      <div className="mb-3">
+        <label className="block font-semibold mb-1">Assign Students:</label>
+        <div className="border rounded p-2 max-h-40 overflow-y-auto">
+          {students.map((s) => (
+            <label key={s.id} className="flex items-center gap-2 mb-1">
+              <input
+                type="checkbox"
+                value={s.id}
+                checked={formNewTeacher.studentIds?.includes(s.id)}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  setFormNewTeacher((prev) => ({
+                    ...prev,
+                    studentIds: e.target.checked
+                      ? [...(prev.studentIds || []), val]
+                      : prev.studentIds.filter((id) => id !== val),
+                  }));
+                }}
+              />
+              {s.name}
+            </label>
+          ))}
+        </div>
+
+        {/* Button to open Add Student modal */}
+        <button
+          className="mt-2 text-blue-500 hover:underline text-sm"
+          onClick={() => {
+            setShowTeacherForm(false);
+            setShowAddStudentModal(true);
+          }}
+        >
+          + Add New Student
+        </button>
+      </div>
+
+      {/* Actions */}
       <div className="flex justify-between">
         <button
           onClick={() => setShowTeacherForm(false)}
@@ -755,7 +928,7 @@ const handleSaveNewStudent = async () => {
           Cancel
         </button>
         <button
-          className="bg-green-600 text-white px-4 py-2 rounded"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
           onClick={handleSaveNewTeacher}
         >
           Save
@@ -764,6 +937,35 @@ const handleSaveNewStudent = async () => {
     </div>
   </div>
 )}
+
+{showAddTeacherModal && (
+  <AddTeacherModal
+    onClose={() => setShowAddTeacherModal(false)}
+    onSave={() => {
+      fetchTeachers(); // чтобы обновить список
+      setShowAddTeacherModal(false);
+    }}
+    classes={classes}
+    students={students}
+    setShowAddClassModal={setShowAddClassModal}
+    setShowAddStudentModal={setShowAddStudentModal}
+  />
+)}
+
+{showAddStudentModalLocal && (
+  <AddStudentModal
+    onClose={() => setShowAddStudentModalLocal(false)}
+    onSave={() => {
+      fetchStudents();
+      setShowAddStudentModalLocal(false);
+    }}
+    teachers={teachers}
+    classes={classes}
+    setShowAddTeacherModal={setShowAddTeacherModal}
+    setShowAddClassModal={setShowAddClassModal}
+  />
+)}
+
 
 {showStudentForm && (
   <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
@@ -844,7 +1046,7 @@ export default function PrincipalDashboardScreen() {
   const { adminId, name } = useParams();
   const navigate = useNavigate();
   useEffect(() => {
-    document.title = "TAMAMAT Principal";
+    document.title = "TAMAMAT School Admin";
   }, []);
   const [activeTab, setActiveTab] = useState("teachers");
   const [teachers, setTeachers] = useState([]);
@@ -854,7 +1056,11 @@ export default function PrincipalDashboardScreen() {
   const [showAddTeacherModal, setShowAddTeacherModal] = useState(false);
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
   const [showAddClassModal, setShowAddClassModal] = useState(false);
+  const [showAddTeacherModalLocal, setShowAddTeacherModalLocal] = useState(false);
+const [showAddClassModalLocal, setShowAddClassModalLocal] = useState(false);
+
   const [editData, setEditData] = useState(null);
+  const [schoolName, setSchoolName] = useState("");
   const [currentPage, setCurrentPage] = useState({
     teachers: 1,
     students: 1,
@@ -881,6 +1087,20 @@ export default function PrincipalDashboardScreen() {
   useEffect(() => {
     fetchAll();
   }, [adminId]);
+
+  useEffect(() => {
+    const fetchAdminInfo = async () => {
+      try {
+        const res = await authorizedFetch(`${SERVER_URL}/api/admin/${adminId}`);
+        const data = await res.json();
+        setSchoolName(data.schoolName || "Your School");
+      } catch (err) {
+        console.error("❌ Failed to fetch admin info:", err);
+      }
+    };
+    fetchAdminInfo();
+  }, [adminId]);
+  
 
   const fetchAll = () => {
     fetchTeachers();
@@ -1193,29 +1413,40 @@ export default function PrincipalDashboardScreen() {
   };  
 
   return (
-    <div className="min-h-screen w-full bg-black text-white p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-4xl font-bold">Principal Dashboard</h1>
-        <div className="flex items-center gap-4">
-          <span className="text-lg">{principalName}</span>
-          <button onClick={handleLogout} className="bg-red-600 px-4 py-2 rounded">
-            Log Out
-          </button>
-        </div>
-      </div>
-      <div className="flex gap-4 mb-6">
-        {["Teachers", "Classes", "Students"].map((tab) => (
-          <button
-            key={tab}
-            className={`px-4 py-2 rounded ${
-              activeTab === tab.toLowerCase() ? "bg-blue-600" : "bg-gray-700"
-            }`}
-            onClick={() => setActiveTab(tab.toLowerCase())}
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
+    <div className="min-h-screen w-full bg-gradient-to-br from-[#111111] to-black text-white p-6 flex flex-col items-center">
+     <div className="w-full flex justify-end items-center mb-6">
+  <div className="flex items-center gap-4">
+  <span className="text-lg font-semibold">
+  School Admin — {schoolName}
+</span>
+
+    <button
+      onClick={handleLogout}
+      className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md"
+    >
+      Log Out
+    </button>
+  </div>
+</div>
+<h1 className="text-4xl font-bold text-center mb-10">School Admin Dashboard</h1>
+
+<div className="flex gap-4 mb-6">
+  {["Teachers", "Classes", "Students"].map((tab) => {
+    const isActive = activeTab === tab.toLowerCase();
+    return (
+      <button
+        key={tab}
+        onClick={() => setActiveTab(tab.toLowerCase())}
+        className={`px-4 py-2 rounded-md text-white transition-all duration-150
+          ${isActive ? "bg-gray-800 border-b-2 border-blue-500" : "hover:bg-gray-700"}
+        `}
+      >
+        {tab}
+      </button>
+    );
+  })}
+</div>
+
       {activeTab === "teachers" && (
         <DataTable
           title="Teachers"
@@ -1246,7 +1477,7 @@ export default function PrincipalDashboardScreen() {
         <DataTable
           title="Classes"
           data={paginatedData.classes}
-          columns={["className", "teacherName", "meetingId", "url"]}
+          columns={["className", "teacherName", "url"]}
           onAdd={() => setShowAddClassModal(true)}
           onMenuToggle={(id, title, e, classUrl) => toggleMenu(id, title, e, classUrl)}
           currentPage={currentPage}
@@ -1263,6 +1494,8 @@ export default function PrincipalDashboardScreen() {
           initialData={teachers.find((t) => t.id === editData.id) || {}}
           classes={classes}
           students={students}
+          setShowAddClassModal={setShowAddClassModal}
+          setShowAddStudentModal={setShowAddStudentModal}
         />
       )}
       {editData?.type === "students" && (
@@ -1280,6 +1513,8 @@ export default function PrincipalDashboardScreen() {
           initialData={students.find((s) => s.id === editData.id) || {}}
           teachers={teachers}
           classes={classes}
+          setShowAddTeacherModal={setShowAddTeacherModal}
+          setShowAddClassModal={setShowAddClassModal}
         />
       )}
       {editData?.type === "classes" && (
@@ -1290,22 +1525,70 @@ export default function PrincipalDashboardScreen() {
           initialData={classes.find((c) => c.id === editData.id) || {}}
           teachers={teachers}
           students={students}
+          classes={classes}
+          setShowAddClassModal={setShowAddClassModal}
+          setShowAddStudentModal={setShowAddStudentModal}
+          fetchTeachers={fetchTeachers}
+          fetchStudents={fetchStudents}
         />
       )}
       {showAddTeacherModal && (
         <AddTeacherModal
-          onClose={() => setShowAddTeacherModal(false)}
-          onSave={handleSaveTeacher}
-          classes={classes}
-          students={students}
-        />
+  onClose={() => setShowAddTeacherModal(false)}
+  onSave={handleSaveTeacher}
+  classes={classes}
+  students={students}
+  setShowAddClassModal={setShowAddClassModal}
+  setShowAddStudentModal={setShowAddStudentModal}
+/>
+
       )}
+
+{showAddTeacherModalLocal && (
+  <AddTeacherModal
+    onClose={() => setShowAddTeacherModalLocal(false)}
+    onSave={() => {
+      fetchTeachers();
+      setShowAddTeacherModalLocal(false);
+    }}
+    classes={classes}
+    students={students}
+    setShowAddClassModal={setShowAddClassModalLocal}
+    setShowAddStudentModal={() => {
+      setShowAddTeacherModalLocal(false);
+      setShowAddStudentModal(true);
+    }}
+  />
+)}
+
+{showAddClassModalLocal && (
+  <AddClassModal
+    onClose={() => setShowAddClassModalLocal(false)}
+    onSave={() => {
+      fetchClasses();
+      setShowAddClassModalLocal(false);
+    }}
+    teachers={teachers}
+    students={students}
+    classes={classes}
+    setShowAddClassModal={setShowAddClassModalLocal}
+    setShowAddStudentModal={() => {
+      setShowAddClassModalLocal(false);
+      setShowAddStudentModal(true);
+    }}
+    fetchTeachers={fetchTeachers}
+    fetchStudents={fetchStudents}
+  />
+)}
+
       {showAddStudentModal && (
         <AddStudentModal
           onClose={() => setShowAddStudentModal(false)}
           onSave={handleSaveStudent}
           teachers={teachers}
           classes={classes}
+          setShowAddTeacherModal={setShowAddTeacherModal}
+          setShowAddClassModal={setShowAddClassModal}
         />
       )}
       {showAddClassModal && (
@@ -1314,6 +1597,11 @@ export default function PrincipalDashboardScreen() {
           onSave={handleSaveClass}
           teachers={teachers}
           students={students}
+          classes={classes}
+          setShowAddClassModal={setShowAddClassModal}
+          setShowAddStudentModal={setShowAddStudentModal}
+          fetchTeachers={fetchTeachers}
+          fetchStudents={fetchStudents}
           
         />
       )}
