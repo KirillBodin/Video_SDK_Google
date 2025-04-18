@@ -74,6 +74,13 @@ function renderModal(title, form, setForm, onSubmit, onClose, customFields = {})
   );
 }
 
+function joinUrl(base, path) {
+  return (
+    base.replace(/\/+$/, "") +      // убираем все конечные слэши из base
+    "/" +                           // добавляем ровно один слэш
+    path.replace(/^\/+/, "")        // убираем все начальные слэши из path
+  );
+}
 
 function ContextMenu({ data, onDelete, setMenuData, onEdit }) {
   const menuRef = useRef();
@@ -86,7 +93,7 @@ function ContextMenu({ data, onDelete, setMenuData, onEdit }) {
   }, [setMenuData]);
 
   const handleCopy = () => {
-    const fullUrl = `${window.location.origin}/${data.classUrl}`;
+    const fullUrl = joinUrl(window.location.origin, data.classUrl);
     navigator.clipboard.writeText(fullUrl);
     toast.success("Class URL copied!");
     setMenuData(null);
@@ -187,7 +194,7 @@ function DataTable({
             data.map((row) => {
               const fullUrl =
                 row.classUrl && title.toLowerCase() === "classes"
-                  ? `${window.location.origin}/${row.classUrl}`
+                ? joinUrl(window.location.origin, row.classUrl)
                   : null;
               return (
                 <tr key={row.id} className="bg-gray-800 border-b border-gray-700">

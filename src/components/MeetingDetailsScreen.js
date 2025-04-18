@@ -47,7 +47,9 @@ export function MeetingDetailsScreen({
       return false;
     }
   };
-
+  useEffect(() => {
+    document.title = "TAMAMAT Main page";
+  }, []);
 
   useEffect(() => {
     
