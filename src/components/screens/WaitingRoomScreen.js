@@ -5,10 +5,32 @@ function WaitingRoom({ meetingId, token, onJoined }) {
 
   useEffect(() => {
     console.log("🔁 WaitingRoom mounted");
+    let interval;
+    let wakeLock = null;
   
-    
+    // Request wake lock to keep the screen on (especially on mobile)
+    const requestWakeLock = async () => {
+      try {
+        if ("wakeLock" in navigator) {
+          wakeLock = await navigator.wakeLock.request("screen");
+          console.log("📱 Wake Lock is active");
+  
+          // Reacquire wake lock if it gets released (e.g. on screen lock)
+          wakeLock.addEventListener("release", () => {
+            console.log("🔋 Wake Lock was released");
+          });
+        } else {
+          console.warn("🚫 Wake Lock API not supported");
+        }
+      } catch (err) {
+        console.error("❌ Failed to acquire wake lock:", err);
+      }
+    };
+  
     const checkParticipants = async () => {
       try {
+        console.log("🌐 Checking session for meetingId:", meetingId);
+  
         const sessionRes = await fetch(
           `https://api.videosdk.live/v2/sessions/?roomId=${meetingId}`,
           {
@@ -18,62 +40,44 @@ function WaitingRoom({ meetingId, token, onJoined }) {
             },
           }
         );
+  
         const sessionData = await sessionRes.json();
-        const activeSession = sessionData.data?.find(s => s.status === "ongoing");
-        if (activeSession) {
-          const participants = activeSession.participants || [];
-          console.log("👥 Participants:", participants.length);
-          if (participants.length > 0) {
-            clearInterval(intervalId);
-            console.log("✅ Teacher started session, joining...");
-            onJoined();
-          }
+        console.log("📥 Session data:", sessionData);
+  
+        const activeSession = sessionData.data?.find(
+          (s) => s.status === "ongoing"
+        );
+  
+        if (!activeSession) return;
+  
+        const participants = activeSession.participants || [];
+        console.log("👥 Participants:", participants.length);
+  
+        if (participants.length > 0) {
+          clearInterval(interval);
+          console.log("✅ Teacher started session, joining...");
+          onJoined();
         }
       } catch (err) {
         console.error("❌ Error checking session:", err);
       }
     };
   
-    
     setChecking(true);
-    const intervalId = setInterval(checkParticipants, 5000);
+    interval = setInterval(checkParticipants, 5000);
     checkParticipants();
-  
-   
-    const requestWakeLock = async () => {
-      try {
-        if ("wakeLock" in navigator) {
-          const wake = await navigator.wakeLock.request("screen");
-          console.log("🔒 Wake lock acquired");
-          
-          wake.addEventListener("release", () => {
-            console.warn("🔓 Wake lock released");
-          });
-        }
-      } catch (err) {
-        
-        console.warn("⚠️ Wake lock failed (ignored):", err);
-      }
-    };
     requestWakeLock();
   
-    
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        requestWakeLock();
+    return () => {
+      console.log("🧹 Clearing interval");
+      clearInterval(interval);
+      if (wakeLock) {
+        wakeLock.release().then(() => {
+          console.log("🔋 Wake Lock released on cleanup");
+        });
       }
     };
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-  
-   
-    return () => {
-      console.log("🧹 Cleaning up WaitingRoom effect");
-      clearInterval(intervalId);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
   }, [meetingId, token, onJoined]);
-  
-  
   
 
   return (
