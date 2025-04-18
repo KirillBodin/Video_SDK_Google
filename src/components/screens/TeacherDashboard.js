@@ -66,7 +66,9 @@ useEffect(() => {
     <div className="bg-white text-black rounded-md p-6 w-[500px] max-h-[90vh] overflow-y-auto">
       <h2 className="text-xl font-bold mb-4">Add Class</h2>
   
-      <label className="block font-semibold mb-1">Class Name</label>
+      <label className="block font-semibold mb-1">
+   Class Name<span className="text-red-500 ml-1">*</span>
+ </label>
       <input
         className="w-full mb-4 px-3 py-2 border rounded"
         placeholder="Enter Class Name"
@@ -106,7 +108,7 @@ useEffect(() => {
       <div className="flex justify-end gap-2">
         <button
           onClick={onClose}
-          className="px-4 py-2 rounded border border-gray-400 text-gray-600 hover:bg-gray-100"
+          className="border border-gray-400 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300 transition px-4 py-2 rounded text-gray-600"
         >
           Cancel
         </button>
@@ -186,7 +188,9 @@ function EditClassModal({
   
         <h2 className="text-xl font-bold mb-4">Add Class</h2>
   
-        <label className="block font-semibold mb-1">Class Name</label>
+        <label className="block font-semibold mb-1">
+   Class Name<span className="text-red-500 ml-1">*</span>
+ </label>
         <input
           className="w-full mb-4 px-3 py-2 border rounded"
           placeholder="Enter Class Name"
@@ -226,7 +230,7 @@ function EditClassModal({
         <div className="flex justify-end gap-2">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded border border-gray-400 text-gray-600 hover:bg-gray-100"
+            className="border border-gray-400 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300 transition px-4 py-2 rounded text-gray-600"
           >
             Cancel
           </button>
@@ -331,7 +335,9 @@ function StudentModal({ onClose, onSave, initialData, setReturnToStudentModal, s
       <div className="bg-white text-black rounded-md p-6 w-[500px] max-h-[90vh] overflow-y-auto shadow-lg">
         <h2 className="text-xl font-bold mb-4">{isEdit ? "Edit" : "Add"} Student</h2>
   
-        <label className="font-semibold">First Name</label>
+        <label className="font-semibold">
+   First Name<span className="text-red-500 ml-1">*</span>
+ </label>
         <input
           type="text"
           className="mb-3 px-3 py-2 border rounded w-full"
@@ -339,7 +345,9 @@ function StudentModal({ onClose, onSave, initialData, setReturnToStudentModal, s
           onChange={(e) => setFirstName(e.target.value)}
         />
   
-        <label className="font-semibold">Last Name</label>
+  <label className="font-semibold">
+   Last Name<span className="text-red-500 ml-1">*</span>
+ </label>
         <input
           type="text"
           className="mb-3 px-3 py-2 border rounded w-full"
@@ -347,7 +355,9 @@ function StudentModal({ onClose, onSave, initialData, setReturnToStudentModal, s
           onChange={(e) => setLastName(e.target.value)}
         />
   
-        <label className="font-semibold">Email</label>
+  <label className="font-semibold">
+   Email<span className="text-red-500 ml-1">*</span>
+ </label>
         <input
           type="email"
           className="mb-4 px-3 py-2 border rounded w-full"
@@ -407,7 +417,8 @@ function StudentModal({ onClose, onSave, initialData, setReturnToStudentModal, s
 
 export default function TeacherDashboard() {
   const { teacherId, name } = useParams();
-
+  const decodedName = decodeURIComponent(name);
+  const teacherLastName = decodedName.split(/[_ ]/).slice(-1)[0];
   const [showStudentModal, setShowStudentModal] = useState(false);
   const [studentToEdit, setStudentToEdit] = useState(null);
   const [studentMenuData, setStudentMenuData] = useState(null);
@@ -808,7 +819,7 @@ const [returnToStudentModal, setReturnToStudentModal] = useState(false);
     <div className="min-h-screen w-full bg-gradient-to-br from-[#111111] to-black text-white p-6 flex flex-col items-center">
       
       <div className="w-full flex justify-end items-center mb-4">
-  <span className="text-white font-semibold mr-4">{decodeURIComponent(name)}</span>
+      <span className="text-white font-semibold mr-4">{teacherLastName}</span>
   <button
     onClick={() => {
       localStorage.removeItem("teacherEmail");
@@ -860,7 +871,7 @@ const [returnToStudentModal, setReturnToStudentModal] = useState(false);
                   <tr className="bg-gray-900 text-white">
                     <th className="px-4 py-3 text-left">Class Name</th>
                     <th className="px-4 py-3 text-center"># of Students</th>
-                    <th className="px-4 py-3 text-left">Class URL</th>
+                    <th className="px-4 py-3 text-left">URL</th>
                     <th className="px-4 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
@@ -881,19 +892,19 @@ const [returnToStudentModal, setReturnToStudentModal] = useState(false);
                             className="underline"
                           >
 <a
-  href="#"
-  onClick={(e) => {
-    e.preventDefault();
-    const url = new URL(lesson.classUrl, window.location.origin);
-    url.searchParams.set("role", "teacher");
-    sessionStorage.setItem("teacherEmail", teacherEmail);
-    sessionStorage.setItem("teacherName", name);
-    window.open(url.toString(), "_blank");
+   href="#"
+   onClick={(e) => {
+     e.preventDefault();
+     const url = new URL(lesson.classUrl, window.location.origin);
+     url.searchParams.set("role", "teacher");
+     sessionStorage.setItem("teacherEmail", teacherEmail);
+     sessionStorage.setItem("teacherName", name);
+     window.open(url.toString(), "_blank");
   }}
-  className="underline text-blue-400"
+   className="underline text-blue-400 hover:text-blue-300 hover:underline transition"
 >
-  {new URL(lesson.classUrl, window.location.origin).href}
-</a>
+   {new URL(lesson.classUrl, window.location.origin).href}
+ </a>
 
                           </a>
                         </td>
@@ -910,25 +921,44 @@ const [returnToStudentModal, setReturnToStudentModal] = useState(false);
                   })}
                 </tbody>
               </table>
-              <div className="flex justify-center mt-4">
+{/* Новый блок */}
+<div className="mt-4 flex justify-center items-center gap-2">
+  {/* Prev */}
   <button
-    onClick={() => setClassPage((prev) => Math.max(prev - 1, 1))}
+    onClick={() => setClassPage(prev => Math.max(prev - 1, 1))}
     disabled={classPage === 1}
-    className="px-3 py-1 mx-1 bg-gray-700 hover:bg-gray-600 rounded disabled:opacity-50"
+    className="px-3 py-1 rounded transition bg-gray-700 text-white hover:bg-gray-600 disabled:opacity-50"
   >
     Prev
   </button>
-  <span className="px-3 py-1 mx-1 text-white">
-    Page {classPage} of {Math.ceil(lessons.length / classesPerPage)}
-  </span>
+
+  {/* Номера страниц */}
+  {Array.from({ length: Math.ceil(lessons.length / classesPerPage) }, (_, idx) => {
+    const page = idx + 1;
+    return (
+      <button
+        key={page}
+        onClick={() => setClassPage(page)}
+        className={`px-3 py-1 rounded transition ${
+          classPage === page
+            ? "bg-blue-600 text-white"
+            : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+        }`}
+      >
+        {page}
+      </button>
+    );
+  })}
+
+  {/* Next */}
   <button
     onClick={() =>
-      setClassPage((prev) =>
+      setClassPage(prev =>
         prev < Math.ceil(lessons.length / classesPerPage) ? prev + 1 : prev
       )
     }
-    disabled={classPage >= Math.ceil(lessons.length / classesPerPage)}
-    className="px-3 py-1 mx-1 bg-gray-700 hover:bg-gray-600 rounded disabled:opacity-50"
+    disabled={classPage === Math.ceil(lessons.length / classesPerPage)}
+    className="px-3 py-1 rounded transition bg-gray-700 text-white hover:bg-gray-600 disabled:opacity-50"
   >
     Next
   </button>
@@ -1000,25 +1030,44 @@ const [returnToStudentModal, setReturnToStudentModal] = useState(false);
             ))}
           </tbody>
         </table>
-        <div className="flex justify-center mt-4">
+{/* Новый блок */}
+<div className="mt-4 flex justify-center items-center gap-2">
+  {/* Prev */}
   <button
-    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-    disabled={currentPage === 1}
-    className="px-3 py-1 mx-1 bg-gray-700 hover:bg-gray-600 rounded disabled:opacity-50"
+    onClick={() => setClassPage(prev => Math.max(prev - 1, 1))}
+    disabled={classPage === 1}
+    className="px-3 py-1 rounded transition bg-gray-700 text-white hover:bg-gray-600 disabled:opacity-50"
   >
     Prev
   </button>
-  <span className="px-3 py-1 mx-1 text-white">
-    Page {currentPage} of {Math.ceil(students.length / itemsPerPage)}
-  </span>
+
+  {/* Номера страниц */}
+  {Array.from({ length: Math.ceil(lessons.length / classesPerPage) }, (_, idx) => {
+    const page = idx + 1;
+    return (
+      <button
+        key={page}
+        onClick={() => setClassPage(page)}
+        className={`px-3 py-1 rounded transition ${
+          classPage === page
+            ? "bg-blue-600 text-white"
+            : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+        }`}
+      >
+        {page}
+      </button>
+    );
+  })}
+
+  {/* Next */}
   <button
     onClick={() =>
-      setCurrentPage((prev) =>
-        prev < Math.ceil(students.length / itemsPerPage) ? prev + 1 : prev
+      setClassPage(prev =>
+        prev < Math.ceil(lessons.length / classesPerPage) ? prev + 1 : prev
       )
     }
-    disabled={currentPage >= Math.ceil(students.length / itemsPerPage)}
-    className="px-3 py-1 mx-1 bg-gray-700 hover:bg-gray-600 rounded disabled:opacity-50"
+    disabled={classPage === Math.ceil(lessons.length / classesPerPage)}
+    className="px-3 py-1 rounded transition bg-gray-700 text-white hover:bg-gray-600 disabled:opacity-50"
   >
     Next
   </button>

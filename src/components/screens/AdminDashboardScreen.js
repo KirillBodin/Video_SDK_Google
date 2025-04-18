@@ -57,10 +57,14 @@ function renderModal(title, form, setForm, onSubmit, onClose, customFields = {})
           );
         })}
         <div className="flex justify-end gap-2">
-          <button onClick={onClose} className="border px-4 py-2 rounded text-gray-600">
-            Cancel
-          </button>
-          <button onClick={onSubmit} className="bg-blue-600 text-white px-4 py-2 rounded">
+        <button
+  onClick={onClose}
+ className="border border-gray-400 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300 transition px-4 py-2 rounded text-gray-600"
+>
+  Cancel
+</button>
+
+          <button onClick={onSubmit} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition">
             Save
           </button>
         </div>
@@ -138,6 +142,17 @@ function DataTable({
   itemsPerPage,
   allData,
 }) {
+
+  const columnLabels = {
+    name:        "Name",
+    email:       "Email",
+    className:   "Class Name",
+    teacherName: "Teacher Name",
+    url:         "URL",
+    classes:     "Classes",
+    teachers:    "Teachers",
+  };
+  
   const addButtonLabel =
     title.toLowerCase() === "classes" ? "Add Class" : `Add ${title.slice(0, -1)}`;
 
@@ -153,13 +168,13 @@ function DataTable({
       <table className="w-full border-collapse border border-gray-700 rounded-lg text-white">
         <thead>
         <tr className="bg-gray-900 text-white">
-            {columns.map((col) => (
-              <th key={col} className="capitalize px-4 py-3">
-                {col}
-              </th>
-            ))}
-            <th className="px-3 py-2 text-right"></th>
-          </tr>
+  {columns.map((col) => (
+    <th key={col} className="px-4 py-3 text-left">
+      {columnLabels[col] || col}
+    </th>
+  ))}
+  <th className="px-3 py-2 text-right"></th>
+</tr>
         </thead>
         <tbody>
           {data.length === 0 ? (
@@ -226,42 +241,66 @@ function DataTable({
         </tbody>
       </table>
 
-      <div className="flex justify-center mt-4">
+      
+      <div className="flex justify-center items-center mt-4 space-x-2">
+       
         <button
           onClick={() =>
-            setCurrentPage((prev) => ({
+            setCurrentPage(prev => ({
               ...prev,
-              [title.toLowerCase()]: Math.max(prev[title.toLowerCase()] - 1, 1),
+              [title.toLowerCase()]: Math.max(prev[title.toLowerCase()] - 1, 1)
             }))
           }
           disabled={currentPage[title.toLowerCase()] === 1}
-          className="px-3 py-1 mx-1 bg-gray-700 hover:bg-gray-600 text-white rounded-md disabled:opacity-50"
+          className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded-md disabled:opacity-50"
         >
           Prev
         </button>
-        <span className="px-3 py-1 mx-1 text-white">
-          Page {currentPage[title.toLowerCase()]} of{" "}
-          {Math.ceil(allData.length === 0 ? 1 : allData.length / itemsPerPage)}
-        </span>
+
+        
+        {Array.from(
+          { length: Math.ceil((allData.length || 1) / itemsPerPage) },
+          (_, i) => i + 1
+        ).map(page => (
+          <button
+            key={page}
+            onClick={() =>
+              setCurrentPage(prev => ({
+                ...prev,
+                [title.toLowerCase()]: page
+              }))
+            }
+            className={`px-3 py-1 rounded-md text-white transition ${
+              currentPage[title.toLowerCase()] === page
+                ? "bg-blue-500"
+                : "hover:bg-gray-600 bg-gray-700"
+            }`}
+          >
+            {page}
+          </button>
+        ))}
+
+       
         <button
           onClick={() =>
-            setCurrentPage((prev) => ({
+            setCurrentPage(prev => ({
               ...prev,
               [title.toLowerCase()]:
                 prev[title.toLowerCase()] < Math.ceil(allData.length / itemsPerPage)
                   ? prev[title.toLowerCase()] + 1
-                  : prev[title.toLowerCase()],
+                  : prev[title.toLowerCase()]
             }))
           }
           disabled={
             currentPage[title.toLowerCase()] >=
             Math.ceil(allData.length / itemsPerPage)
           }
-          className="px-3 py-1 mx-1 bg-gray-700 hover:bg-gray-600 text-white rounded-md disabled:opacity-50"
+          className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded-md disabled:opacity-50"
         >
           Next
         </button>
       </div>
+
     </div>
   );
 }
@@ -792,9 +831,13 @@ const handleSaveNewStudent = async () => {
 </button>
 
           <div className="flex justify-end gap-2">
-            <button onClick={onClose} className="border px-4 py-2 rounded text-gray-600">
-              Cancel
-            </button>
+          <button
+  onClick={onClose}
+  className="border border-gray-400 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300 transition px-4 py-2 rounded text-gray-600"
+>
+  Cancel
+</button>
+
             <button onClick={handleSubmit} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
               Save
             </button>
@@ -923,7 +966,7 @@ const handleSaveNewStudent = async () => {
       <div className="flex justify-between">
         <button
           onClick={() => setShowTeacherForm(false)}
-          className="border px-4 py-2 rounded text-gray-600"
+         className="border border-gray-400 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300 transition px-4 py-2 rounded text-gray-600"
         >
           Cancel
         </button>
@@ -1021,7 +1064,7 @@ const handleSaveNewStudent = async () => {
       <div className="flex justify-between">
         <button
           onClick={() => setShowStudentForm(false)}
-          className="border px-4 py-2 rounded text-gray-600"
+          className="border border-gray-400 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300 transition px-4 py-2 rounded text-gray-600"
         >
           Cancel
         </button>
@@ -1061,6 +1104,7 @@ const [showAddClassModalLocal, setShowAddClassModalLocal] = useState(false);
 
   const [editData, setEditData] = useState(null);
   const [schoolName, setSchoolName] = useState("");
+  const [adminName, setAdminName] = useState("");
   const [currentPage, setCurrentPage] = useState({
     teachers: 1,
     students: 1,
@@ -1094,6 +1138,10 @@ const [showAddClassModalLocal, setShowAddClassModalLocal] = useState(false);
         const res = await authorizedFetch(`${SERVER_URL}/api/admin/${adminId}`);
         const data = await res.json();
         setSchoolName(data.schoolName || "Your School");
+        setAdminName(
+          data.name && data.name.split(" ").slice(-1)[0]
+        );
+        
       } catch (err) {
         console.error("❌ Failed to fetch admin info:", err);
       }
@@ -1417,7 +1465,7 @@ const [showAddClassModalLocal, setShowAddClassModalLocal] = useState(false);
      <div className="w-full flex justify-end items-center mb-6">
   <div className="flex items-center gap-4">
   <span className="text-lg font-semibold">
-  School Admin — {schoolName}
+  {adminName} — {schoolName}
 </span>
 
     <button

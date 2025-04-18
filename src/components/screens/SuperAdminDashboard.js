@@ -13,7 +13,6 @@ import { useParams, useNavigate } from "react-router-dom";
 
 const SERVER_URL = process.env.REACT_APP_SERVER_URL;
 function renderModal(title, form, setForm, onSubmit, onClose, customFields = {}) {
-  console.log("🧩 renderModal", { title, form, customFields });
 
   const fieldPlaceholders = {
     firstName: "First Name",
@@ -41,7 +40,7 @@ const mergedFields = [...Object.keys(customFields), ...Object.keys(form).filter(
 
   return ReactDOM.createPortal(
     <div className={`fixed inset-0 ${customFields.zIndex || 'z-[60]'} bg-black bg-opacity-40 flex items-center justify-center`}>
-      <div className="bg-white text-black p-6 rounded w-96 max-h-[90vh] overflow-y-auto shadow-xl">
+     <div className="bg-white text-black p-6 rounded-lg w-96 max-h-[90vh] overflow-y-auto shadow-xl">
         <h2 className="text-xl font-bold mb-4">{title}</h2>
         
         {mergedFields.map((field) => {
@@ -67,10 +66,10 @@ const mergedFields = [...Object.keys(customFields), ...Object.keys(form).filter(
           );
         })}
         <div className="flex justify-end gap-2">
-          <button onClick={onClose} className="border px-4 py-2 rounded text-gray-600">
+          <button onClick={onClose} className="border border-gray-400 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300 transition px-4 py-2 rounded text-gray-600">
             Cancel
           </button>
-          <button onClick={onSubmit} className="bg-blue-600 text-white px-4 py-2 rounded">
+          <button onClick={onSubmit} className="bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 transition text-white px-4 py-2 rounded">
             Save
           </button>
         </div>
@@ -624,14 +623,14 @@ if (!res.ok) {
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-[#111111] to-black text-white p-6">
     
-    <div className="w-full flex justify-end items-center mb-6">
+    <div className="w-full flex justify-end items-center mb-6 px-4">
   <div className="flex items-center gap-4">
     <span className="text-lg font-semibold text-white">
       {superadminName?.split("_").slice(1).join(" ")}
     </span>
     <button
       onClick={handleLogout}
-      className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md"
+      className="bg-red-500 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 transition text-white px-4 py-2 rounded-md"
     >
       Log Out
     </button>
@@ -665,7 +664,7 @@ if (!res.ok) {
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-xl font-semibold"></h3>
             <button
-              className="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded"
+              className="bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition px-4 py-2 rounded"
               onClick={() => setShowTeacherModal(true)}
             >
               Add Teacher
@@ -713,7 +712,7 @@ if (!res.ok) {
   columns={[
     { label: "Class Name", key: "className" },
     { label: "# of Students", key: "numberOfStudents" },
-    { label: "Class URL", key: "classUrl" },
+    { label: "URL", key: "classUrl" },
   ]}
   onMenuToggle={toggleMenu}
   totalItems={classes.length}
@@ -734,7 +733,7 @@ if (!res.ok) {
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-xl font-semibold"></h3>
             <button
-              className="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded"
+              className="bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition px-4 py-2 rounded"
               onClick={() => setShowStudentModal(true)}
             >
               Add Student
@@ -767,7 +766,7 @@ if (!res.ok) {
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-xl font-semibold"></h3>
             <button
-              className="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded"
+              className="bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition px-4 py-2 rounded"
               onClick={() => setShowDirectorModal(true)}
             >
               Add School Admin
@@ -1702,21 +1701,43 @@ function DataTable({ title, data, columns, onMenuToggle, currentPage = 1, totalI
         <p className="text-white text-center">No {title.toLowerCase()} found</p>
       )}
 
-      {onPageChange && (
-        <div className="mt-4 flex justify-center gap-2">
-          {Array.from({ length: Math.ceil(totalItems / ITEMS_PER_PAGE) }, (_, i) => (
-            <button
-              key={i}
-              onClick={() => onPageChange(i + 1)}
-              className={`px-3 py-1 rounded ${
-                currentPage === i + 1 ? "bg-blue-600 text-white" : "bg-gray-700 text-gray-300"
-              }`}
-            >
-              {i + 1}
-            </button>
-          ))}
-        </div>
-      )}
+{onPageChange && (
+  <div className="mt-4 flex justify-center items-center gap-2">
+    {/* Prev */}
+    <button
+      onClick={() => onPageChange(currentPage - 1)}
+      disabled={currentPage === 1}
+      className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded-md disabled:opacity-50"
+    >
+      Prev
+    </button>
+
+    {/* Page numbers */}
+    {Array.from({ length: Math.ceil(totalItems / ITEMS_PER_PAGE) }, (_, i) => (
+      <button
+        key={i}
+        onClick={() => onPageChange(i + 1)}
+        className={`px-3 py-1 rounded transition ${
+          currentPage === i + 1
+            ? "bg-blue-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            : "bg-gray-700 text-gray-300 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        }`}
+      >
+        {i + 1}
+      </button>
+    ))}
+
+    {/* Next */}
+    <button
+      onClick={() => onPageChange(currentPage + 1)}
+      disabled={currentPage === Math.ceil(totalItems / ITEMS_PER_PAGE)}
+      className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded-md disabled:opacity-50"
+    >
+      Next
+    </button>
+  </div>
+)}
+
     </div>
   );
 }
@@ -2210,10 +2231,10 @@ function StudentModal({ visible, onClose, onSave, initialData, classes, isEdit =
           </select>
         </div>
         <div className="flex justify-end mt-4 gap-2">
-          <button onClick={onClose} className="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded">
+          <button onClick={onClose} className="border border-gray-400 px-4 py-2 rounded text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300 transition">
             Cancel
           </button>
-          <button onClick={() => onSave(form)} className="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded">
+          <button onClick={() => onSave(form)} className="bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition px-4 py-2 rounded">
             Save
           </button>
         </div>
@@ -2289,10 +2310,10 @@ function DirectorModal({ visible, onClose, onSave, initialData, isEdit = false }
           />
         </div>
         <div className="flex justify-end mt-4 gap-2">
-          <button onClick={onClose} className="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded">
+          <button onClick={onClose} className="border border-gray-400 px-4 py-2 rounded text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300 transition">
             Cancel
           </button>
-          <button onClick={() => onSave(form)} className="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded">
+          <button onClick={() => onSave(form)} className="bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition px-4 py-2 rounded">
             Save
           </button>
         </div>

@@ -42,7 +42,7 @@ export function MeetingDetailsScreen({
       const data = await response.json();
       return data.exists; 
     } catch (error) {
-      console.error("❌ Email verification error:", error);
+      
       toast.error("Server error while checking email.");
       return false;
     }
@@ -50,24 +50,23 @@ export function MeetingDetailsScreen({
 
 
   useEffect(() => {
-    console.log("🟡 [useEffect] INIT MeetingDetailsScreen");
+    
   
     const wasEnded = sessionStorage.getItem("meetingWasEnded");
-    console.log("🟨 meetingWasEnded =", wasEnded);
+    
   
     if (wasEnded) {
       sessionStorage.removeItem("meetingWasEnded");
       const prevToken = sessionStorage.getItem("waitingToken");
       const prevRoomName = sessionStorage.getItem("waitingRoomName");
   
-      console.log("🟨 waitingToken =", prevToken);
-      console.log("🟨 waitingRoomName =", prevRoomName);
+    
   
       if (prevToken && prevRoomName) {
         setLocalToken(prevToken);
         setRoomName(prevRoomName);
         setWaitingRoomVisible(true);
-        console.log("✅ Switching to WaitingRoomScreen...");
+        
       } else {
         toast.error("Missing meeting data. Please rejoin manually.");
       }
@@ -75,12 +74,12 @@ export function MeetingDetailsScreen({
   
     const urlParams = new URLSearchParams(window.location.search);
     const tokenFromUrl = urlParams.get("token");
-    console.log("🟡 tokenFromUrl =", tokenFromUrl);
+    
   
     if (tokenFromUrl) {
       sessionStorage.setItem("sessionToken", tokenFromUrl);
       const redirectAfterLogin = sessionStorage.getItem("redirectAfterLogin");
-      console.log("🟡 redirectAfterLogin =", redirectAfterLogin);
+      
       if (redirectAfterLogin) {
         navigate(redirectAfterLogin);
         sessionStorage.removeItem("redirectAfterLogin");
@@ -91,12 +90,12 @@ export function MeetingDetailsScreen({
     }
   
     const token = sessionStorage.getItem("sessionToken");
-    console.log("🟡 sessionToken =", token);
+    
   
     if (token) {
       try {
         const decoded = jwtDecode(token);
-        console.log("🟢 Decoded token:", decoded);
+        
   
         if (decoded.email) setUserEmail(decoded.email);
         if (decoded.name) setUserName(decoded.name);
@@ -106,7 +105,7 @@ export function MeetingDetailsScreen({
     }
   
     const googleLoginAction = sessionStorage.getItem("googleLoginAction");
-    console.log("🟡 googleLoginAction =", googleLoginAction);
+    
   
     if (googleLoginAction === "create") {
       setIsCreateMeetingClicked(true);
@@ -119,14 +118,13 @@ export function MeetingDetailsScreen({
     const email = sessionStorage.getItem("teacherEmail");
     const storedTeacherName = sessionStorage.getItem("teacherName");
   
-    console.log("📥 Stored email =", email);
-    console.log("📥 Stored name =", storedTeacherName);
+   
   
     if (email) setUserEmail(email);
     if (storedTeacherName) setUserName(storedTeacherName);
   
     if (className) {
-      console.log("📥 className from URL =", className);
+     
       setRoomName(className);
     }
   }, [className, navigate]);
@@ -162,11 +160,7 @@ export function MeetingDetailsScreen({
 
  
   if (waitingRoomVisible) {
-    console.log("🚪 Rendering WaitingRoomScreen with:", {
-      roomName,
-      token: localToken,
-      userName
-    });
+
   
     const role = "student";
     return (
