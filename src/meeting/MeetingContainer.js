@@ -447,6 +447,9 @@ export function MeetingContainer({ onMeetingLeave, setIsMeetingLeft }) {
       if (to && localParticipantId !== to) return;
       if (command === "endMeeting") {
         sessionStorage.setItem("meetingWasEnded", "true");
+        setTimeout(() => {
+          sessionStorage.removeItem("meetingWasEnded");
+        }, 15000);
         await mMeeting.leave();
         navigate(window.location.pathname);
         return;
