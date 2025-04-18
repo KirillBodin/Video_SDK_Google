@@ -306,11 +306,14 @@ return (
 
        
         setParticipantName(userName);
-
-        setTimeout(() => {
-          sessionStorage.setItem("participantRole", "teacher");
-          onClickStartMeeting(token, meetingData.meetingId);
-        }, 2000);
+         setTimeout(() => {
+             sessionStorage.setItem("participantRole", "teacher");
+             onClickStartMeeting(
+               token,
+               meetingData.meetingId,
+               userName        
+             );
+           }, 2000);
       } catch (error) {
         toast.error("Server error while creating meeting!");
       }

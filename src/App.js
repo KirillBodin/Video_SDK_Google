@@ -18,7 +18,10 @@ import UnauthorizedScreen from "./components/screens/UnauthorizedScreen";
 function App() {
   const [token, setToken] = useState("");
   const [meetingId, setMeetingId] = useState("");
-  const [participantName, setParticipantName] = useState("");
+  const [participantName, setParticipantName] = useState(
+    () => sessionStorage.getItem("videosdk_userName") || ""
+  );
+  
   const [micOn, setMicOn] = useState(false);
   const [webcamOn, setWebcamOn] = useState(false);
   const [customAudioStream, setCustomAudioStream] = useState(null);
@@ -27,13 +30,20 @@ function App() {
   const [isMeetingLeft, setIsMeetingLeft] = useState(false);
   const [role, setRole] = useState("");
 
-  const handleStartMeeting = (currentToken, currentMeetingId) => {
-    if (!currentToken || !currentMeetingId) {
-      return;
-    }
+  const handleStartMeeting = (currentToken, currentMeetingId, name) => {
+    if (!currentToken || !currentMeetingId) return;
     setToken(currentToken);
     setMeetingId(currentMeetingId);
+    if (name) setParticipantName(name);
   };
+
+  useEffect(() => {
+    if (participantName) {
+      sessionStorage.setItem("videosdk_userName", participantName);
+    }
+  }, [participantName]);
+  
+  
   useEffect(() => {
     const userAgent = navigator.userAgent || navigator.vendor || window.opera;
   
@@ -101,7 +111,7 @@ function App() {
                     <MeetingContainer
                       onMeetingLeave={() => {
                         setMeetingId("");
-                        setParticipantName("");
+                        
                         setWebcamOn(false);
                         setMicOn(false);
                         setMeetingStarted(false);
@@ -173,7 +183,7 @@ function App() {
           <MeetingContainer
             onMeetingLeave={() => {
               setMeetingId("");
-              setParticipantName("");
+             
               setWebcamOn(false);
               setMicOn(false);
               setMeetingStarted(false);

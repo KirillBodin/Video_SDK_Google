@@ -5,53 +5,65 @@ function WaitingRoom({ meetingId, token, onJoined }) {
 
   useEffect(() => {
     console.log("🔁 WaitingRoom mounted");
-    let interval;
-
-    const checkParticipants = async () => {
+  
+    
+    let wakeLock = null;
+  
+    const requestWakeLock = async () => {
       try {
-        console.log("🌐 Checking session for meetingId:", meetingId);
-
-        const sessionRes = await fetch(
-          `https://api.videosdk.live/v2/sessions/?roomId=${meetingId}`,
-          {
-            headers: {
-              Authorization: token,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        const sessionData = await sessionRes.json();
-        console.log("📥 Session data:", sessionData);
-
-        const activeSession = sessionData.data?.find(
-          (s) => s.status === "ongoing"
-        );
-
-        if (!activeSession) return;
-
-        const participants = activeSession.participants || [];
-        console.log("👥 Participants:", participants.length);
-
-        if (participants.length > 0) {
-          clearInterval(interval);
-          console.log("✅ Teacher started session, joining...");
-          onJoined();
+        if ('wakeLock' in navigator) {
+          // Request a screen wake lock
+          wakeLock = await navigator.wakeLock.request('screen');
+          console.log('🔒 Screen wake lock acquired');
+  
+         
+          wakeLock.addEventListener('release', () => {
+            console.warn('🔓 Screen wake lock released');
+          });
         }
       } catch (err) {
-        console.error("❌ Error checking session:", err);
+        console.error('❌ Could not obtain wake lock:', err);
       }
     };
-
+  
+    requestWakeLock();
+  
+    
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        requestWakeLock();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+   
+  
+    let intervalId = null;
+  
+    const checkParticipants = async () => {
+      try {
+        
+      } catch (err) {
+        console.error('❌ Error checking session:', err);
+      }
+    };
+  
     setChecking(true);
-    interval = setInterval(checkParticipants, 5000);
+    intervalId = setInterval(checkParticipants, 5000);
     checkParticipants();
-
+  
     return () => {
-      console.log("🧹 Clearing interval");
-      clearInterval(interval);
+      console.log('🧹 Clearing interval and releasing wake lock');
+      clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (wakeLock) {
+        wakeLock.release().catch(err => {
+          console.error('❌ Error releasing wake lock:', err);
+        });
+      }
     };
   }, [meetingId, token, onJoined]);
+  
+  
 
   return (
     <div className="h-screen w-screen bg-black text-white flex items-center justify-center">
@@ -71,6 +83,7 @@ export default function WaitingLobbyScreen({
 }) {
   const [resolvedMeetingId, setResolvedMeetingId] = useState("");
 
+  
   useEffect(() => {
     console.log("🧭 WaitingLobbyScreen", { roomName, token, userName, role });
 
@@ -96,11 +109,17 @@ export default function WaitingLobbyScreen({
   }, [roomName]);
 
   return resolvedMeetingId ? (
-    <WaitingRoom
-      meetingId={resolvedMeetingId}
-      token={token}
-      onJoined={() => onJoined(resolvedMeetingId)}
-    />
+<WaitingRoom
+  meetingId={resolvedMeetingId}
+  token={token}
+ onJoined={() =>
+    onJoined(
+      resolvedMeetingId,  
+      userName,           
+      role                
+    )
+  }
+/>
   ) : (
     <div className="h-screen w-screen bg-black text-white flex items-center justify-center">
       <h2 className="text-xl font-bold">Waiting for the teacher to create the meeting...</h2>
