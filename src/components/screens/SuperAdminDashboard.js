@@ -585,8 +585,9 @@ if (!res.ok) {
         if (!res.ok) throw new Error("Failed to load teacher details");
         const data = await res.json();
   
-        const { firstName, lastName, email, adminId, classIds, studentIds } = data;
-
+        const { firstName, lastName, email, adminName, classIds, studentIds } = data;
+        const matchedAdmin = admins.find((a) => a.name === adminName);
+        const admin = matchedAdmin ? matchedAdmin.id : "";
         setEditData({
           id,
           type,
@@ -594,6 +595,7 @@ if (!res.ok) {
             firstName,
             lastName,
             email,
+            adminId: admin,
             classIds,
             studentIds,
             schoolName: data.schoolName || "",
