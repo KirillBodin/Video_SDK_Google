@@ -684,7 +684,7 @@ if (!res.ok) {
       teachers: "Teacher",
       students: "Student",
       classes: "Class",
-      schoolAdmins: "School Admin"
+      schooladmins: "School Admin"
     };
     
     if (!window.confirm(`Are you sure you want to delete this ${type}?`)) return;
@@ -717,7 +717,6 @@ if (!res.ok) {
       if (type === "students") setStudents((prev) => prev.filter((s) => s.id !== id));
       if (type === "schooladmins") setAdmins((prev) => prev.filter((d) => d.id !== id));
       
-      console.log("✅ Deletion successful for:", type, id);
   
     } catch (err) {
       console.error("❌ Error in deleteItem:", err);
