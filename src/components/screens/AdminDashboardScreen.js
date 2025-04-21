@@ -47,12 +47,17 @@ function renderModal(title, form, setForm, onSubmit, onClose, customFields = {})
                 )}
               </label>
               <input
-                name={field}
-                placeholder={fieldPlaceholders[field] || field}
-                className="w-full px-3 py-2 border rounded"
-                value={form[field] || ""}
-                onChange={handleChange}
-              />
+  name={field}
+  placeholder={fieldPlaceholders[field] || field}
+  className="w-full px-3 py-2 border rounded"
+  value={form[field] || ""}
+  onChange={handleChange}
+/>
+{field === "password" && (
+  <p className="text-sm text-gray-500 mt-1">
+    Leave blank to keep current password
+  </p>
+)}
             </div>
           );
         })}
