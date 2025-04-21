@@ -48,7 +48,7 @@ export function MeetingDetailsScreen({
     }
   };
   useEffect(() => {
-    document.title = "TAMAMAT Main page";
+    document.title = "TAMAMAT - Teaching Platform";
   }, []);
 
   useEffect(() => {

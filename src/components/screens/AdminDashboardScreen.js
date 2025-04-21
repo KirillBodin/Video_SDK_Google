@@ -76,9 +76,9 @@ function renderModal(title, form, setForm, onSubmit, onClose, customFields = {})
 
 function joinUrl(base, path) {
   return (
-    base.replace(/\/+$/, "") +      // убираем все конечные слэши из base
-    "/" +                           // добавляем ровно один слэш
-    path.replace(/^\/+/, "")        // убираем все начальные слэши из path
+    base.replace(/\/+$/, "") +      
+    "/" +                           
+    path.replace(/^\/+/, "")       
   );
 }
 
@@ -370,10 +370,23 @@ function AddTeacherModal({ onClose, onSave, isEdit = false, initialData = {}, cl
   
 
   const handleSubmit = () => {
-    if (!form.firstName || !form.lastName || !form.email || (!isEdit && !form.password)) {
-      toast.error("All fields are required");
+    if (!form.firstName) {
+      toast.error("First name is required");
       return;
     }
+    if (!form.lastName) {
+      toast.error("Last name is required");
+      return;
+    }
+    if (!form.email) {
+      toast.error("Email is required");
+      return;
+    }
+    if (!isEdit && !form.password) {
+      toast.error("Password is required");
+      return;
+    }
+    
     onSave(form);
     onClose();
   };
@@ -507,10 +520,23 @@ function AddStudentModal({
   };
 
   const handleSubmit = () => {
-    if (!form.firstName || !form.lastName || !form.email || form.teacherIds.length === 0) {
-      toast.error("All fields are required, including at least one teacher.");
+    if (!form.firstName) {
+      toast.error("First name is required");
       return;
     }
+    if (!form.lastName) {
+      toast.error("Last name is required");
+      return;
+    }
+    if (!form.email) {
+      toast.error("Email is required");
+      return;
+    }
+    if (!form.teacherIds || form.teacherIds.length === 0) {
+      toast.error("At least one teacher must be assigned");
+      return;
+    }
+    
     onSave(form);
     onClose();
   };
@@ -670,18 +696,15 @@ const handleSaveNewTeacher = async () => {
       setForm({ ...form, teacherId: newTeacher.id });
       setShowTeacherForm(false);
     } else {
-      if (res.status === 400) {
-
-        toast.error("Email already exists. Please use a different email.");
-      } else {
-        toast.error("Error adding teacher");
-      }
+      const errorData = await res.json(); // 
+      toast.error(errorData.error || "Error adding teacher");
     }
   } catch (error) {
     console.error(error);
     toast.error("Error adding teacher");
   }
 };
+
 
 
 
@@ -705,11 +728,8 @@ const handleSaveNewStudent = async () => {
       setForm({ ...form, studentIds: [...form.studentIds, newStudent.id] });
       setShowStudentForm(false);
     } else {
-      if (res.status === 400) {
-        toast.error("Email already exists. Please use a different email.");
-      } else {
-        toast.error("Error adding student");
-      }
+      const errorData = await res.json(); 
+      toast.error(errorData.error || "Error adding teacher");
     }
   } catch (error) {
     console.error(error);
@@ -1318,10 +1338,10 @@ const [showAddClassModalLocal, setShowAddClassModalLocal] = useState(false);
         toast.success("Teacher added!");
         fetchTeachers();
         fetchAll(); 
-      } else if (res.status === 400) {
-        toast.error("Email already exists. Please use a different email.");
+
       } else {
-        toast.error("Failed to add teacher. Server error.");
+        const errData = await res.json();
+        toast.error(errData.error || "Failed to add teacher. Server error.");
       }
     } catch (error) {
       console.error("❌ handleSaveTeacher error:", error);
@@ -1352,10 +1372,9 @@ const [showAddClassModalLocal, setShowAddClassModalLocal] = useState(false);
       if (res.ok) {
         toast.success("Student updated!");
         fetchStudents();
-      } else if (res.status === 400) {
-        toast.error("Email already exists. Please use a different email.");
       } else {
-        toast.error("Failed to update student. Server error.");
+        const errData = await res.json();
+        toast.error(errData.error || "Failed to add teacher. Server error.");
       }
     } catch (error) {
       console.error("❌ handleUpdateStudent error:", error);
@@ -1375,20 +1394,19 @@ const [showAddClassModalLocal, setShowAddClassModalLocal] = useState(false);
         body: JSON.stringify({ name: fullName, email, password, classIds, teacherIds }),
       });
   
-
       if (res.ok) {
         toast.success("Student added!");
         fetchStudents();
         fetchAll();
-        return;
-      }
-  
-  
-      if (res.status === 400) {
-   
-        toast.error("Email already exists. Please use a different email.");
       } else {
-        toast.error("Failed to add student. Server returned an error.");
+        let errorText = "Failed to add student.";
+        try {
+          const errData = await res.json();
+          errorText = errData.error || errorText;
+        } catch (parseErr) {
+          console.warn("Could not parse error response as JSON");
+        }
+        toast.error(errorText);
       }
     } catch (error) {
       console.error("❌ handleSaveStudent error:", error);
@@ -1410,7 +1428,7 @@ const [showAddClassModalLocal, setShowAddClassModalLocal] = useState(false);
     const formattedClassName = className.replace(/\s+/g, "_");
   
     try {
-      await authorizedFetch(`${SERVER_URL}/api/lessons/${id}`, {
+      const res = await authorizedFetch(`${SERVER_URL}/api/lessons/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1420,13 +1438,21 @@ const [showAddClassModalLocal, setShowAddClassModalLocal] = useState(false);
           studentIds,
         }),
       });
-      toast.success("Class updated!");
-      fetchClasses();
+  
+      if (res.ok) {
+        toast.success("Class updated!");
+        fetchClasses();
+        return;
+      } else {
+        const errData = await res.json();
+        toast.error(errData.error || "Failed to update class. Server error.");
+      }
     } catch (error) {
       console.error("❌ Failed to update class:", error);
-      toast.error("Failed to update class.");
+      toast.error(error.message || "Failed to update class.");
     }
   };
+  
   
   
 
@@ -1457,7 +1483,8 @@ const [showAddClassModalLocal, setShowAddClassModalLocal] = useState(false);
       fetchClasses();
       fetchAll();
     } else {
-      toast.error("Failed to add class.");
+      const errData = await res.json();
+      toast.error(errData.error || "Failed to add teacher. Server error.");
     }
   };
   

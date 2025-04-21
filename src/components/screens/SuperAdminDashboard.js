@@ -259,38 +259,81 @@ export default function SuperAdminDashboard() {
 
   
   const handleAddTeacher = async () => {
-    const { firstName, lastName, teacherEmail, teacherPassword, adminId } = newTeacherData;
-    if (!firstName || !lastName || !teacherEmail || !teacherPassword || !adminId) {
-      toast.info("Please fill in all teacher fields (including Admin)!");
+    const { firstName, lastName, teacherEmail, teacherPassword, adminId, classIds, studentIds } = newTeacherData;
+  
+    if (!firstName) {
+      toast.info("First name is required.");
       return;
     }
+    if (!lastName) {
+      toast.info("Last name is required.");
+      return;
+    }
+    if (!teacherEmail) {
+      toast.info("Email is required.");
+      return;
+    }
+    if (!teacherPassword) {
+      toast.info("Password is required.");
+      return;
+    }
+    if (!adminId) {
+      toast.info("Please select a School Admin.");
+      return;
+    }
+  
     try {
-      const fullName = `${firstName} ${lastName}`;
+      const teacherName = `${firstName} ${lastName}`;
+      const payload = {
+        teacherName,
+        teacherEmail,
+        teacherPassword,
+        adminId,
+        classIds,
+        studentIds
+      };
+  
       const res = await authorizedFetch(`${SERVER_URL}/api/super-admin/teachers`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ teacherName: fullName, teacherEmail, teacherPassword, adminId }),
+        body: JSON.stringify(payload),
       });
+  
       const data = await res.json();
       if (!res.ok) {
         const errorMsg = data?.error || data?.message || "Failed to create teacher";
         throw new Error(errorMsg);
       }
-      
+  
       toast.success("Teacher added successfully!");
       fetchTeachers();
-      setNewTeacherData({ firstName: "", lastName: "", teacherEmail: "", teacherPassword: "", adminId: "" });
+      setNewTeacherData({
+        firstName: "",
+        lastName: "",
+        teacherEmail: "",
+        teacherPassword: "",
+        adminId: "",
+        classIds: [],
+        studentIds: []
+      });
       setShowTeacherModal(false);
     } catch (err) {
       console.error("Error creating teacher:", err);
       toast.error(err.message);
     }
   };
+  
+  
 
   const handleAddClass = async () => {
     const { className, teacherId, studentIds } = newClassData;
-    if (!className || !teacherId) {
-      toast.info("Please fill in class name and teacher.");
+  
+    if (!className) {
+      toast.info("Class name is required.");
+      return;
+    }
+    if (!teacherId) {
+      toast.info("Please select a teacher.");
       return;
     }
   
@@ -300,27 +343,42 @@ export default function SuperAdminDashboard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ className, teacherId, studentIds }),
       });
+  
       const data = await res.json();
       if (!res.ok) {
         const errorMsg = data?.error || data?.message || "Failed to create class";
         throw new Error(errorMsg);
       }
-      
   
       toast.success("Class added successfully!");
       fetchClasses();
       setShowClassModal(false);
       setNewClassData({ className: "", teacherId: "", studentIds: [] });
     } catch (err) {
+      console.error("Error creating class:", err);
       toast.error(err.message);
     }
   };
   
+  
 
   const handleAddStudent = async () => {
-    const { firstName, lastName, studentEmail, classIds } = newStudentData;
-    if (!firstName || !lastName || !studentEmail || !classIds.length) {
-      toast.info("Please fill in student fields and select at least one class!");
+    const { firstName, lastName, studentEmail, classIds,teacherIds } = newStudentData;
+  
+    if (!firstName) {
+      toast.info("First name is required.");
+      return;
+    }
+    if (!lastName) {
+      toast.info("Last name is required.");
+      return;
+    }
+    if (!studentEmail) {
+      toast.info("Email is required.");
+      return;
+    }
+    if (!teacherIds.length) {
+      toast.info("Please select at least one techer.");
       return;
     }
   
@@ -331,12 +389,13 @@ export default function SuperAdminDashboard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ studentName: fullName, studentEmail, classIds, teacherIds: newStudentData.teacherIds }),
       });
+  
       const data = await res.json();
       if (!res.ok) {
         const errorMsg = data?.error || data?.message || "Failed to create student";
         throw new Error(errorMsg);
       }
-      
+  
       toast.success("Student added successfully!");
       fetchStudents();
       setNewStudentData({ firstName: "", lastName: "", studentEmail: "", classIds: [], teacherIds: [] });
@@ -347,25 +406,47 @@ export default function SuperAdminDashboard() {
     }
   };
   
+  
 
   const handleAddDirector = async (form) => {
     const { firstName, lastName, schoolName, email, password, teacherIds } = form;
-const name = `${firstName} ${lastName}`;
-    if (!name?.trim() || !email?.trim() || !password?.trim()) {
-      toast.info("Please fill in all director fields!");
+  
+    if (!firstName?.trim()) {
+      toast.info("First name is required.");
       return;
     }
+    if (!lastName?.trim()) {
+      toast.info("Last name is required.");
+      return;
+    }
+    if (!schoolName?.trim()) {
+      toast.info("School name is required.");
+      return;
+    }
+    if (!email?.trim()) {
+      toast.info("Email is required.");
+      return;
+    }
+    if (!password?.trim()) {
+      toast.info("Password is required.");
+      return;
+    }
+  
+    const name = `${firstName} ${lastName}`;
+  
     try {
       const res = await authorizedFetch(`${SERVER_URL}/api/super-admin/admins`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password, schoolName })
+        body: JSON.stringify({ name, email, password, schoolName }),
       });
+  
       const data = await res.json();
       if (!res.ok) {
         const errorMsg = data?.error || data?.message || "Failed to create director";
         throw new Error(errorMsg);
       }
+  
       toast.success("Director added successfully!");
       fetchAdmins();
       setShowDirectorModal(false);
@@ -376,23 +457,43 @@ const name = `${firstName} ${lastName}`;
   };
   
   
+  
 
   
   const handleUpdateTeacher = async (data) => {
-    const { id, firstName, lastName, teacherEmail, teacherPassword, adminId } = data;
+    const {
+      id,
+      firstName,
+      lastName,
+      email,
+      password,
+      adminId,
+      classIds,
+      studentIds,
+    } = data;
+  
     try {
       const fullName = `${firstName} ${lastName}`;
       const res = await authorizedFetch(`${SERVER_URL}/api/super-admin/teachers/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ teacherName: fullName, teacherEmail, teacherPassword, adminId }),
+        body: JSON.stringify({
+          teacherName: fullName,
+          teacherEmail: email,
+          teacherPassword: password,
+          adminId,
+          classIds,
+          studentIds,
+          id
+        }),
       });
-      const data = await res.json();
-if (!res.ok) {
-  const errorMsg = data?.error || data?.message || "Failed to update teacher";
-  throw new Error(errorMsg);
-}
-
+  
+      const responseData = await res.json();
+      if (!res.ok) {
+        const errorMsg = responseData?.error || responseData?.message || "Failed to update teacher";
+        throw new Error(errorMsg);
+      }
+  
       toast.success("Teacher updated!");
       fetchTeachers();
       setEditData(null);
@@ -401,6 +502,7 @@ if (!res.ok) {
       toast.error(err.message);
     }
   };
+  
 
   const handleUpdateClass = async (data) => {
     const { id, className, teacherId, studentIds } = data;
@@ -492,9 +594,9 @@ if (!res.ok) {
             firstName,
             lastName,
             email,
-            adminId,
             classIds,
             studentIds,
+            schoolName: data.schoolName || "",
           }
         });
         
@@ -513,7 +615,6 @@ if (!res.ok) {
           classInfo: {
             className: data.className,
             teacherId: data.teacherId,
-            adminId: admins.find(a => a.name === data.adminName)?.id || "",
             studentIds: data.studentIds || [],
           }
         });
@@ -535,8 +636,7 @@ if (!res.ok) {
             lastName: data.lastName,
             studentEmail: data.email,
             classIds: data.classIds || [],
-            teacherIds: data.teacherIds || [],
-            adminId: admins.find(a => a.name === data.adminName)?.id || ""
+            teacherIds: data.teacherIds || []
           }
         });
       } catch (err) {
@@ -907,8 +1007,15 @@ if (!res.ok) {
             </label>
           ))}
         </div>
+        <button
+          className="text-blue-500 hover:underline text-sm mt-2"
+          onClick={() => setShowClassModal(true)}
+        >
+          + Add New Class
+        </button>
       </div>
     ),
+    
     
     teacherIds: (
       <div className="mb-3">
@@ -937,8 +1044,15 @@ if (!res.ok) {
             </label>
           ))}
         </div>
+        <button
+          className="text-blue-500 hover:underline text-sm mt-2"
+          onClick={() => setShowTeacherModal(true)}
+        >
+          + Add New Teacher
+        </button>
       </div>
     ),
+    
     
     
   }
@@ -1028,6 +1142,7 @@ if (!res.ok) {
           <input
   type="password"
   name="password"
+  autoComplete="new-password"
   className="w-full px-3 py-2 border rounded"
   placeholder="Password"
   value={editData.directorInfo.password || ""}
@@ -1038,6 +1153,7 @@ if (!res.ok) {
     }))
   }
 />
+
 {editData?.type === "schoolAdmins" && (
   <p className="text-sm text-gray-500 mt-1">
     Leave blank to keep current password
@@ -1050,7 +1166,7 @@ if (!res.ok) {
       ),teacherIds: (
         <div className="mb-3">
           <label className="block font-semibold mb-1">Assign Teachers</label>
-          <div className="border rounded p-2 max-h-40 overflow-y-auto">
+          <div className="border rounded p-2 max-h-40 overflow-y-auto mb-2">
             {teachers.map((t) => (
               <label key={t.id} className="flex items-center gap-2 mb-1">
                 <input
@@ -1074,6 +1190,12 @@ if (!res.ok) {
               </label>
             ))}
           </div>
+          <button
+            className="text-blue-500 hover:underline text-sm"
+            onClick={() => setShowTeacherModal(true)}
+          >
+            + Add New Teacher
+          </button>
         </div>
       )
       
@@ -1839,28 +1961,7 @@ function TeacherModal({ visible, onClose, onSave, initialData, admins, isEdit = 
     });
   }, [initialData]);
   
-  const addNewButtons = (
-    <div className="flex flex-col gap-2 mb-3">
-      <button
-        className="w-full bg-blue-500 text-white px-3 py-2 rounded"
-        onClick={() => setShowClassForm(true)}
-      >
-        + Add New Class
-      </button>
-      <button
-        className="w-full bg-blue-500 text-white px-3 py-2 rounded"
-        onClick={() => setShowStudentForm(true)}
-      >
-        + Add New Student
-      </button>
-      <button
-        className="w-full bg-blue-500 text-white px-3 py-2 rounded"
-        onClick={() => setShowAdminForm(true)}
-      >
-        + Add New Admin
-      </button>
-    </div>
-  );
+
   
   const handleSubmit = () => {
     if (!form.firstName || !form.lastName || !form.email || (!isEdit && !form.password) || !form.adminId) {
@@ -1935,8 +2036,8 @@ function TeacherModal({ visible, onClose, onSave, initialData, admins, isEdit = 
             onChange={(e) => setForm({ ...form, password: e.target.value })}
           />
           <p className="text-sm text-gray-500 mt-1">
-          Leave blank to keep current password
-        </p>
+            Leave blank to keep current password
+          </p>
         </div>
       ),
       adminId: (
@@ -1957,6 +2058,12 @@ function TeacherModal({ visible, onClose, onSave, initialData, admins, isEdit = 
               </option>
             ))}
           </select>
+          <button
+            className="text-blue-500 hover:underline text-sm mt-1"
+            onClick={() => setShowAdminForm(true)}
+          >
+            + Add New Admin
+          </button>
         </div>
       ),
       classIds: (
@@ -1981,6 +2088,12 @@ function TeacherModal({ visible, onClose, onSave, initialData, admins, isEdit = 
               </label>
             ))}
           </div>
+          <button
+            className="text-blue-500 hover:underline text-sm mt-1"
+            onClick={() => setShowClassForm(true)}
+          >
+            + Add New Class
+          </button>
         </div>
       ),
       studentIds: (
@@ -2005,13 +2118,17 @@ function TeacherModal({ visible, onClose, onSave, initialData, admins, isEdit = 
               </label>
             ))}
           </div>
+          <button
+            className="text-blue-500 hover:underline text-sm mt-1"
+            onClick={() => setShowStudentForm(true)}
+          >
+            + Add New Student
+          </button>
         </div>
       ),
-      addNewButtons: addNewButtons
-      
     }
-    
   );
+  
   {showClassForm && (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
       <div className="bg-white text-black p-6 rounded w-[450px] max-h-[90vh] overflow-y-auto">
@@ -2113,26 +2230,6 @@ function ClassModal({ visible, onClose, onSave, initialData, teachers, students 
             {teachers.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      ),
-      adminId: (
-        <div className="mb-3">
-          <label className="block font-semibold mb-1">
-            Select Admin<span className="text-red-500 ml-1">*</span>
-          </label>
-          <select
-            name="adminId"
-            className="w-full px-3 py-2 border rounded"
-            value={form.adminId}
-            onChange={(e) => setForm({ ...form, adminId: e.target.value })}
-          >
-            <option value="">Select Admin</option>
-            {admins.map((admin) => (
-              <option key={admin.id} value={admin.id}>
-                {admin.name}
               </option>
             ))}
           </select>
