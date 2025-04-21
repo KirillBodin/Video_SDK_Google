@@ -679,39 +679,63 @@ if (!res.ok) {
   
 
   const deleteItem = async (id, type) => {
+  
+    const singularMap = {
+      teachers: "Teacher",
+      students: "Student",
+      classes: "Class",
+      schoolAdmins: "School Admin"
+    };
+    
     if (!window.confirm(`Are you sure you want to delete this ${type}?`)) return;
+  
     try {
+      const normalizedType = type.toLowerCase();
       let url = "";
-      if (type === "teachers") {
+      
+      if (normalizedType === "teachers") {
         url = `${SERVER_URL}/api/super-admin/teachers/${id}`;
-      } else if (type === "classes") {
+      } else if (normalizedType === "classes") {
         url = `${SERVER_URL}/api/super-admin/classes/${id}`;
-      } else if (type === "students") {
+      } else if (normalizedType === "students") {
         url = `${SERVER_URL}/api/super-admin/students/${id}`;
-      } else if (type === "schooladmins") {
+      } else if (normalizedType === "schooladmins") {
         url = `${SERVER_URL}/api/super-admin/admins/${id}`;
       }
+      
+  
+    
+  
       const res = await authorizedFetch(url, { method: "DELETE" });
+  
+  
       if (!res.ok) throw new Error(`Failed to delete ${type}`);
-      toast.success(`${type} deleted successfully!`);
+      toast.success(`${singularMap[type] || "Item"} deleted successfully!`);
+  
       if (type === "teachers") setTeachers((prev) => prev.filter((t) => t.id !== id));
       if (type === "classes") setClasses((prev) => prev.filter((c) => c.id !== id));
       if (type === "students") setStudents((prev) => prev.filter((s) => s.id !== id));
-      if (type === "directors") setAdmins((prev) => prev.filter((d) => d.id !== id));
+      if (type === "schooladmins") setAdmins((prev) => prev.filter((d) => d.id !== id));
+      
+      console.log("✅ Deletion successful for:", type, id);
+  
     } catch (err) {
+      console.error("❌ Error in deleteItem:", err);
       toast.error(err.message);
     }
   };
+  
   const toggleMenu = ({ id, type, x, y, classUrl }) => {
-    const normalizedType = type === "school admins" ? "schoolAdmins" : type;
     setMenuData({
       id,
-      type: normalizedType,
+      type: type.toLowerCase(), 
       x,
       y,
       classUrl,
     });
   };
+  
+  
   
   
   
@@ -860,7 +884,7 @@ if (!res.ok) {
         </div>
       )}
 
-      {/* Directors Tab */}
+      {/* schooladmins Tab */}
       {activeTab === "schoolAdmins" && (
         <div className="w-full max-w-5xl mx-auto">
           <div className="flex justify-between items-center mb-4">
@@ -1057,7 +1081,6 @@ if (!res.ok) {
     
   }
 )}
-{console.log("🎯 Rendering edit modal for:", editData)}
 
 {editData?.type === "schoolAdmins" && (
   renderModal(
@@ -1803,7 +1826,12 @@ function DataTable({ title, data, columns, onMenuToggle, currentPage = 1, totalI
                         const scrollY = scrollable.scrollTop || 0;
                         onMenuToggle({
                           id: item.id,
-                          type: title.toLowerCase(),
+                          type:
+  title === "School Admins" ? "schoolAdmins" :
+  title === "Teachers" ? "teachers" :
+  title === "Students" ? "students" :
+  title === "Classes" ? "classes" :
+  title.toLowerCase(),
                           x: rect.left + scrollX,
                           y: rect.top + scrollY + 35,
                           classUrl: item.classUrl,
