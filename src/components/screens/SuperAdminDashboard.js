@@ -262,23 +262,23 @@ export default function SuperAdminDashboard() {
     const { firstName, lastName, teacherEmail, teacherPassword, adminId, classIds, studentIds } = newTeacherData;
   
     if (!firstName) {
-      toast.info("First name is required.");
+      toast.error("First name is required.");
       return;
     }
     if (!lastName) {
-      toast.info("Last name is required.");
+      toast.error("Last name is required.");
       return;
     }
     if (!teacherEmail) {
-      toast.info("Email is required.");
+      toast.error("Email is required.");
       return;
     }
     if (!teacherPassword) {
-      toast.info("Password is required.");
+      toast.error("Password is required.");
       return;
     }
     if (!adminId) {
-      toast.info("Please select a School Admin.");
+      toast.error("Please select a School Admin.");
       return;
     }
   
@@ -329,11 +329,11 @@ export default function SuperAdminDashboard() {
     const { className, teacherId, studentIds } = newClassData;
   
     if (!className) {
-      toast.info("Class name is required.");
+      toast.error("Class name is required.");
       return;
     }
     if (!teacherId) {
-      toast.info("Please select a teacher.");
+      toast.error("Please select a teacher.");
       return;
     }
   
@@ -366,19 +366,19 @@ export default function SuperAdminDashboard() {
     const { firstName, lastName, studentEmail, classIds,teacherIds } = newStudentData;
   
     if (!firstName) {
-      toast.info("First name is required.");
+      toast.error("First name is required.");
       return;
     }
     if (!lastName) {
-      toast.info("Last name is required.");
+      toast.error("Last name is required.");
       return;
     }
     if (!studentEmail) {
-      toast.info("Email is required.");
+      toast.error("Email is required.");
       return;
     }
     if (!teacherIds.length) {
-      toast.info("Please select at least one techer.");
+      toast.error("Please select at least one techer.");
       return;
     }
   
@@ -412,23 +412,23 @@ export default function SuperAdminDashboard() {
     const { firstName, lastName, schoolName, email, password, teacherIds } = form;
   
     if (!firstName?.trim()) {
-      toast.info("First name is required.");
+      toast.error("First name is required.");
       return;
     }
     if (!lastName?.trim()) {
-      toast.info("Last name is required.");
+      toast.error("Last name is required.");
       return;
     }
     if (!schoolName?.trim()) {
-      toast.info("School name is required.");
+      toast.error("School name is required.");
       return;
     }
     if (!email?.trim()) {
-      toast.info("Email is required.");
+      toast.error("Email is required.");
       return;
     }
     if (!password?.trim()) {
-      toast.info("Password is required.");
+      toast.error("Password is required.");
       return;
     }
   
