@@ -54,6 +54,10 @@ useEffect(() => {
   };
 
   const handleSaveClass = () => {
+    if (!className.trim()) {
+      toast.error("Class name is required!");
+      return;
+    }
     onSaveClass({
       className,
       studentIds: selectedStudentIds,
@@ -162,6 +166,11 @@ function EditClassModal({
   }, [lessonToEdit.teacherId]);
 
   const handleSubmit = () => {
+    if (!className.trim()) {
+      toast.error("Class name is required!");
+      return;
+    }
+  
     const updatedLesson = {
       id: lessonToEdit.id,
       className,
@@ -316,10 +325,19 @@ function StudentModal({ onClose, onSave, initialData, setReturnToStudentModal, s
   };
 
   const handleSubmit = () => {
-    if (!firstName || !lastName || !email) {
-      toast.error("All fields are required");
+    if (!firstName.trim()) {
+      toast.error("First name is required!");
       return;
     }
+    if (!lastName.trim()) {
+      toast.error("Last name is required!");
+      return;
+    }
+    if (!email.trim()) {
+      toast.error("Email is required!");
+      return;
+    }
+    
 
     onSave({
       firstName,
@@ -524,10 +542,19 @@ const [returnToStudentModal, setReturnToStudentModal] = useState(false);
   };
   
   const handleSaveOrUpdateStudent = async ({ firstName, lastName, email, classIds, id }) => {
-    if (!firstName || !lastName || !email) {
-      toast.error("All fields are required!");
+    if (!firstName.trim()) {
+      toast.error("First name is required!");
       return;
     }
+    if (!lastName.trim()) {
+      toast.error("Last name is required!");
+      return;
+    }
+    if (!email.trim()) {
+      toast.error("Email is required!");
+      return;
+    }
+    
     try {
       const name = `${firstName.trim()} ${lastName.trim()}`;
   
